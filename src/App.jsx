@@ -39,7 +39,20 @@ function App() {
   const [blinkIndex, setBlinkIndex] = useState(0);
   const [jumpInput, setJumpInput] = useState('');
   const [jumpError, setJumpError] = useState('');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [hijriData, setHijriData] = useState([]);
+  const [hijriIndex, setHijriIndex] = useState(0);
+  
+  // إعدادات الخط
+  const [isFontMenuOpen, setIsFontMenuOpen] = useState(false);
+  const [fontSize, setFontSize] = useState(38);
+  const [fontFamily, setFontFamily] = useState("'Tajawal', sans-serif");
+  const [fontWeight, setFontWeight] = useState("bold");
+  const [fontColor, setFontColor] = useState("darkgreen");
+
   const actionButtonsRef = useRef(null);
+  const audioRef = useRef(null);
+  const fontMenuRef = useRef(null);
 
   const starredArray = Array.from(starredIndices).sort((a, b) => a - b);
 
@@ -76,6 +89,9 @@ function App() {
       if (actionButtonsRef.current && !actionButtonsRef.current.contains(event.target)) {
         setActiveTooltip(null);
       }
+      if (fontMenuRef.current && !fontMenuRef.current.contains(event.target)) {
+        setIsFontMenuOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("touchstart", handleClickOutside);
@@ -93,6 +109,90 @@ function App() {
     }, 800); // Changes the number every 800 milliseconds
     return () => clearInterval(interval);
   }, []);
+
+  // جلب التاريخ الهجري من واجهة Aladhan API تلقائياً
+  useEffect(() => {
+    if (hijriData.length === 0) {
+      const today = new Date();
+      const dateStr = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
+      fetch(`https://api.aladhan.com/v1/gToH?date=${dateStr}`)
+        .then(res => res.json())
+        .then(json => {
+          if (json.code === 200) {
+            const hijri = json.data.hijri;
+            // ترتيب العرض: اسم اليوم، رقم اليوم، اسم الشهر، رقم السنة
+            setHijriData([hijri.weekday.ar, hijri.day, hijri.month.ar, hijri.year]);
+          }
+        })
+        .catch(err => console.error("Error fetching Hijri date:", err));
+    }
+  }, [hijriData.length]);
+
+  // حلقة وميض التاريخ الهجري
+  useEffect(() => {
+    let interval;
+    if (hijriData.length > 0) {
+      interval = setInterval(() => {
+        setHijriIndex(prev => (prev + 1) % hijriData.length);
+      }, 1500); // يتغير النص كل ثانية ونصف ليكون مريحاً للقراءة
+    }
+    return () => clearInterval(interval);
+  }, [hijriData.length]);
+
+  // إيقاف الصوت تلقائياً عند الانتقال لخماسية أخرى أو تغيير وضع العرض
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, [currentIndex, viewMode]);
+
+  const toggleAudio = async () => {
+    if (isPlaying) {
+      if (audioRef.current) audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      const verse = currentVersesText[0];
+      if (verse) {
+        // تنسيق رقم السورة والآية ليكون من 3 خانات (مثال: السورة 1 الآية 2 تصبح 001002)
+        const surah = verse.s.toString().padStart(3, '0');
+        const ayah = verse.a.toString().padStart(3, '0');
+        const url = `https://everyayah.com/data/Minshawy_Murattal_128kbps/${surah}${ayah}.mp3`; // يمكنك تغيير المعرف هنا
+        
+        if (!audioRef.current) {
+          audioRef.current = new Audio();
+          audioRef.current.onended = () => setIsPlaying(false); // إعادة الأيقونة عند انتهاء التلاوة
+        }
+        
+        // استخدام Cache API لحفظ الصوتيات وتوفير الإنترنت
+        if ('caches' in window) {
+          try {
+            const cache = await caches.open('quran-audio-cache');
+            const cachedResponse = await cache.match(url);
+            
+            if (cachedResponse) {
+              // التشغيل من الذاكرة المحلية فوراً
+              const blob = await cachedResponse.blob();
+              audioRef.current.src = URL.createObjectURL(blob);
+            } else {
+              // التشغيل من الإنترنت مع الحفظ في الخلفية للمرات القادمة
+              if (!audioRef.current.src.includes(`${surah}${ayah}.mp3`)) audioRef.current.src = url;
+              fetch(url).then(response => {
+                if (response.ok) cache.put(url, response.clone());
+              }).catch(e => console.error("Error caching audio in background", e));
+            }
+          } catch (e) {
+            if (!audioRef.current.src.includes(`${surah}${ayah}.mp3`)) audioRef.current.src = url;
+          }
+        } else {
+          if (!audioRef.current.src.includes(`${surah}${ayah}.mp3`)) audioRef.current.src = url;
+        }
+
+        audioRef.current.play().catch(err => console.error("Error playing audio:", err));
+        setIsPlaying(true);
+      }
+    }
+  };
 
   const toggleStar = (index) => {
     setStarredIndices(prev => {
@@ -171,41 +271,105 @@ function App() {
   };
 
   return (
-    <div className="app-container">
+    <div className="app-container" style={{
+      '--app-font-size': `${fontSize}px`,
+      '--app-font-family': fontFamily,
+      '--app-font-weight': fontWeight,
+      '--app-font-color': fontColor
+    }}>
       <h1 className="app-title">خماسيات القرآن الكريم</h1>
       
-      <div className="top-stars-container">
-        {/* النجمة اليمنى: تعرض العداد وتفتح القائمة */}
-        <button 
-          className="top-star-btn"
-          title="قائمة الخماسيات للتثبيت"
-          onClick={() => setViewMode(prev => prev === 'starred' ? 'khmasiyat' : 'starred')}
-          style={{ color: viewMode === 'starred' ? '#f39c12' : 'darkgreen' }}
-        >
-          <span style={{ fontSize: '26px', fontWeight: 'bold', paddingTop: '2px' }}>{starredIndices.size}</span>
-          <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
-            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-          </svg>
+      {/* الأزرار العلوية */}
+      <div className="action-buttons-container upper-actions">
+        <button className="action-icon" title="القائمة">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
         </button>
+        <button className="action-icon" title="الإعدادات">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+        </button>
+        
+        {/* قائمة إعدادات الخط (الثانية من اليسار) */}
+        <div className="icon-wrapper" ref={fontMenuRef}>
+          <button 
+            className="action-icon" 
+            title="إعدادات الخط"
+            onClick={() => setIsFontMenuOpen(!isFontMenuOpen)}
+            style={{ backgroundColor: isFontMenuOpen ? '#f39c12' : '' }}
+          >
+            <span style={{ fontSize: '28px', fontWeight: 'bold', fontFamily: 'Georgia, serif' }}>A</span>
+          </button>
+          
+          {isFontMenuOpen && (
+            <div className="settings-popover">
+              <div className="settings-row font-size-ctrl">
+                <button type="button" onClick={() => setFontSize(s => Math.max(16, s - 2))}>-</button>
+                <span>{fontSize}</span>
+                <button type="button" onClick={() => setFontSize(s => Math.min(100, s + 2))}>+</button>
+              </div>
+              <div className="settings-row">
+                <select className="font-family-select" value={fontFamily} onChange={(e) => setFontFamily(e.target.value)}>
+                  <option value="'Tajawal', sans-serif">تجوال</option>
+                  <option value="'Amiri Quran', serif">أميري قرآني</option>
+                  <option value="'Scheherazade New', serif">شهرزاد</option>
+                  <option value="'Noto Naskh Arabic', serif">نوتو نسخ</option>
+                  <option value="'Amiri', serif">أميري (عادي)</option>
+                </select>
+              </div>
+              <div className="segmented-control">
+                <button type="button" className={fontWeight === 'normal' ? 'active' : ''} onClick={() => setFontWeight('normal')}>عادي</button>
+                <button type="button" className={fontWeight === 'bold' ? 'active' : ''} onClick={() => setFontWeight('bold')}>عريض</button>
+              </div>
+              <div className="settings-row colors-row">
+              {['#000000', 'darkgreen', '#d9534f', '#007bff', '#ffffff', '#be185d', '#b45309'].map(c => (
+                  <button 
+                    key={c} 
+                    style={{backgroundColor: c, border: c === '#ffffff' && fontColor !== '#ffffff' ? '1px solid #ccc' : ''}} 
+                    className={`color-btn ${fontColor === c ? 'active' : ''}`} 
+                    onClick={() => setFontColor(c)} 
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
-        {/* النجمة اليسرى: تضيف الخماسية الحالية للقائمة */}
         <button 
-          className="top-star-btn"
-          title="تثبيت الخماسية"
-          onClick={() => toggleStar(currentIndex)}
-          disabled={viewMode !== 'khmasiyat'}
-          style={{ color: starredIndices.has(currentIndex) ? '#f39c12' : 'darkgreen' }}
+          className="action-icon" 
+          title="التاريخ الهجري"
         >
-          {starredIndices.has(currentIndex) ? (
-            <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+          {hijriData.length > 0 ? (
+            <span style={{ fontSize: '14px', fontWeight: 'bold', fontFamily: 'Tajawal, sans-serif', textAlign: 'center', lineHeight: '1.2' }}>
+              {hijriData[hijriIndex]}
+            </span>
           ) : (
-            <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></svg>
+            <span style={{ fontSize: '14px' }}>...</span>
           )}
         </button>
       </div>
 
       {viewMode === 'starred' ? (
-        <div className="starred-list-container">
+        <>
+          <div className="top-stars-container starred-mode-stars">
+            <button 
+              className="top-star-btn"
+              title="العودة للقراءة"
+              onClick={() => setViewMode('khmasiyat')}
+              style={{ color: '#f39c12' }}
+            >
+              <span style={{ fontSize: '26px', fontWeight: 'bold', paddingTop: '2px' }}>{starredIndices.size}</span>
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+              </svg>
+            </button>
+            <button 
+              className="top-star-btn"
+              disabled={true}
+              style={{ color: 'darkgreen', opacity: 0.5 }}
+            >
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></svg>
+            </button>
+          </div>
+          <div className="starred-list-container">
           {starredArray.length === 0 ? (
             <div className="empty-starred">لا توجد خماسيات مثبتة بعد</div>
           ) : (
@@ -231,8 +395,35 @@ function App() {
             })
           )}
         </div>
+        </>
       ) : (
         <div className="content-layout">
+          <div className="top-stars-container inside-text-field">
+            <button 
+              className="top-star-btn"
+              title="قائمة الخماسيات للتثبيت"
+              onClick={() => setViewMode('starred')}
+              style={{ color: 'darkgreen' }}
+            >
+              <span style={{ fontSize: '26px', fontWeight: 'bold', paddingTop: '2px' }}>{starredIndices.size}</span>
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+              </svg>
+            </button>
+            <button 
+              className="top-star-btn"
+              title="تثبيت الخماسية"
+              onClick={() => toggleStar(currentIndex)}
+              style={{ color: starredIndices.has(currentIndex) ? '#f39c12' : 'darkgreen' }}
+            >
+              {starredIndices.has(currentIndex) ? (
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+              ) : (
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></svg>
+              )}
+            </button>
+          </div>
+
           <button 
             onClick={() => {
               if (viewMode === 'khmasiyat') {
@@ -252,10 +443,10 @@ function App() {
           
           {viewMode === 'shared-verses' ? (
             <div className="verse-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ color: 'darkgreen', fontWeight: 'bold', fontSize: '48px', marginBottom: '20px' }}>
+              <div style={{ color: fontColor, fontWeight: fontWeight, fontSize: '48px', marginBottom: '20px' }}>
                 {SHARED_VERSE_GROUPS[sharedGroupIndex].count}
               </div>
-              <div style={{ color: 'darkgreen', fontWeight: 'bold', fontSize: '32px', lineHeight: '1.8' }}>
+              <div style={{ color: fontColor, fontWeight: fontWeight, fontSize: `calc(${fontSize}px * 0.85)`, lineHeight: '1.8' }}>
                 {SHARED_VERSE_GROUPS[sharedGroupIndex].surahs.map(s => `[${SURAH_NAMES[s - 1]}]`).join(' ، ')}
               </div>
             </div>
@@ -293,9 +484,7 @@ function App() {
             title="فهرس السور"
             onClick={() => setActiveTooltip(activeTooltip === 'surah' ? null : 'surah')}
           >
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-              <path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/>
-            </svg>
+            <span style={{ fontSize: '26px', fontWeight: 'bold', fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>i</span>
           </button>
         </div>
         
@@ -322,18 +511,28 @@ function App() {
           className="action-icon" 
           title="السور المتشابهة في العدد"
           onClick={() => setViewMode(prev => prev === 'khmasiyat' ? 'shared-verses' : 'khmasiyat')}
-          style={{ backgroundColor: viewMode === 'shared-verses' ? 'darkgreen' : '', color: viewMode === 'shared-verses' ? '#fff' : '' }}
+          style={{ backgroundColor: viewMode === 'shared-verses' ? '#f39c12' : '' }}
         >
           <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
             <path d="M5 8h14v2H5zm0 6h14v2H5z"/>
           </svg>
         </button>
         
-        {/* استعادة أيقونة الصوت ليبقى لدينا 4 أيقونات دائرية سفلية */}
-        <button className="action-icon" title="تشغيل الصوت">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
+        <button 
+          className="action-icon" 
+          title={isPlaying ? "إيقاف الصوت" : "تشغيل الصوت"}
+          onClick={toggleAudio}
+          style={{ backgroundColor: isPlaying ? '#f39c12' : '' }}
+        >
+          {isPlaying ? (
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          )}
         </button>
       </div>
 
@@ -344,7 +543,7 @@ function App() {
               <div className={`input-inner-wrapper ${jumpError ? 'shake border-error' : ''}`}>
                 {!jumpInput && !jumpError && (
                   <div className="marquee-text">
-                    أدخل رقم السورة + : + رقم الخماسية، مثلاً 5:55 أو أدخل رقم الخماسية
+                    أدخل رقم السورة + : + رقم الخماسية، مثلاً 55 : 5 أو أدخل رقم الخماسية
                   </div>
                 )}
                 <input

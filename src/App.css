@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Scheherazade+New:wght@400;700&family=Tajawal:wght@400;500;700&display=swap');
 
 .app-container {
   padding: 20px;
@@ -16,15 +16,15 @@
 }
 
 .verse-container {
-  margin: 20px 0;
-  padding: 30px;
+  margin: 0 auto;
+  padding: 50px 70px;
   border: 1px solid #e1e4e8;
   border-radius: 12px;
   max-width: 800px;
   background-color: #ffffff;
   line-height: 2.4;
-  font-size: 38px;
-  font-family: 'Tajawal', sans-serif;
+  font-size: var(--app-font-size, 38px);
+  font-family: var(--app-font-family, 'Tajawal', sans-serif);
   box-shadow: 0 4px 10px rgba(0,0,0,0.05);
   flex: 1;
   height: 260px;
@@ -36,8 +36,8 @@
 }
 
 .verse-text {
-  color: darkgreen;
-  font-weight: bold;
+  color: var(--app-font-color, darkgreen);
+  font-weight: var(--app-font-weight, bold);
   margin: auto 0;
 }
 
@@ -79,15 +79,17 @@
 }
 
 .content-layout {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  max-width: 950px;
-  margin: 0 auto;
+  position: relative;
+  display: block;
+  max-width: 800px;
+  margin: 20px auto;
 }
 
 .nav-arrow {
+  position: absolute;
+  top: 50%;
+  margin-top: -25px;
+  z-index: 10;
   background-color: transparent;
   color: darkgreen;
   width: 50px;
@@ -100,6 +102,14 @@
   transition: all 0.2s ease;
   flex-shrink: 0;
   padding: 0;
+}
+
+.prev-arrow {
+  right: 15px;
+}
+
+.next-arrow {
+  left: 15px;
 }
 
 .nav-arrow svg {
@@ -138,25 +148,29 @@
   margin-top: 25px;
 }
 
+.action-buttons-container.upper-actions {
+  margin-top: 0;
+  margin-bottom: 25px;
+}
+
 .action-icon {
   width: 55px;
   height: 55px;
   border-radius: 50%;
-  background-color: #ffffff;
-  color: darkgreen;
-  border: 1px solid #e1e4e8;
+  background-color: darkgreen;
+  color: #ffffff;
+  border: 3px solid #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   transition: all 0.2s ease;
   padding: 0;
 }
 
 .action-icon:hover {
-  background-color: darkgreen;
-  color: #ffffff;
+  background-color: #004d00; /* درجة أغمق عند التمرير */
   transform: translateY(-3px);
   box-shadow: 0 6px 12px rgba(0, 100, 0, 0.2);
 }
@@ -170,10 +184,28 @@
   display: flex;
   justify-content: space-between;
   max-width: 800px;
-  margin: 0 auto -20px auto; /* تسحب النجوم لتقترب جداً من حقل النص */
-  padding: 0 10px;
+  margin: 0 auto;
+  padding: 0;
   position: relative;
   z-index: 10;
+}
+
+.top-stars-container.inside-text-field {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.top-stars-container.inside-text-field .top-star-btn {
+  pointer-events: auto;
+}
+
+.starred-mode-stars {
+  margin-bottom: 15px;
+  padding: 0 5px;
 }
 
 .top-star-btn {
@@ -297,6 +329,126 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(5px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Font Settings Popover */
+.settings-popover {
+  position: absolute;
+  top: calc(100% + 15px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 1px solid #e1e4e8;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  padding: 15px;
+  width: 240px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  animation: popoverFade 0.15s ease-out;
+  color: #333;
+  cursor: default;
+}
+
+.settings-popover::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px;
+  border-style: solid;
+  border-color: transparent transparent white transparent;
+}
+
+@keyframes popoverFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.font-size-ctrl button {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #e1e4e8;
+  background: #f4f6f8;
+  color: darkgreen;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.font-size-ctrl button:hover { background: #e1e4e8; }
+.font-size-ctrl span { font-size: 18px; font-weight: bold; font-family: Arial, sans-serif; }
+
+.font-family-select {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e1e4e8;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 16px;
+  background: #f4f6f8;
+  cursor: pointer;
+  outline: none;
+}
+
+.segmented-control {
+  display: flex;
+  width: 100%;
+  background: #f4f6f8;
+  border-radius: 8px;
+  padding: 4px;
+}
+.segmented-control button {
+  flex: 1;
+  padding: 6px 0;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  color: #555;
+  font-family: 'Tajawal', sans-serif;
+}
+.segmented-control button.active {
+  background: white;
+  color: darkgreen;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.colors-row {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.color-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.color-btn:hover {
+  transform: scale(1.1);
+}
+.color-btn.active {
+  border-color: #333;
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
 /* Jump To Section */
@@ -445,13 +597,10 @@
 
 /* Mobile Responsiveness */
 @media (max-width: 600px) {
-  .content-layout {
-    gap: 5px;
-  }
   .verse-container {
     font-size: 28px;
-    padding: 15px;
-    margin: 10px 0;
+    padding: 40px 45px;
+    margin: 0 auto;
     height: 200px;
   }
   .verse-number {
@@ -463,6 +612,13 @@
   .nav-arrow {
     width: 40px;
     height: 40px;
+    margin-top: -20px;
+  }
+  .prev-arrow {
+    right: 5px;
+  }
+  .next-arrow {
+    left: 5px;
   }
   .nav-arrow svg {
     width: 35px;
@@ -471,6 +627,10 @@
   .action-buttons-container {
     gap: 12px;
     margin-top: 15px;
+  }
+  .action-buttons-container.upper-actions {
+    margin-top: 0;
+    margin-bottom: 15px;
   }
   .action-icon {
     width: 45px;
@@ -489,9 +649,10 @@
   .marquee-text {
     font-size: 18px;
   }
-  .top-stars-container {
-    margin-bottom: -15px;
-    padding: 0 5px;
+  .top-stars-container.inside-text-field {
+    top: 10px;
+    left: 10px;
+    right: 10px;
   }
   .top-star-btn svg {
     width: 24px;
