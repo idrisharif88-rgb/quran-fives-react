@@ -408,7 +408,7 @@
 
 .ayah-menu-popover.popover-align-right {
   left: auto;
-  right: 0;
+  right: -70px; /* Moved even more to the right */
   transform: translateX(0);
 }
 
@@ -926,6 +926,9 @@
     max-height: 60vh; /* تحديد أقصى ارتفاع للقائمة */
     overflow-y: auto; /* إضافة شريط تمرير عمودي عند الحاجة */
     padding-right: 4px; /* تعديل بسيط لتجنب قص المحتوى مع شريط التمرير */
+  }
+  .ayah-menu-popover.popover-align-right {
+    right: -40px; /* Moved even more to the right on mobile */
   }
   .ayah-menu-popover.popover-align-right::after {
     right: 15px; /* Center arrow over 45px icon */
