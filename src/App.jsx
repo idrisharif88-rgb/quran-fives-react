@@ -296,6 +296,18 @@ function App() {
     });
   };
 
+  const togglePageStar = (index) => {
+    setStarredPages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
+
   const handleJump = () => {
     setJumpError('');
 
@@ -371,74 +383,89 @@ function App() {
       
       {/* الأزرار العلوية */}
       <div className="action-buttons-container upper-actions">
-        <div className="icon-wrapper" ref={pageStartsMenuRef}>
-          <button
-            className="action-icon menu-main-btn"
-            title="القائمة"
-            onClick={() => {
-              setIsPageStartsMenuOpen(prev => !prev);
-              setIsAyahMenuOpen(false);
-              setIsFontMenuOpen(false);
-            }}
-            style={{ backgroundColor: isPageStartsMenuOpen ? '#f39c12' : '' }}
-          >
-            <img src={menuMainIcon} alt="القائمة" className="menu-main-icon" />
-          </button>
-          {isPageStartsMenuOpen && (
-            <div className="ayah-menu-popover" dir="rtl">
-              {pageStartsOptions.map(option => (
-                <button
-                  key={option}
-                  type="button"
-                  className="ayah-menu-item"
-                  onClick={() => setIsPageStartsMenuOpen(false)}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="icon-wrapper" ref={ayahMenuRef}>
+        {isPageStartsMode && (
           <button
             className="action-icon"
-            title="اختبارات الآيات"
-            onClick={() => {
-              setIsAyahMenuOpen(prev => !prev);
-              setIsPageStartsMenuOpen(false);
-              setIsFontMenuOpen(false);
-            }}
-            style={{ backgroundColor: isAyahMenuOpen ? '#f39c12' : '' }}
+            title="العودة للقراءة"
+            onClick={() => setViewMode('khmasiyat')}
           >
-            <span
-              style={{
-                fontSize: '22px',
-                fontWeight: 800,
-                fontFamily: "'Tajawal', 'Noto Naskh Arabic', sans-serif",
-                lineHeight: 1,
-                letterSpacing: '0.5px',
-                display: 'inline-block',
-                transform: 'scaleX(1.12)'
-              }}
-            >
-              آية
-            </span>
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+            </svg>
           </button>
-          {isAyahMenuOpen && (
-            <div className="ayah-menu-popover" dir="rtl">
-              {ayahTestOptions.map(option => (
-                <button
-                  key={option.id}
-                  type="button"
-                  className="ayah-menu-item"
-                  onClick={() => handleAyahOptionClick(option.id)}
-                >
-                  {option.label}
-                </button>
-              ))}
+        )}
+        {!isPageStartsMode && (
+          <>
+            <div className="icon-wrapper" ref={pageStartsMenuRef}>
+              <button
+                className="action-icon menu-main-btn"
+                title="القائمة"
+                onClick={() => {
+                  setIsPageStartsMenuOpen(prev => !prev);
+                  setIsAyahMenuOpen(false);
+                  setIsFontMenuOpen(false);
+                }}
+                style={{ backgroundColor: isPageStartsMenuOpen ? '#f39c12' : '' }}
+              >
+                <img src={menuMainIcon} alt="القائمة" className="menu-main-icon" />
+              </button>
+              {isPageStartsMenuOpen && (
+                <div className="ayah-menu-popover" dir="rtl">
+                  {pageStartsOptions.map(option => (
+                    <button
+                      key={option}
+                      type="button"
+                      className="ayah-menu-item"
+                      onClick={() => handlePageStartsOptionClick(option)}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+            <div className="icon-wrapper" ref={ayahMenuRef}>
+              <button
+                className="action-icon"
+                title="اختبارات الآيات"
+                onClick={() => {
+                  setIsAyahMenuOpen(prev => !prev);
+                  setIsPageStartsMenuOpen(false);
+                  setIsFontMenuOpen(false);
+                }}
+                style={{ backgroundColor: isAyahMenuOpen ? '#f39c12' : '' }}
+              >
+                <span
+                  style={{
+                    fontSize: '22px',
+                    fontWeight: 800,
+                    fontFamily: "'Tajawal', 'Noto Naskh Arabic', sans-serif",
+                    lineHeight: 1,
+                    letterSpacing: '0.5px',
+                    display: 'inline-block',
+                    transform: 'scaleX(1.12)'
+                  }}
+                >
+                  آية
+                </span>
+              </button>
+              {isAyahMenuOpen && (
+                <div className="ayah-menu-popover" dir="rtl">
+                  {ayahTestOptions.map(option => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      className="ayah-menu-item"
+                      onClick={() => handleAyahOptionClick(option.id)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
         
         {/* قائمة إعدادات الخط (الثانية من اليسار) */}
         <div className="icon-wrapper" ref={fontMenuRef}>
@@ -517,16 +544,16 @@ function App() {
 
       {!isQuizMode && (
         <>
-      {viewMode === 'starred' ? (
+      {viewMode === 'starred' || viewMode === 'page-starred' ? (
         <>
           <div className="top-stars-container starred-mode-stars">
             <button 
               className="top-star-btn"
               title="العودة للقراءة"
-              onClick={() => setViewMode('khmasiyat')}
+              onClick={() => setViewMode(viewMode === 'page-starred' ? 'page-starts' : 'khmasiyat')}
               style={{ color: '#f39c12' }}
             >
-              <span style={{ fontSize: '26px', fontWeight: 'bold', paddingTop: '2px' }}>{starredIndices.size}</span>
+              <span style={{ fontSize: '26px', fontWeight: 'bold', paddingTop: '2px' }}>{viewMode === 'page-starred' ? starredPages.size : starredIndices.size}</span>
               <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
                 <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
               </svg>
@@ -540,29 +567,54 @@ function App() {
             </button>
           </div>
           <div className="starred-list-container">
-          {starredArray.length === 0 ? (
-            <div className="empty-starred">لا توجد خماسيات مثبتة بعد</div>
-          ) : (
-            starredArray.map(index => {
-              const kh = getSurahAndRange(index);
-              const lastVerseIdx = kh.absoluteEndIndex - 1;
-              const verse = QURAN_VERSES[lastVerseIdx];
-              return (
-                <div 
-                  key={index} 
-                  className="starred-rectangle"
-                  onClick={() => {
-                    setCurrentIndex(index);
-                    setViewMode('khmasiyat');
-                  }}
-                >
-                  <div className="starred-title">سورة {kh.name}</div>
-                  <div className="starred-preview">
-                    {verse?.t} <span className="starred-verse-num">﴿{verse?.a}﴾</span>
+          {viewMode === 'page-starred' ? (
+            starredPagesArray.length === 0 ? (
+              <div className="empty-starred">لا توجد صفحات مثبتة بعد</div>
+            ) : (
+              starredPagesArray.map(index => {
+                const verse = pageStartsData[index];
+                return (
+                  <div 
+                    key={index} 
+                    className="starred-rectangle"
+                    onClick={() => {
+                      setCurrentPageIndex(index);
+                      setViewMode('page-starts');
+                    }}
+                  >
+                    <div className="starred-title">سورة {SURAH_NAMES[verse.s - 1]} - صفحة {verse.page}</div>
+                    <div className="starred-preview">
+                      {verse?.t} <span className="starred-verse-num">﴿{verse?.a}﴾</span>
+                    </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })
+            )
+          ) : (
+            starredArray.length === 0 ? (
+              <div className="empty-starred">لا توجد خماسيات مثبتة بعد</div>
+            ) : (
+              starredArray.map(index => {
+                const kh = getSurahAndRange(index);
+                const lastVerseIdx = kh.absoluteEndIndex - 1;
+                const verse = QURAN_VERSES[lastVerseIdx];
+                return (
+                  <div 
+                    key={index} 
+                    className="starred-rectangle"
+                    onClick={() => {
+                      setCurrentIndex(index);
+                      setViewMode('khmasiyat');
+                    }}
+                  >
+                    <div className="starred-title">سورة {kh.name}</div>
+                    <div className="starred-preview">
+                      {verse?.t} <span className="starred-verse-num">﴿{verse?.a}﴾</span>
+                    </div>
+                  </div>
+                );
+              })
+            )
           )}
         </div>
         </>
@@ -571,22 +623,22 @@ function App() {
           <div className="top-stars-container inside-text-field">
             <button 
               className="top-star-btn"
-              title="قائمة الخماسيات للتثبيت"
-              onClick={() => setViewMode('starred')}
+              title={isPageStartsMode ? "قائمة الصفحات للتثبيت" : "قائمة الخماسيات للتثبيت"}
+              onClick={() => setViewMode(isPageStartsMode ? 'page-starred' : 'starred')}
               style={{ color: 'darkgreen' }}
             >
-              <span style={{ fontSize: '26px', fontWeight: 'bold', paddingTop: '2px' }}>{starredIndices.size}</span>
+              <span style={{ fontSize: '26px', fontWeight: 'bold', paddingTop: '2px' }}>{isPageStartsMode ? starredPages.size : starredIndices.size}</span>
               <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
                 <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
               </svg>
             </button>
             <button 
               className="top-star-btn"
-              title="تثبيت الخماسية"
-              onClick={() => toggleStar(currentIndex)}
-              style={{ color: starredIndices.has(currentIndex) ? '#f39c12' : 'darkgreen' }}
+              title={isPageStartsMode ? "تثبيت الصفحة" : "تثبيت الخماسية"}
+              onClick={() => isPageStartsMode ? togglePageStar(currentPageIndex) : toggleStar(currentIndex)}
+              style={{ color: (isPageStartsMode ? starredPages.has(currentPageIndex) : starredIndices.has(currentIndex)) ? '#f39c12' : 'darkgreen' }}
             >
-              {starredIndices.has(currentIndex) ? (
+              {(isPageStartsMode ? starredPages.has(currentPageIndex) : starredIndices.has(currentIndex)) ? (
                 <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
               ) : (
                 <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></svg>
@@ -657,6 +709,7 @@ function App() {
         </div>
       )}
 
+      {!isPageStartsMode && (
       <div className="action-buttons-container" ref={actionButtonsRef}>
         <div className="icon-wrapper">
           {activeTooltip === 'surah' && (
@@ -720,6 +773,7 @@ function App() {
           )}
         </button>
       </div>
+      )}
 
       {viewMode === 'khmasiyat' && (
         <>
