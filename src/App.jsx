@@ -210,8 +210,10 @@ function App() {
         .then(json => {
           if (json.code === 200) {
             const hijri = json.data.hijri;
+            // إزالة "ال" سواء كانت في البداية أو قبلها مسافة، مع إزالة الفراغات الزائدة
+            const dayNameWithoutAl = hijri.weekday.ar.replace('ال', '').trim();
             // ترتيب العرض: اسم اليوم، رقم اليوم، اسم الشهر، رقم السنة
-            setHijriData([hijri.weekday.ar, hijri.day, hijri.month.ar, hijri.year]);
+            setHijriData([dayNameWithoutAl, hijri.day, hijri.month.ar, hijri.year]);
           }
         })
         .catch(err => console.error("Error fetching Hijri date:", err));
@@ -519,6 +521,7 @@ function App() {
         <button 
           className="action-icon" 
           title="التاريخ الهجري"
+          style={{ width: '65px', height: '65px' }}
         >
           {hijriData.length > 0 ? (
             <span style={{ fontSize: '14px', fontWeight: 'bold', fontFamily: 'Tajawal, sans-serif', textAlign: 'center', lineHeight: '1.2' }}>
