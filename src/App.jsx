@@ -44,6 +44,12 @@ function App() {
   const [hijriIndex, setHijriIndex] = useState(0);
   
   // إعدادات الخط
+  const [isAyahMenuOpen, setIsAyahMenuOpen] = useState(false);
+  const [activeAyahTest, setActiveAyahTest] = useState(null);
+  const [quizKhmasiyaIndex, setQuizKhmasiyaIndex] = useState(null);
+  const [quizFiveInSurahGuess, setQuizFiveInSurahGuess] = useState('');
+  const [quizSurahGuess, setQuizSurahGuess] = useState('');
+  const [quizResult, setQuizResult] = useState('');
   const [isFontMenuOpen, setIsFontMenuOpen] = useState(false);
   const [fontSize, setFontSize] = useState(38);
   const [fontFamily, setFontFamily] = useState("'Tajawal', sans-serif");
@@ -52,6 +58,7 @@ function App() {
 
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
+  const ayahMenuRef = useRef(null);
   const fontMenuRef = useRef(null);
 
   const starredArray = Array.from(starredIndices).sort((a, b) => a - b);
@@ -92,6 +99,9 @@ function App() {
       if (fontMenuRef.current && !fontMenuRef.current.contains(event.target)) {
         setIsFontMenuOpen(false);
       }
+      if (ayahMenuRef.current && !ayahMenuRef.current.contains(event.target)) {
+        setIsAyahMenuOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("touchstart", handleClickOutside);
@@ -103,6 +113,50 @@ function App() {
 
   // Data: Cycle through 11, 29, 52 for the verse count button
   const blinkValues = ['11', '29', '52'];
+  const ayahTestOptions = [
+    { id: 'khmasiyat', label: 'اختبار خماسيات' },
+    { id: 'random-ayat', label: 'اختبار آيات عشوائي' },
+    { id: 'surah-count', label: 'اختبار سور - عدد آيات' }
+  ];
+  const createKhmasiyatQuestion = () => {
+    const randomIndex = Math.floor(Math.random() * 1202);
+    setQuizKhmasiyaIndex(randomIndex);
+    setQuizFiveInSurahGuess('');
+    setQuizSurahGuess('');
+    setQuizResult('');
+  };
+  const handleAyahOptionClick = (optionId) => {
+    if (optionId === 'khmasiyat') {
+      setActiveAyahTest('khmasiyat');
+      createKhmasiyatQuestion();
+    } else {
+      setActiveAyahTest(null);
+      setQuizResult('');
+    }
+    setIsAyahMenuOpen(false);
+  };
+  const checkKhmasiyatAnswer = () => {
+    if (quizKhmasiyaIndex === null) return;
+    const guessedFiveInSurah = Number(quizFiveInSurahGuess);
+    const guessedSurah = Number(quizSurahGuess);
+    if (!Number.isInteger(guessedFiveInSurah) || !Number.isInteger(guessedSurah)) {
+      setQuizResult('يرجى إدخال رقم الخماسية داخل السورة ورقم السورة.');
+      return;
+    }
+    const correctFiveInSurah = quizKhmasiyaData?.end ?? 0;
+    const correctSurah = getSurahAndRange(quizKhmasiyaIndex).surah;
+    if (guessedFiveInSurah === correctFiveInSurah && guessedSurah === correctSurah) {
+      setQuizResult('إجابة صحيحة');
+      setTimeout(() => {
+        createKhmasiyatQuestion();
+      }, 200);
+    } else {
+      setQuizResult(`غير صحيح. الخماسية داخل السورة: ${correctFiveInSurah} | السورة: ${correctSurah}`);
+    }
+  };
+  const quizKhmasiyaData = quizKhmasiyaIndex !== null ? getSurahAndRange(quizKhmasiyaIndex) : null;
+  const quizLastVerse = quizKhmasiyaData ? QURAN_VERSES[quizKhmasiyaData.absoluteEndIndex - 1] : null;
+  const isKhmasiyatQuizMode = activeAyahTest === 'khmasiyat';
   useEffect(() => {
     const interval = setInterval(() => {
       setBlinkIndex(prev => (prev + 1) % blinkValues.length);
@@ -284,16 +338,55 @@ function App() {
         <button className="action-icon" title="القائمة">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
         </button>
-        <button className="action-icon" title="الإعدادات">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
-        </button>
+        <div className="icon-wrapper" ref={ayahMenuRef}>
+          <button
+            className="action-icon"
+            title="اختبارات الآيات"
+            onClick={() => {
+              setIsAyahMenuOpen(prev => !prev);
+              setIsFontMenuOpen(false);
+            }}
+            style={{ backgroundColor: isAyahMenuOpen ? '#f39c12' : '' }}
+          >
+            <span
+              style={{
+                fontSize: '22px',
+                fontWeight: 800,
+                fontFamily: "'Tajawal', 'Noto Naskh Arabic', sans-serif",
+                lineHeight: 1,
+                letterSpacing: '0.5px',
+                display: 'inline-block',
+                transform: 'scaleX(1.12)'
+              }}
+            >
+              آية
+            </span>
+          </button>
+          {isAyahMenuOpen && (
+            <div className="ayah-menu-popover" dir="rtl">
+              {ayahTestOptions.map(option => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className="ayah-menu-item"
+                  onClick={() => handleAyahOptionClick(option.id)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         
         {/* قائمة إعدادات الخط (الثانية من اليسار) */}
         <div className="icon-wrapper" ref={fontMenuRef}>
           <button 
             className="action-icon" 
             title="إعدادات الخط"
-            onClick={() => setIsFontMenuOpen(!isFontMenuOpen)}
+            onClick={() => {
+              setIsFontMenuOpen(prev => !prev);
+              setIsAyahMenuOpen(false);
+            }}
             style={{ backgroundColor: isFontMenuOpen ? '#f39c12' : '' }}
           >
             <span style={{ fontSize: '28px', fontWeight: 'bold', fontFamily: 'Georgia, serif' }}>A</span>
@@ -347,6 +440,57 @@ function App() {
         </button>
       </div>
 
+      {activeAyahTest === 'khmasiyat' && quizKhmasiyaData && (
+        <div className="khmasiyat-quiz-panel" dir="rtl">
+          <h2 className="khmasiyat-quiz-title">اختبار خماسيات</h2>
+          <div className="khmasiyat-quiz-verse">
+            {quizLastVerse?.t}
+          </div>
+          <div className="khmasiyat-quiz-inputs">
+            <div className="khmasiyat-quiz-field">
+              <label className="khmasiyat-quiz-label">رقم السورة</label>
+              <input
+                type="number"
+                className="khmasiyat-quiz-input"
+                value={quizSurahGuess}
+                onChange={(e) => setQuizSurahGuess(e.target.value)}
+                placeholder="من 1 إلى 114"
+                min="1"
+                max="114"
+              />
+            </div>
+            <div className="khmasiyat-quiz-field">
+              <label className="khmasiyat-quiz-label">الخماسية داخل السورة</label>
+              <input
+                type="number"
+                className="khmasiyat-quiz-input"
+                value={quizFiveInSurahGuess}
+                onChange={(e) => setQuizFiveInSurahGuess(e.target.value)}
+                placeholder="مثال: 5 أو 10 أو 15"
+                min="5"
+              />
+            </div>
+          </div>
+          <div className="khmasiyat-quiz-actions">
+            <button type="button" className="khmasiyat-quiz-btn" onClick={checkKhmasiyatAnswer}>تحقق</button>
+            <button type="button" className="khmasiyat-quiz-btn secondary" onClick={createKhmasiyatQuestion}>خماسية جديدة</button>
+            <button
+              type="button"
+              className="khmasiyat-quiz-btn secondary"
+              onClick={() => {
+                setActiveAyahTest(null);
+                setQuizResult('');
+              }}
+            >
+              العودة للتصفح
+            </button>
+          </div>
+          {quizResult && <div className="khmasiyat-quiz-result">{quizResult}</div>}
+        </div>
+      )}
+
+      {!isKhmasiyatQuizMode && (
+        <>
       {viewMode === 'starred' ? (
         <>
           <div className="top-stars-container starred-mode-stars">
@@ -569,6 +713,8 @@ function App() {
               {currentIndex + 1} / 1202
             </div>
           </div>
+        </>
+      )}
         </>
       )}
     </div>
