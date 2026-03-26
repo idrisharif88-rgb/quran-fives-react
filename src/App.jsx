@@ -29,6 +29,41 @@ const SHARED_VERSE_GROUPS = Object.keys(countGroups)
   .sort((a, b) => a - b)
   .map(count => ({ count, surahs: countGroups[count] }));
 
+function getSecureRandomIntInclusive(min, max) {
+  const lower = Math.ceil(min);
+  const upper = Math.floor(max);
+  const span = upper - lower + 1;
+  if (span <= 0) return lower;
+
+  if (window.crypto && window.crypto.getRandomValues) {
+    const uint32Max = 0x100000000;
+    const limit = uint32Max - (uint32Max % span);
+    const randomBuffer = new Uint32Array(1);
+    let randomValue = 0;
+    do {
+      window.crypto.getRandomValues(randomBuffer);
+      randomValue = randomBuffer[0];
+    } while (randomValue >= limit);
+    return lower + (randomValue % span);
+  }
+
+  return lower + Math.floor(Math.random() * span);
+}
+
+function buildShuffledKhmasiyaIndices(start, end) {
+  const indices = [];
+  for (let n = start; n <= end; n++) {
+    indices.push(n - 1);
+  }
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = getSecureRandomIntInclusive(0, i);
+    const temp = indices[i];
+    indices[i] = indices[j];
+    indices[j] = temp;
+  }
+  return indices;
+}
+
 function App() {
   // State Management: This holds our current Khmasiyat index (starts at 0)
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -49,6 +84,11 @@ function App() {
   const [quizKhmasiyaIndex, setQuizKhmasiyaIndex] = useState(null);
   const [quizFiveInSurahGuess, setQuizFiveInSurahGuess] = useState('');
   const [quizSurahGuess, setQuizSurahGuess] = useState('');
+  const [quizRangeStart, setQuizRangeStart] = useState('1');
+  const [quizRangeEnd, setQuizRangeEnd] = useState('1202');
+  const [quizOrder, setQuizOrder] = useState([]);
+  const [quizNextPointer, setQuizNextPointer] = useState(0);
+  const [quizOrderRange, setQuizOrderRange] = useState({ start: 1, end: 1202 });
   const [quizResult, setQuizResult] = useState('');
   const [isFontMenuOpen, setIsFontMenuOpen] = useState(false);
   const [fontSize, setFontSize] = useState(38);
@@ -118,9 +158,30 @@ function App() {
     { id: 'random-ayat', label: 'اختبار آيات عشوائي' },
     { id: 'surah-count', label: 'اختبار سور - عدد آيات' }
   ];
-  const createKhmasiyatQuestion = () => {
-    const randomIndex = Math.floor(Math.random() * 1202);
-    setQuizKhmasiyaIndex(randomIndex);
+  const createKhmasiyatQuestion = (forceNewCycle = false) => {
+    const start = Number(quizRangeStart);
+    const end = Number(quizRangeEnd);
+    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end > 1202 || start > end) {
+      setQuizKhmasiyaIndex(null);
+      setQuizResult('المدى غير صحيح. أدخل من 1 إلى 1202 بحيث البداية أقل من أو تساوي النهاية.');
+      return;
+    }
+
+    const rangeChanged = quizOrderRange.start !== start || quizOrderRange.end !== end;
+    const needsNewCycle = forceNewCycle || rangeChanged || quizOrder.length === 0 || quizNextPointer >= quizOrder.length;
+
+    if (needsNewCycle) {
+      const newOrder = buildShuffledKhmasiyaIndices(start, end);
+      const firstIndex = newOrder[0] ?? null;
+      setQuizOrder(newOrder);
+      setQuizNextPointer(firstIndex === null ? 0 : 1);
+      setQuizOrderRange({ start, end });
+      setQuizKhmasiyaIndex(firstIndex);
+    } else {
+      setQuizKhmasiyaIndex(quizOrder[quizNextPointer]);
+      setQuizNextPointer(prev => prev + 1);
+    }
+
     setQuizFiveInSurahGuess('');
     setQuizSurahGuess('');
     setQuizResult('');
@@ -128,7 +189,9 @@ function App() {
   const handleAyahOptionClick = (optionId) => {
     if (optionId === 'khmasiyat') {
       setActiveAyahTest('khmasiyat');
-      createKhmasiyatQuestion();
+      setQuizOrder([]);
+      setQuizNextPointer(0);
+      createKhmasiyatQuestion(true);
     } else {
       setActiveAyahTest(null);
       setQuizResult('');
@@ -136,7 +199,10 @@ function App() {
     setIsAyahMenuOpen(false);
   };
   const checkKhmasiyatAnswer = () => {
-    if (quizKhmasiyaIndex === null) return;
+    if (quizKhmasiyaIndex === null) {
+      setQuizResult('لا يوجد سؤال حالي. اختر المدى ثم اضغط "تطبيق المدى".');
+      return;
+    }
     const guessedFiveInSurah = Number(quizFiveInSurahGuess);
     const guessedSurah = Number(quizSurahGuess);
     if (!Number.isInteger(guessedFiveInSurah) || !Number.isInteger(guessedSurah)) {
@@ -156,6 +222,7 @@ function App() {
   };
   const quizKhmasiyaData = quizKhmasiyaIndex !== null ? getSurahAndRange(quizKhmasiyaIndex) : null;
   const quizLastVerse = quizKhmasiyaData ? QURAN_VERSES[quizKhmasiyaData.absoluteEndIndex - 1] : null;
+  const quizRemainingCount = Math.max(0, quizOrder.length - quizNextPointer);
   const isKhmasiyatQuizMode = activeAyahTest === 'khmasiyat';
   useEffect(() => {
     const interval = setInterval(() => {
@@ -440,11 +507,43 @@ function App() {
         </button>
       </div>
 
-      {activeAyahTest === 'khmasiyat' && quizKhmasiyaData && (
+      {activeAyahTest === 'khmasiyat' && (
         <div className="khmasiyat-quiz-panel" dir="rtl">
           <h2 className="khmasiyat-quiz-title">اختبار خماسيات</h2>
+          <div className="khmasiyat-quiz-range">
+            <div className="khmasiyat-quiz-field">
+              <label className="khmasiyat-quiz-label">من خماسية</label>
+              <input
+                type="number"
+                className="khmasiyat-quiz-input"
+                value={quizRangeStart}
+                onChange={(e) => setQuizRangeStart(e.target.value)}
+                placeholder="1"
+                min="1"
+                max="1202"
+              />
+            </div>
+            <div className="khmasiyat-quiz-field">
+              <label className="khmasiyat-quiz-label">إلى خماسية</label>
+              <input
+                type="number"
+                className="khmasiyat-quiz-input"
+                value={quizRangeEnd}
+                onChange={(e) => setQuizRangeEnd(e.target.value)}
+                placeholder="1202"
+                min="1"
+                max="1202"
+              />
+            </div>
+            <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => createKhmasiyatQuestion(true)}>
+              تطبيق المدى
+            </button>
+          </div>
+          <div className="khmasiyat-quiz-progress">
+            المتبقي حتى إنهاء المدى: {quizRemainingCount}
+          </div>
           <div className="khmasiyat-quiz-verse">
-            {quizLastVerse?.t}
+            {quizLastVerse?.t || 'اختر مدى صحيحًا ثم اضغط "تطبيق المدى" لعرض سؤال عشوائي.'}
           </div>
           <div className="khmasiyat-quiz-inputs">
             <div className="khmasiyat-quiz-field">

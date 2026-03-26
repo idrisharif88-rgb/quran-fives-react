@@ -450,6 +450,25 @@
   padding: 10px;
 }
 
+.khmasiyat-quiz-range {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.khmasiyat-range-apply {
+  white-space: nowrap;
+}
+
+.khmasiyat-quiz-progress {
+  text-align: center;
+  color: #374151;
+  font-size: 18px;
+  font-weight: 700;
+  font-family: 'Tajawal', sans-serif;
+}
+
 .khmasiyat-quiz-inputs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -829,6 +848,15 @@
   }
   .khmasiyat-quiz-title {
     font-size: 24px;
+  }
+  .khmasiyat-quiz-range {
+    grid-template-columns: 1fr;
+  }
+  .khmasiyat-quiz-progress {
+    font-size: 16px;
+  }
+  .khmasiyat-range-apply {
+    width: 100%;
   }
   .khmasiyat-quiz-inputs {
     grid-template-columns: 1fr;
