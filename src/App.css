@@ -747,30 +747,34 @@
 
 /* Progress Bar Styling */
 .progress-wrapper {
-  margin: 30px auto 0;
-  max-width: 600px;
+  margin: 15px auto 0; /* Adjusted margin to bring it closer to the button */
+  max-width: 300px; /* Made the progress bar container shorter */
   animation: fadeIn 0.4s ease-out;
+  display: flex; /* Use flexbox for horizontal alignment */
+  align-items: center; /* Vertically align items */
+  gap: 10px; /* Space between progress bar and text */
 }
 
 .progress-container {
-  width: 100%;
+  flex-grow: 1; /* Allow the bar to take available space */
   height: 8px;
   background-color: #e1e4e8;
   border-radius: 4px;
   overflow: hidden;
+  min-width: 100px; /* Ensure it has a minimum width */
 }
 
 .progress-bar {
   height: 100%;
   background-color: darkgreen;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease; /* Keep smooth transition */
 }
 
 .progress-text {
-  font-size: 24px;
+  font-size: 18px; /* Made the font smaller to fit next to the bar */
   font-weight: bold;
   color: #444;
-  margin-top: 10px;
+  margin-top: 0; /* Remove top margin as it's now horizontal */
   font-family: Arial, sans-serif;
 }
 
@@ -805,7 +809,7 @@
     font-size: 28px;
     padding: 40px 45px;
     margin: 0 auto;
-    height: 200px;
+    height: 55vh;
   }
   .verse-number {
     font-size: 32px;
@@ -849,6 +853,10 @@
   }
   .jump-button {
     font-size: 20px;
+  }
+  .jump-to-container {
+    margin-top: 20px; /* Adjust margin for better spacing */
+    margin-bottom: 10px; /* Add bottom margin to separate from progress bar */
   }
   .marquee-text {
     font-size: 18px;
