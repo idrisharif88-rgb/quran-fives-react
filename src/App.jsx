@@ -410,7 +410,7 @@ function App() {
                 <img src={menuMainIcon} alt="القائمة" className="menu-main-icon" />
               </button>
               {isPageStartsMenuOpen && (
-                <div className="ayah-menu-popover" dir="rtl">
+                <div className="ayah-menu-popover popover-align-right" dir="rtl">
                   {pageStartsOptions.map(option => (
                     <button
                       key={option}

@@ -406,6 +406,18 @@
   border-color: transparent transparent white transparent;
 }
 
+.ayah-menu-popover.popover-align-right {
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+}
+
+.ayah-menu-popover.popover-align-right::after {
+  left: auto;
+  right: 20px; /* Center arrow over 55px icon */
+  transform: translateX(0);
+}
+
 .ayah-menu-item {
   border: none;
   background: transparent;
@@ -914,5 +926,8 @@
     max-height: 60vh; /* تحديد أقصى ارتفاع للقائمة */
     overflow-y: auto; /* إضافة شريط تمرير عمودي عند الحاجة */
     padding-right: 4px; /* تعديل بسيط لتجنب قص المحتوى مع شريط التمرير */
+  }
+  .ayah-menu-popover.popover-align-right::after {
+    right: 15px; /* Center arrow over 45px icon */
   }
 }
