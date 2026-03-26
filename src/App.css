@@ -143,8 +143,8 @@
 .action-buttons-container {
   display: flex;
   justify-content: center;
-  align-items: center;
-  gap: 20px;
+  align-items: center; /* Keep vertical alignment */
+  gap: 50px; /* Increased space between icons */
   margin-top: 25px;
 }
 
@@ -833,7 +833,7 @@
     height: 35px;
   }
   .action-buttons-container {
-    gap: 12px;
+    gap: 35px; /* Increased space for mobile */
     margin-top: 15px;
   }
   .action-buttons-container.upper-actions {
@@ -909,5 +909,10 @@
   }
   .khmasiyat-quiz-input {
     font-size: 17px;
+  }
+  .ayah-menu-popover {
+    max-height: 60vh; /* تحديد أقصى ارتفاع للقائمة */
+    overflow-y: auto; /* إضافة شريط تمرير عمودي عند الحاجة */
+    padding-right: 4px; /* تعديل بسيط لتجنب قص المحتوى مع شريط التمرير */
   }
 }
