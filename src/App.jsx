@@ -4,6 +4,9 @@ import TextDisplay from './components/TextDisplay';
 import { QURAN_VERSES } from './data/quranVerses';
 import { SURAH_METADATA } from './data/quranConstants';
 import menuMainIcon from './assets/menu-main-icon.png';
+import KhmasiyatQuiz from './utils/KhmasiyatQuiz';
+import RandomAyahQuiz from './utils/RandomAyahQuiz';
+import SurahCountQuiz from './utils/SurahCountQuiz';
 import './App.css';
 
 // مصفوفة بأسماء السور الـ 114
@@ -30,41 +33,6 @@ const SHARED_VERSE_GROUPS = Object.keys(countGroups)
   .sort((a, b) => a - b)
   .map(count => ({ count, surahs: countGroups[count] }));
 
-function getSecureRandomIntInclusive(min, max) {
-  const lower = Math.ceil(min);
-  const upper = Math.floor(max);
-  const span = upper - lower + 1;
-  if (span <= 0) return lower;
-
-  if (window.crypto && window.crypto.getRandomValues) {
-    const uint32Max = 0x100000000;
-    const limit = uint32Max - (uint32Max % span);
-    const randomBuffer = new Uint32Array(1);
-    let randomValue = 0;
-    do {
-      window.crypto.getRandomValues(randomBuffer);
-      randomValue = randomBuffer[0];
-    } while (randomValue >= limit);
-    return lower + (randomValue % span);
-  }
-
-  return lower + Math.floor(Math.random() * span);
-}
-
-function buildShuffledIndices(start, end) {
-  const indices = [];
-  for (let n = start; n <= end; n++) {
-    indices.push(n - 1);
-  }
-  for (let i = indices.length - 1; i > 0; i--) {
-    const j = getSecureRandomIntInclusive(0, i);
-    const temp = indices[i];
-    indices[i] = indices[j];
-    indices[j] = temp;
-  }
-  return indices;
-}
-
 function App() {
   // State Management: This holds our current Khmasiyat index (starts at 0)
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -82,31 +50,6 @@ function App() {
   // إعدادات الخط
   const [isAyahMenuOpen, setIsAyahMenuOpen] = useState(false);
   const [activeAyahTest, setActiveAyahTest] = useState(null);
-  const [quizKhmasiyaIndex, setQuizKhmasiyaIndex] = useState(null);
-  const [quizFiveInSurahGuess, setQuizFiveInSurahGuess] = useState('');
-  const [quizSurahGuess, setQuizSurahGuess] = useState('');
-  const [quizRangeStart, setQuizRangeStart] = useState('1');
-  const [quizRangeEnd, setQuizRangeEnd] = useState('1202');
-  const [quizOrder, setQuizOrder] = useState([]);
-  const [quizNextPointer, setQuizNextPointer] = useState(0);
-  const [quizOrderRange, setQuizOrderRange] = useState({ start: 1, end: 1202 });
-  const [quizResult, setQuizResult] = useState('');
-  const [randomAyahIndex, setRandomAyahIndex] = useState(null);
-  const [randomAyahSurahGuess, setRandomAyahSurahGuess] = useState('');
-  const [randomAyahVerseGuess, setRandomAyahVerseGuess] = useState('');
-  const [randomAyahRangeStart, setRandomAyahRangeStart] = useState('1');
-  const [randomAyahRangeEnd, setRandomAyahRangeEnd] = useState(String(QURAN_VERSES.length));
-  const [randomAyahOrder, setRandomAyahOrder] = useState([]);
-  const [randomAyahNextPointer, setRandomAyahNextPointer] = useState(0);
-  const [randomAyahOrderRange, setRandomAyahOrderRange] = useState({ start: 1, end: QURAN_VERSES.length });
-  const [randomAyahResult, setRandomAyahResult] = useState('');
-  const [surahCountMode, setSurahCountMode] = useState('name-to-count');
-  const [surahCountQuestionIndex, setSurahCountQuestionIndex] = useState(0);
-  const [surahCountOrder, setSurahCountOrder] = useState([]);
-  const [surahCountNextPointer, setSurahCountNextPointer] = useState(0);
-  const [surahCountGuess, setSurahCountGuess] = useState('');
-  const [surahCountInput, setSurahCountInput] = useState('');
-  const [surahCountResult, setSurahCountResult] = useState('');
   const [isPageStartsMenuOpen, setIsPageStartsMenuOpen] = useState(false);
   const [pageStartsData, setPageStartsData] = useState([]);
   const [isPageStartsLoading, setIsPageStartsLoading] = useState(false);
@@ -229,102 +172,12 @@ function App() {
       setIsPageStartsLoading(false);
     }
   };
-  const createKhmasiyatQuestion = (forceNewCycle = false) => {
-    const start = Number(quizRangeStart);
-    const end = Number(quizRangeEnd);
-    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end > 1202 || start > end) {
-      setQuizKhmasiyaIndex(null);
-      setQuizResult('المدى غير صحيح. أدخل من 1 إلى 1202 بحيث البداية أقل من أو تساوي النهاية.');
-      return;
-    }
 
-    const rangeChanged = quizOrderRange.start !== start || quizOrderRange.end !== end;
-    const needsNewCycle = forceNewCycle || rangeChanged || quizOrder.length === 0 || quizNextPointer >= quizOrder.length;
-
-    if (needsNewCycle) {
-      const newOrder = buildShuffledIndices(start, end);
-      const firstIndex = newOrder[0] ?? null;
-      setQuizOrder(newOrder);
-      setQuizNextPointer(firstIndex === null ? 0 : 1);
-      setQuizOrderRange({ start, end });
-      setQuizKhmasiyaIndex(firstIndex);
-    } else {
-      setQuizKhmasiyaIndex(quizOrder[quizNextPointer]);
-      setQuizNextPointer(prev => prev + 1);
-    }
-
-    setQuizFiveInSurahGuess('');
-    setQuizSurahGuess('');
-    setQuizResult('');
-  };
-  const createRandomAyahQuestion = (forceNewCycle = false) => {
-    const start = Number(randomAyahRangeStart);
-    const end = Number(randomAyahRangeEnd);
-    const maxVerses = QURAN_VERSES.length;
-    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end > maxVerses || start > end) {
-      setRandomAyahIndex(null);
-      setRandomAyahResult(`المدى غير صحيح. أدخل من 1 إلى ${maxVerses} بحيث البداية أقل من أو تساوي النهاية.`);
-      return;
-    }
-
-    const rangeChanged = randomAyahOrderRange.start !== start || randomAyahOrderRange.end !== end;
-    const needsNewCycle = forceNewCycle || rangeChanged || randomAyahOrder.length === 0 || randomAyahNextPointer >= randomAyahOrder.length;
-
-    if (needsNewCycle) {
-      const newOrder = buildShuffledIndices(start, end);
-      const firstIndex = newOrder[0] ?? null;
-      setRandomAyahOrder(newOrder);
-      setRandomAyahNextPointer(firstIndex === null ? 0 : 1);
-      setRandomAyahOrderRange({ start, end });
-      setRandomAyahIndex(firstIndex);
-    } else {
-      setRandomAyahIndex(randomAyahOrder[randomAyahNextPointer]);
-      setRandomAyahNextPointer(prev => prev + 1);
-    }
-
-    setRandomAyahSurahGuess('');
-    setRandomAyahVerseGuess('');
-    setRandomAyahResult('');
-  };
-  const createSurahCountQuestion = (forceNewCycle = false) => {
-    const needsNewCycle = forceNewCycle || surahCountOrder.length === 0 || surahCountNextPointer >= surahCountOrder.length;
-    if (needsNewCycle) {
-      const newOrder = buildShuffledIndices(1, SURAH_METADATA.length);
-      const firstIndex = newOrder[0] ?? 0;
-      setSurahCountOrder(newOrder);
-      setSurahCountNextPointer(newOrder.length > 0 ? 1 : 0);
-      setSurahCountQuestionIndex(firstIndex);
-    } else {
-      setSurahCountQuestionIndex(surahCountOrder[surahCountNextPointer]);
-      setSurahCountNextPointer(prev => prev + 1);
-    }
-    setSurahCountGuess('');
-    setSurahCountResult('');
-  };
   const handleAyahOptionClick = (optionId) => {
-    if (optionId === 'khmasiyat') {
-      setActiveAyahTest('khmasiyat');
-      setQuizOrder([]);
-      setQuizNextPointer(0);
-      createKhmasiyatQuestion(true);
-    } else if (optionId === 'random-ayat') {
-      setActiveAyahTest('random-ayat');
-      setRandomAyahOrder([]);
-      setRandomAyahNextPointer(0);
-      createRandomAyahQuestion(true);
-    } else if (optionId === 'surah-count') {
-      setActiveAyahTest('surah-count');
-      setSurahCountMode('name-to-count');
-      setSurahCountOrder([]);
-      setSurahCountNextPointer(0);
-      createSurahCountQuestion(true);
-      setSurahCountInput('');
-      setSurahCountResult('');
+    if (['khmasiyat', 'random-ayat', 'surah-count'].includes(optionId)) {
+      setActiveAyahTest(optionId);
     } else {
       setActiveAyahTest(null);
-      setQuizResult('');
-      setRandomAyahResult('');
-      setSurahCountResult('');
     }
     setIsAyahMenuOpen(false);
   };
@@ -338,87 +191,7 @@ function App() {
     }
     setIsPageStartsMenuOpen(false);
   };
-  const checkKhmasiyatAnswer = () => {
-    if (quizKhmasiyaIndex === null) {
-      setQuizResult('لا يوجد سؤال حالي. اختر المدى ثم اضغط "تطبيق المدى".');
-      return;
-    }
-    const guessedFiveInSurah = Number(quizFiveInSurahGuess);
-    const guessedSurah = Number(quizSurahGuess);
-    if (!Number.isInteger(guessedFiveInSurah) || !Number.isInteger(guessedSurah)) {
-      setQuizResult('يرجى إدخال رقم الخماسية داخل السورة ورقم السورة.');
-      return;
-    }
-    const correctFiveInSurah = quizKhmasiyaData?.end ?? 0;
-    const correctSurah = getSurahAndRange(quizKhmasiyaIndex).surah;
-    if (guessedFiveInSurah === correctFiveInSurah && guessedSurah === correctSurah) {
-      setQuizResult('إجابة صحيحة');
-      setTimeout(() => {
-        createKhmasiyatQuestion();
-      }, 200);
-    } else {
-      setQuizResult(`غير صحيح. الخماسية داخل السورة: ${correctFiveInSurah} | السورة: ${correctSurah}`);
-    }
-  };
-  const checkRandomAyahAnswer = () => {
-    if (randomAyahIndex === null) {
-      setRandomAyahResult('لا يوجد سؤال حالي. اختر المدى ثم اضغط "تطبيق المدى".');
-      return;
-    }
-    const guessedSurah = Number(randomAyahSurahGuess);
-    const guessedVerse = Number(randomAyahVerseGuess);
-    if (!Number.isInteger(guessedSurah) || !Number.isInteger(guessedVerse)) {
-      setRandomAyahResult('يرجى إدخال رقم السورة ورقم الآية.');
-      return;
-    }
 
-    const correctSurah = randomAyahData?.s ?? 0;
-    const correctVerse = randomAyahData?.a ?? 0;
-    if (guessedSurah === correctSurah && guessedVerse === correctVerse) {
-      setRandomAyahResult('إجابة صحيحة');
-      setTimeout(() => {
-        createRandomAyahQuestion();
-      }, 200);
-    } else {
-      setRandomAyahResult(`غير صحيح. السورة: ${correctSurah} | الآية: ${correctVerse}`);
-    }
-  };
-  const checkSurahCountAnswer = () => {
-    const guessed = Number(surahCountGuess);
-    if (!Number.isInteger(guessed)) {
-      setSurahCountResult('يرجى إدخال عدد آيات صحيح.');
-      return;
-    }
-    const correctCount = SURAH_METADATA[surahCountQuestionIndex]?.verseCount ?? 0;
-    if (guessed === correctCount) {
-      setSurahCountResult('إجابة صحيحة');
-      setTimeout(() => {
-        createSurahCountQuestion();
-      }, 200);
-    } else {
-      setSurahCountResult(`غير صحيح. العدد الصحيح: ${correctCount}`);
-    }
-  };
-  const findSurahsByVerseCount = () => {
-    const count = Number(surahCountInput);
-    if (!Number.isInteger(count) || count <= 0) {
-      setSurahCountResult('يرجى إدخال عدد آيات صحيح.');
-      return;
-    }
-    const matches = SURAH_METADATA.filter(s => s.verseCount === count);
-    if (matches.length === 0) {
-      setSurahCountResult(`لا توجد سورة بهذا العدد: ${count}`);
-      return;
-    }
-    const names = matches.map(s => `${s.name} (${s.id})`).join('، ');
-    setSurahCountResult(`السور المطابقة: ${names}`);
-  };
-  const quizKhmasiyaData = quizKhmasiyaIndex !== null ? getSurahAndRange(quizKhmasiyaIndex) : null;
-  const quizLastVerse = quizKhmasiyaData ? QURAN_VERSES[quizKhmasiyaData.absoluteEndIndex - 1] : null;
-  const quizRemainingCount = Math.max(0, quizOrder.length - quizNextPointer);
-  const randomAyahData = randomAyahIndex !== null ? QURAN_VERSES[randomAyahIndex] : null;
-  const randomAyahRemainingCount = Math.max(0, randomAyahOrder.length - randomAyahNextPointer);
-  const surahCountRemaining = Math.max(0, surahCountOrder.length - surahCountNextPointer);
   const isQuizMode = activeAyahTest === 'khmasiyat' || activeAyahTest === 'random-ayat' || activeAyahTest === 'surah-count';
   useEffect(() => {
     const interval = setInterval(() => {
@@ -731,265 +504,15 @@ function App() {
       </div>
 
       {activeAyahTest === 'khmasiyat' && (
-        <div className="khmasiyat-quiz-panel" dir="rtl">
-          <h2 className="khmasiyat-quiz-title">اختبار خماسيات</h2>
-          <div className="khmasiyat-quiz-range">
-            <div className="khmasiyat-quiz-field">
-              <label className="khmasiyat-quiz-label">من خماسية</label>
-              <input
-                type="number"
-                className="khmasiyat-quiz-input"
-                value={quizRangeStart}
-                onChange={(e) => setQuizRangeStart(e.target.value)}
-                placeholder="1"
-                min="1"
-                max="1202"
-              />
-            </div>
-            <div className="khmasiyat-quiz-field">
-              <label className="khmasiyat-quiz-label">إلى خماسية</label>
-              <input
-                type="number"
-                className="khmasiyat-quiz-input"
-                value={quizRangeEnd}
-                onChange={(e) => setQuizRangeEnd(e.target.value)}
-                placeholder="1202"
-                min="1"
-                max="1202"
-              />
-            </div>
-            <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => createKhmasiyatQuestion(true)}>
-              تطبيق المدى
-            </button>
-          </div>
-          <div className="khmasiyat-quiz-progress">
-            المتبقي حتى إنهاء المدى: {quizRemainingCount}
-          </div>
-          <div className="khmasiyat-quiz-verse">
-            {quizLastVerse?.t || 'اختر مدى صحيحًا ثم اضغط "تطبيق المدى" لعرض سؤال عشوائي.'}
-          </div>
-          <div className="khmasiyat-quiz-inputs">
-            <div className="khmasiyat-quiz-field">
-              <label className="khmasiyat-quiz-label">رقم السورة</label>
-              <input
-                type="number"
-                className="khmasiyat-quiz-input"
-                value={quizSurahGuess}
-                onChange={(e) => setQuizSurahGuess(e.target.value)}
-                placeholder="من 1 إلى 114"
-                min="1"
-                max="114"
-              />
-            </div>
-            <div className="khmasiyat-quiz-field">
-              <label className="khmasiyat-quiz-label">الخماسية داخل السورة</label>
-              <input
-                type="number"
-                className="khmasiyat-quiz-input"
-                value={quizFiveInSurahGuess}
-                onChange={(e) => setQuizFiveInSurahGuess(e.target.value)}
-                placeholder="مثال: 5 أو 10 أو 15"
-                min="5"
-              />
-            </div>
-          </div>
-          <div className="khmasiyat-quiz-actions">
-            <button type="button" className="khmasiyat-quiz-btn" onClick={checkKhmasiyatAnswer}>تحقق</button>
-            <button type="button" className="khmasiyat-quiz-btn secondary" onClick={createKhmasiyatQuestion}>خماسية جديدة</button>
-            <button
-              type="button"
-              className="khmasiyat-quiz-btn secondary"
-              onClick={() => {
-                setActiveAyahTest(null);
-                setQuizResult('');
-              }}
-            >
-              العودة للتصفح
-            </button>
-          </div>
-          {quizResult && <div className="khmasiyat-quiz-result">{quizResult}</div>}
-        </div>
+        <KhmasiyatQuiz onClose={() => setActiveAyahTest(null)} />
       )}
 
       {activeAyahTest === 'random-ayat' && (
-        <div className="khmasiyat-quiz-panel" dir="rtl">
-          <h2 className="khmasiyat-quiz-title">اختبار آيات عشوائي</h2>
-          <div className="khmasiyat-quiz-range">
-            <div className="khmasiyat-quiz-field">
-              <label className="khmasiyat-quiz-label">من آية (ترتيب المصحف)</label>
-              <input
-                type="number"
-                className="khmasiyat-quiz-input"
-                value={randomAyahRangeStart}
-                onChange={(e) => setRandomAyahRangeStart(e.target.value)}
-                placeholder="1"
-                min="1"
-                max={QURAN_VERSES.length}
-              />
-            </div>
-            <div className="khmasiyat-quiz-field">
-              <label className="khmasiyat-quiz-label">إلى آية (ترتيب المصحف)</label>
-              <input
-                type="number"
-                className="khmasiyat-quiz-input"
-                value={randomAyahRangeEnd}
-                onChange={(e) => setRandomAyahRangeEnd(e.target.value)}
-                placeholder={String(QURAN_VERSES.length)}
-                min="1"
-                max={QURAN_VERSES.length}
-              />
-            </div>
-            <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => createRandomAyahQuestion(true)}>
-              تطبيق المدى
-            </button>
-          </div>
-          <div className="khmasiyat-quiz-progress">
-            المتبقي حتى إنهاء المدى: {randomAyahRemainingCount}
-          </div>
-          <div className="khmasiyat-quiz-verse">
-            {randomAyahData?.t || 'اختر مدى صحيحًا ثم اضغط "تطبيق المدى" لعرض سؤال عشوائي.'}
-          </div>
-          <div className="khmasiyat-quiz-inputs">
-            <div className="khmasiyat-quiz-field">
-              <label className="khmasiyat-quiz-label">رقم السورة</label>
-              <input
-                type="number"
-                className="khmasiyat-quiz-input"
-                value={randomAyahSurahGuess}
-                onChange={(e) => setRandomAyahSurahGuess(e.target.value)}
-                placeholder="من 1 إلى 114"
-                min="1"
-                max="114"
-              />
-            </div>
-            <div className="khmasiyat-quiz-field">
-              <label className="khmasiyat-quiz-label">رقم الآية داخل السورة</label>
-              <input
-                type="number"
-                className="khmasiyat-quiz-input"
-                value={randomAyahVerseGuess}
-                onChange={(e) => setRandomAyahVerseGuess(e.target.value)}
-                placeholder="مثال: 1 أو 23"
-                min="1"
-              />
-            </div>
-          </div>
-          <div className="khmasiyat-quiz-actions">
-            <button type="button" className="khmasiyat-quiz-btn" onClick={checkRandomAyahAnswer}>تحقق</button>
-            <button type="button" className="khmasiyat-quiz-btn secondary" onClick={createRandomAyahQuestion}>آية جديدة</button>
-            <button
-              type="button"
-              className="khmasiyat-quiz-btn secondary"
-              onClick={() => {
-                setActiveAyahTest(null);
-                setRandomAyahResult('');
-              }}
-            >
-              العودة للتصفح
-            </button>
-          </div>
-          {randomAyahResult && <div className="khmasiyat-quiz-result">{randomAyahResult}</div>}
-        </div>
+        <RandomAyahQuiz onClose={() => setActiveAyahTest(null)} />
       )}
 
       {activeAyahTest === 'surah-count' && (
-        <div className="khmasiyat-quiz-panel" dir="rtl">
-          <h2 className="khmasiyat-quiz-title">اختبار سور - عدد آيات</h2>
-          <div className="surah-count-mode-switch">
-            <button
-              type="button"
-              className={`khmasiyat-quiz-btn secondary ${surahCountMode === 'name-to-count' ? 'active' : ''}`}
-              onClick={() => {
-                setSurahCountMode('name-to-count');
-                setSurahCountResult('');
-                setSurahCountInput('');
-                createSurahCountQuestion();
-              }}
-            >
-              اسم سورة ← عدد آيات
-            </button>
-            <button
-              type="button"
-              className={`khmasiyat-quiz-btn secondary ${surahCountMode === 'count-to-name' ? 'active' : ''}`}
-              onClick={() => {
-                setSurahCountMode('count-to-name');
-                setSurahCountResult('');
-                setSurahCountGuess('');
-              }}
-            >
-              عدد آيات ← السور
-            </button>
-          </div>
-
-          {surahCountMode === 'name-to-count' ? (
-            <>
-              <div className="khmasiyat-quiz-progress">
-                المتبقي حتى إنهاء جميع السور: {surahCountRemaining}
-              </div>
-              <div className="khmasiyat-quiz-verse">
-                سورة {SURAH_METADATA[surahCountQuestionIndex]?.name}
-              </div>
-              <div className="khmasiyat-quiz-inputs">
-                <div className="khmasiyat-quiz-field">
-                  <label className="khmasiyat-quiz-label">عدد الآيات</label>
-                  <input
-                    type="number"
-                    className="khmasiyat-quiz-input"
-                    value={surahCountGuess}
-                    onChange={(e) => setSurahCountGuess(e.target.value)}
-                    placeholder="أدخل عدد الآيات"
-                    min="1"
-                  />
-                </div>
-              </div>
-              <div className="khmasiyat-quiz-actions">
-                <button type="button" className="khmasiyat-quiz-btn" onClick={checkSurahCountAnswer}>تحقق</button>
-                <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => createSurahCountQuestion()}>سورة جديدة</button>
-                <button
-                  type="button"
-                  className="khmasiyat-quiz-btn secondary"
-                  onClick={() => {
-                    setActiveAyahTest(null);
-                    setSurahCountResult('');
-                  }}
-                >
-                  العودة للتصفح
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="khmasiyat-quiz-inputs">
-                <div className="khmasiyat-quiz-field">
-                  <label className="khmasiyat-quiz-label">عدد الآيات</label>
-                  <input
-                    type="number"
-                    className="khmasiyat-quiz-input"
-                    value={surahCountInput}
-                    onChange={(e) => setSurahCountInput(e.target.value)}
-                    placeholder="أدخل العدد"
-                    min="1"
-                  />
-                </div>
-              </div>
-              <div className="khmasiyat-quiz-actions">
-                <button type="button" className="khmasiyat-quiz-btn" onClick={findSurahsByVerseCount}>ابحث</button>
-                <button
-                  type="button"
-                  className="khmasiyat-quiz-btn secondary"
-                  onClick={() => {
-                    setActiveAyahTest(null);
-                    setSurahCountResult('');
-                  }}
-                >
-                  العودة للتصفح
-                </button>
-              </div>
-            </>
-          )}
-
-          {surahCountResult && <div className="khmasiyat-quiz-result">{surahCountResult}</div>}
-        </div>
+        <SurahCountQuiz onClose={() => setActiveAyahTest(null)} />
       )}
 
       {!isQuizMode && (
@@ -1077,11 +600,14 @@ function App() {
                 setCurrentIndex(prev => Math.max(0, prev - 1));
               } else if (viewMode === 'shared-verses') {
                 setSharedGroupIndex(prev => Math.max(0, prev - 1));
+              } else if (viewMode === 'page-starts') {
+                setCurrentPageIndex(prev => Math.max(0, prev - 1));
               }
             }}
             className="nav-arrow prev-arrow"
             disabled={(viewMode === 'khmasiyat' && currentIndex === 0) || 
-                      (viewMode === 'shared-verses' && sharedGroupIndex === 0)}
+                      (viewMode === 'shared-verses' && sharedGroupIndex === 0) ||
+                      (viewMode === 'page-starts' && currentPageIndex === 0)}
             title="السابق">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
@@ -1097,6 +623,14 @@ function App() {
                 {SHARED_VERSE_GROUPS[sharedGroupIndex].surahs.map(s => `[${SURAH_NAMES[s - 1]}]`).join(' ، ')}
               </div>
             </div>
+          ) : viewMode === 'page-starts' && isPageStartsLoading ? (
+            <div className="verse-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ color: fontColor, fontWeight: fontWeight, fontSize: `calc(${fontSize}px * 0.85)` }}>جاري تحميل بيانات الصفحات...</div>
+            </div>
+          ) : viewMode === 'page-starts' && pageStartsError ? (
+            <div className="verse-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ color: '#d9534f', fontWeight: fontWeight, fontSize: `calc(${fontSize}px * 0.85)` }}>{pageStartsError}</div>
+            </div>
           ) : (
             <TextDisplay verses={currentVersesText} />
           )}
@@ -1107,10 +641,14 @@ function App() {
                 setCurrentIndex(prev => Math.min(1201, prev + 1));
               } else if (viewMode === 'shared-verses') {
                 setSharedGroupIndex(prev => Math.min(SHARED_VERSE_GROUPS.length - 1, prev + 1));
+              } else if (viewMode === 'page-starts') {
+                setCurrentPageIndex(prev => Math.min(pageStartsData.length - 1, prev + 1));
               }
             }}
             className="nav-arrow next-arrow"
-            disabled={(viewMode === 'khmasiyat' && currentIndex === 1201) || (viewMode === 'shared-verses' && sharedGroupIndex === SHARED_VERSE_GROUPS.length - 1)}
+            disabled={(viewMode === 'khmasiyat' && currentIndex === 1201) || 
+                      (viewMode === 'shared-verses' && sharedGroupIndex === SHARED_VERSE_GROUPS.length - 1) ||
+                      (viewMode === 'page-starts' && currentPageIndex === pageStartsData.length - 1)}
             title="التالي">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
@@ -1217,6 +755,17 @@ function App() {
             </div>
           </div>
         </>
+      )}
+
+      {viewMode === 'page-starts' && !isPageStartsLoading && pageStartsData.length > 0 && (
+        <div className="progress-wrapper">
+          <div className="progress-container">
+            <div className="progress-bar" style={{ width: `${Math.min(((currentPageIndex + 1) / 604) * 100, 100)}%`, backgroundColor: '#f39c12' }}></div>
+          </div>
+          <div className="progress-text">
+            صفحة {currentPageIndex + 1} / 604
+          </div>
+        </div>
       )}
         </>
       )}
