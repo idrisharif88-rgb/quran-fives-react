@@ -381,8 +381,6 @@ function App() {
       '--app-font-weight': fontWeight,
       '--app-font-color': fontColor
     }}>
-      <h1 className="app-title">خماسيات القرآن الكريم</h1>
-      
       {/* الأزرار العلوية */}
       <div className="action-buttons-container upper-actions">
         {isPageStartsMode && (
