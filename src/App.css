@@ -140,6 +140,35 @@
   filter: none;
 }
 
+.action-icon,
+.nav-arrow,
+.top-star-btn,
+.expand-btn,
+.color-btn,
+.ayah-menu-item {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+.action-icon:focus,
+.nav-arrow:focus,
+.top-star-btn:focus,
+.expand-btn:focus,
+.color-btn:focus,
+.ayah-menu-item:focus {
+  outline: none;
+}
+
+.action-icon:focus-visible,
+.nav-arrow:focus-visible,
+.top-star-btn:focus-visible,
+.expand-btn:focus-visible,
+.color-btn:focus-visible,
+.ayah-menu-item:focus-visible {
+  outline: 3px solid #f39c12;
+  outline-offset: 3px;
+}
+
 .action-buttons-container {
   display: flex;
   justify-content: center;
