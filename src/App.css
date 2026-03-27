@@ -477,10 +477,11 @@
 }
 
 .khmasiyat-quiz-range {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  display: flex; /* Changed from grid to flex */
+  justify-content: center; /* Center items horizontally */
   gap: 10px;
-  align-items: end;
+  align-items: center; /* Align items vertically in the middle */
+  margin-top: 15px; /* Adjust spacing as needed */
 }
 
 .khmasiyat-range-apply {
@@ -533,6 +534,66 @@
 .khmasiyat-quiz-input:focus {
   border-color: darkgreen;
   box-shadow: 0 0 0 3px rgba(0, 100, 0, 0.12);
+}
+
+/* Style for the compact range inputs */
+.khmasiyat-quiz-input.khmasiyat-range-input {
+  width: 60px; /* Fixed width for a small square look */
+  height: 40px; /* Fixed height */
+  padding: 5px; /* Smaller padding */
+  font-size: 16px; /* Smaller font size */
+  text-align: center; /* Center text */
+}
+
+/* Style for the separator between range inputs */
+.range-separator {
+  font-size: 20px;
+  font-weight: bold;
+  color: #555;
+}
+
+/* Visually hidden class for accessibility */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* Adjust apply button for the new layout */
+.khmasiyat-range-apply {
+  padding: 8px 15px; /* Slightly smaller padding for the button */
+  font-size: 16px; /* Smaller font size for the button */
+}
+
+/* Adjust khmasiyat-quiz-field to ensure input is centered if label is hidden */
+.khmasiyat-quiz-field {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+/* Mobile responsiveness for the new layout */
+@media (max-width: 600px) {
+  .khmasiyat-quiz-range {
+    flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+    justify-content: center;
+    gap: 8px;
+  }
+  .khmasiyat-quiz-input.khmasiyat-range-input {
+    width: 50px;
+    height: 35px;
+    font-size: 14px;
+  }
+  .khmasiyat-range-apply {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
 }
 
 .khmasiyat-quiz-actions {

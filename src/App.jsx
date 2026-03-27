@@ -382,6 +382,7 @@ function App() {
       '--app-font-color': fontColor
     }}>
       {/* الأزرار العلوية */}
+      {!isQuizMode && (
       <div className="action-buttons-container upper-actions">
         {isPageStartsMode && (
           <button
@@ -530,6 +531,7 @@ function App() {
           )}
         </button>
       </div>
+      )}
 
       {activeAyahTest === 'khmasiyat' && (
         <KhmasiyatQuiz onClose={() => setActiveAyahTest(null)} />
