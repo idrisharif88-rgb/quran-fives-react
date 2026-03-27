@@ -72,6 +72,7 @@ function App() {
   const pageStartsMenuRef = useRef(null);
   const ayahMenuRef = useRef(null);
   const fontMenuRef = useRef(null);
+  const swipeStartRef = useRef(null);
 
   const starredArray = Array.from(starredIndices).sort((a, b) => a - b);
   const starredPagesArray = Array.from(starredPages).sort((a, b) => a - b);
@@ -353,6 +354,40 @@ function App() {
       }
       return newSet;
     });
+  };
+
+  const handleSwipeNav = (direction) => {
+    if (viewMode !== 'khmasiyat') return;
+    if (direction === 'next') setCurrentIndex(prev => Math.min(1201, prev + 1));
+    if (direction === 'prev') setCurrentIndex(prev => Math.max(0, prev - 1));
+  };
+
+  const onSwipeTouchStart = (e) => {
+    if (viewMode !== 'khmasiyat') return;
+    const t = e.touches?.[0];
+    if (!t) return;
+    swipeStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+
+  const onSwipeTouchEnd = (e) => {
+    if (viewMode !== 'khmasiyat') return;
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start) return;
+
+    const t = e.changedTouches?.[0];
+    if (!t) return;
+
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    if (absX < 60 || absX < absY * 1.4) return;
+
+    // Requested behavior: swipe right => next, swipe left => past
+    if (dx > 0) handleSwipeNav('next');
+    else handleSwipeNav('prev');
   };
 
   const handlePageJump = () => {
@@ -683,7 +718,7 @@ function App() {
         </div>
         </>
       ) : (
-        <div className="content-layout">
+        <div className="content-layout" onTouchStart={onSwipeTouchStart} onTouchEnd={onSwipeTouchEnd}>
           <div className="top-stars-container inside-text-field">
             <button 
               className="top-star-btn"
