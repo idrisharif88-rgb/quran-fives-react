@@ -50,7 +50,7 @@ export default function RandomAyahQuiz({ onClose }) {
 
   const checkRandomAyahAnswer = () => {
     if (randomAyahIndex === null) {
-      setRandomAyahResult('لا يوجد سؤال حالي. اختر المدى ثم اضغط "تطبيق المدى".');
+      setRandomAyahResult('لا يوجد سؤال حالي. اختر المدى ثم اضغط "تطبيق".');
       return;
     }
     const guessedSurah = Number(randomAyahSurahGuess);
@@ -81,18 +81,32 @@ export default function RandomAyahQuiz({ onClose }) {
     <div className="khmasiyat-quiz-panel" dir="rtl">
       <h2 className="khmasiyat-quiz-title">اختبار آيات عشوائي</h2>
       <div className="khmasiyat-quiz-range">
-        <div className="khmasiyat-quiz-field">
-          <label className="khmasiyat-quiz-label">من آية (ترتيب المصحف)</label>
-          <input type="number" className="khmasiyat-quiz-input" value={randomAyahRangeStart} onChange={(e) => setRandomAyahRangeStart(e.target.value)} placeholder="1" min="1" max={QURAN_VERSES.length} />
-        </div>
-        <div className="khmasiyat-quiz-field">
-          <label className="khmasiyat-quiz-label">إلى آية (ترتيب المصحف)</label>
-          <input type="number" className="khmasiyat-quiz-input" value={randomAyahRangeEnd} onChange={(e) => setRandomAyahRangeEnd(e.target.value)} placeholder={String(QURAN_VERSES.length)} min="1" max={QURAN_VERSES.length} />
-        </div>
-        <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => createRandomAyahQuestion(true)}>تطبيق المدى</button>
+        <span className="khmasiyat-range-label">من</span>
+        <input
+          type="number"
+          className="khmasiyat-quiz-input khmasiyat-range-input"
+          value={randomAyahRangeStart}
+          onChange={(e) => setRandomAyahRangeStart(e.target.value)}
+          placeholder="1"
+          min="1"
+          max={QURAN_VERSES.length}
+          aria-label="من"
+        />
+        <span className="khmasiyat-range-label">إلى</span>
+        <input
+          type="number"
+          className="khmasiyat-quiz-input khmasiyat-range-input"
+          value={randomAyahRangeEnd}
+          onChange={(e) => setRandomAyahRangeEnd(e.target.value)}
+          placeholder={String(QURAN_VERSES.length)}
+          min="1"
+          max={QURAN_VERSES.length}
+          aria-label="إلى"
+        />
+        <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => createRandomAyahQuestion(true)}>تطبيق</button>
       </div>
       <div className="khmasiyat-quiz-progress">المتبقي حتى إنهاء المدى: {randomAyahRemainingCount}</div>
-      <div className="khmasiyat-quiz-verse">{randomAyahData?.t || 'اختر مدى صحيحًا ثم اضغط "تطبيق المدى" لعرض سؤال عشوائي.'}</div>
+      <div className="khmasiyat-quiz-verse">{randomAyahData?.t || 'اختر مدى صحيحًا ثم اضغط "تطبيق" لعرض سؤال عشوائي.'}</div>
       <div className="khmasiyat-quiz-inputs"><div className="khmasiyat-quiz-field"><label className="khmasiyat-quiz-label">رقم السورة</label><input type="number" className="khmasiyat-quiz-input" value={randomAyahSurahGuess} onChange={(e) => setRandomAyahSurahGuess(e.target.value)} placeholder="من 1 إلى 114" min="1" max="114" /></div><div className="khmasiyat-quiz-field"><label className="khmasiyat-quiz-label">رقم الآية داخل السورة</label><input type="number" className="khmasiyat-quiz-input" value={randomAyahVerseGuess} onChange={(e) => setRandomAyahVerseGuess(e.target.value)} placeholder="مثال: 1 أو 23" min="1" /></div></div>
       <div className="khmasiyat-quiz-actions"><button type="button" className="khmasiyat-quiz-btn" onClick={checkRandomAyahAnswer}>تحقق</button><button type="button" className="khmasiyat-quiz-btn secondary" onClick={createRandomAyahQuestion}>آية جديدة</button><button type="button" className="khmasiyat-quiz-btn secondary" onClick={onClose}>العودة للتصفح</button></div>
       {randomAyahResult && <div className="khmasiyat-quiz-result">{randomAyahResult}</div>}

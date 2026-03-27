@@ -83,19 +83,35 @@ export default function KhmasiyatQuiz({ onClose }) {
     <div className="khmasiyat-quiz-panel" dir="rtl">
       <h2 className="khmasiyat-quiz-title">اختبار خماسيات</h2>
       <div className="khmasiyat-quiz-range">
-        <div className="khmasiyat-quiz-field">
-          <label className="khmasiyat-quiz-label">من خماسية</label>
-          <input type="number" className="khmasiyat-quiz-input" value={quizRangeStart} onChange={(e) => setQuizRangeStart(e.target.value)} placeholder="1" min="1" max="1202" />
-        </div>
-        <div className="khmasiyat-quiz-field">
-          <label className="khmasiyat-quiz-label">إلى خماسية</label>
-          <input type="number" className="khmasiyat-quiz-input" value={quizRangeEnd} onChange={(e) => setQuizRangeEnd(e.target.value)} placeholder="1202" min="1" max="1202" />
-        </div>
-        <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => createKhmasiyatQuestion(true)}>تطبيق المدى</button>
+        <span className="khmasiyat-range-label">من</span>
+        <input
+          type="number"
+          className="khmasiyat-quiz-input khmasiyat-range-input"
+          value={quizRangeStart}
+          onChange={(e) => setQuizRangeStart(e.target.value)}
+          placeholder="0001"
+          min="1"
+          max="1202"
+          aria-label="من خماسية"
+          maxLength="4"
+        />
+        <span className="khmasiyat-range-label">إلى</span>
+        <input
+          type="number"
+          className="khmasiyat-quiz-input khmasiyat-range-input"
+          value={quizRangeEnd}
+          onChange={(e) => setQuizRangeEnd(e.target.value)}
+          placeholder="1202"
+          min="1"
+          max="1202"
+          aria-label="إلى خماسية"
+          maxLength="4"
+        />
+        <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => createKhmasiyatQuestion(true)}>تطبيق</button>
       </div>
       <div className="khmasiyat-quiz-progress">المتبقي حتى إنهاء المدى: {quizRemainingCount}</div>
       <div className="khmasiyat-quiz-verse">{quizLastVerse?.t || 'اختر مدى صحيحًا ثم اضغط "تطبيق المدى" لعرض سؤال عشوائي.'}</div>
-      <div className="khmasiyat-quiz-inputs">
+      <div className="khmasiyat-quiz-inputs khmasiyat-quiz-guess-row">
         <div className="khmasiyat-quiz-field"><label className="khmasiyat-quiz-label">رقم السورة</label><input type="number" className="khmasiyat-quiz-input" value={quizSurahGuess} onChange={(e) => setQuizSurahGuess(e.target.value)} placeholder="من 1 إلى 114" min="1" max="114" /></div>
         <div className="khmasiyat-quiz-field"><label className="khmasiyat-quiz-label">الخماسية داخل السورة</label><input type="number" className="khmasiyat-quiz-input" value={quizFiveInSurahGuess} onChange={(e) => setQuizFiveInSurahGuess(e.target.value)} placeholder="مثال: 5 أو 10 أو 15" min="5" /></div>
       </div>

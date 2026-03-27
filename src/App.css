@@ -477,11 +477,18 @@
 }
 
 .khmasiyat-quiz-range {
-  display: flex; /* Changed from grid to flex */
-  justify-content: center; /* Center items horizontally */
+  display: flex;
+  justify-content: center;
+  align-items: center;
   gap: 10px;
-  align-items: center; /* Align items vertically in the middle */
-  margin-top: 15px; /* Adjust spacing as needed */
+  margin: 15px 0;
+}
+
+.khmasiyat-range-label {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  white-space: nowrap;
 }
 
 .khmasiyat-range-apply {
@@ -581,9 +588,11 @@
 /* Mobile responsiveness for the new layout */
 @media (max-width: 600px) {
   .khmasiyat-quiz-range {
-    flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+    flex-wrap: nowrap; /* Keep من/إلى/تطبيق on one line */
     justify-content: center;
     gap: 8px;
+    overflow-x: auto;
+    max-width: 100%;
   }
   .khmasiyat-quiz-input.khmasiyat-range-input {
     width: 50px;
@@ -957,16 +966,40 @@
     font-size: 24px;
   }
   .khmasiyat-quiz-range {
-    grid-template-columns: 1fr;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  .khmasiyat-range-label {
+    font-size: 16px;
+    flex-basis: auto;
+    white-space: nowrap;
+  }
+  .khmasiyat-quiz-input.khmasiyat-range-input {
+    width: 50px;
+    height: 35px;
+    font-size: 14px;
   }
   .khmasiyat-quiz-progress {
     font-size: 16px;
   }
   .khmasiyat-range-apply {
-    width: 100%;
+    width: auto;
   }
   .khmasiyat-quiz-inputs {
     grid-template-columns: 1fr;
+  }
+  .khmasiyat-quiz-inputs.khmasiyat-quiz-guess-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+  }
+  .khmasiyat-quiz-inputs.khmasiyat-quiz-guess-row .khmasiyat-quiz-label {
+    font-size: 13px;
+  }
+  .khmasiyat-quiz-inputs.khmasiyat-quiz-guess-row .khmasiyat-quiz-input {
+    font-size: 15px;
+    padding: 8px 10px;
   }
   .surah-count-mode-switch {
     grid-template-columns: 1fr;
