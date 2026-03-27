@@ -498,7 +498,6 @@ function App() {
                   style={{
                     fontSize: '22px',
                     fontWeight: 800,
-                    fontFamily: "'Tajawal', 'Noto Naskh Arabic', sans-serif",
                     lineHeight: 1,
                     letterSpacing: '0.5px',
                     display: 'inline-block',
@@ -538,7 +537,7 @@ function App() {
             }}
             style={{ backgroundColor: isFontMenuOpen ? '#f39c12' : '' }}
           >
-            <span style={{ fontSize: '28px', fontWeight: 'bold', fontFamily: 'Georgia, serif' }}>A</span>
+            <span style={{ fontSize: '28px', fontWeight: 'bold' }}>A</span>
           </button>
           
           {isFontMenuOpen && (
@@ -581,7 +580,7 @@ function App() {
           style={{ width: '65px', height: '65px' }}
         >
           {hijriData.length > 0 ? (
-            <span style={{ fontSize: '14px', fontWeight: 'bold', fontFamily: 'Tajawal, sans-serif', textAlign: 'center', lineHeight: '1.2' }}>
+            <span style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>
               {hijriData[hijriIndex]}
             </span>
           ) : (
@@ -787,7 +786,7 @@ function App() {
             title="فهرس السور"
             onClick={() => setActiveTooltip(activeTooltip === 'surah' ? null : 'surah')}
           >
-            <span style={{ fontSize: '26px', fontWeight: 'bold', fontFamily: 'Georgia, serif', fontStyle: 'italic' }}>i</span>
+            <span style={{ fontSize: '26px', fontWeight: 'bold', fontStyle: 'italic' }}>i</span>
           </button>
         </div>
         
@@ -804,7 +803,7 @@ function App() {
             title="عدد الآيات"
             onClick={() => setActiveTooltip(activeTooltip === 'verses' ? null : 'verses')}
           >
-            <span style={{ fontSize: '20px', fontWeight: 'bold', fontFamily: 'Arial' }}>
+            <span style={{ fontSize: '20px', fontWeight: 'bold' }}>
               {blinkValues[blinkIndex]}
             </span>
           </button>
@@ -865,7 +864,7 @@ function App() {
               {jumpError && <p className="jump-error-message">{jumpError}</p>}
             </div>
           </div>
-          <div className="progress-wrapper">
+          <div className="progress-wrapper big-progress">
             <div className="progress-container">
               <div className="progress-bar" style={{ width: `${Math.min(((currentIndex + 1) / 1202) * 100, 100)}%` }}></div>
             </div>
@@ -899,7 +898,7 @@ function App() {
             {pageJumpError && <p className="jump-error-message">{pageJumpError}</p>}
           </div>
         </div>
-        <div className="progress-wrapper page-starts-progress">
+        <div className="progress-wrapper big-progress">
           <div className="progress-container">
             <div className="progress-bar" style={{ width: `${Math.min(((currentPageIndex + 1) / 604) * 100, 100)}%`, backgroundColor: '#f39c12' }}></div>
           </div>

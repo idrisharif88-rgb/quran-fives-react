@@ -2,7 +2,7 @@
 
 .app-container {
   padding: 20px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--app-font-family, 'Tajawal', sans-serif);
   text-align: center;
   direction: rtl;
   background-color: #f4f6f8;
@@ -46,7 +46,7 @@
   font-weight: bold;
   margin: 0 8px;
   font-size: 48px;
-  font-family: Arial, sans-serif;
+  font-family: inherit;
 }
 
 .expand-btn {
@@ -65,7 +65,7 @@
   margin: 0 12px;
   transition: all 0.2s ease;
   vertical-align: middle;
-  font-family: Arial, sans-serif;
+  font-family: inherit;
 }
 
 .expand-btn:hover {
@@ -260,7 +260,7 @@
   gap: 6px;
   cursor: pointer;
   transition: transform 0.2s ease;
-  font-family: 'Tajawal', sans-serif;
+  font-family: inherit;
 }
 
 .top-star-btn:hover:not(:disabled) {
@@ -309,14 +309,14 @@
   margin-bottom: 10px;
   border-bottom: 1px solid #e1e4e8;
   padding-bottom: 8px;
-  font-family: Arial, sans-serif;
+  font-family: inherit;
 }
 
 .starred-preview {
   color: #333;
   font-size: 24px;
   line-height: 1.8;
-  font-family: 'Tajawal', sans-serif;
+  font-family: inherit;
 }
 
 .starred-verse-num {
@@ -324,7 +324,7 @@
   font-weight: bold;
   margin: 0 5px;
   font-size: 20px;
-  font-family: Arial, sans-serif;
+  font-family: inherit;
 }
 
 .empty-starred {
@@ -332,7 +332,7 @@
   color: #666;
   font-size: 24px;
   margin-top: 40px;
-  font-family: 'Tajawal', sans-serif;
+  font-family: inherit;
 }
 
 /* Tooltip Styling */
@@ -351,7 +351,7 @@
   padding: 6px 14px;
   border-radius: 8px;
   font-size: 16px;
-  font-family: 'Tajawal', sans-serif;
+  font-family: inherit;
   white-space: nowrap;
   box-shadow: 0 4px 6px rgba(0,0,0,0.15);
   z-index: 10;
@@ -453,7 +453,7 @@
   color: #1f2937;
   font-size: 18px;
   font-weight: 700;
-  font-family: 'Tajawal', sans-serif;
+  font-family: inherit;
   padding: 10px 12px;
   border-radius: 8px;
   text-align: right;
@@ -489,7 +489,7 @@
   text-align: center;
   color: darkgreen;
   font-size: 30px;
-  font-family: 'Tajawal', sans-serif;
+  font-family: inherit;
   font-weight: 700;
 }
 
@@ -529,7 +529,7 @@
   color: #374151;
   font-size: 18px;
   font-weight: 700;
-  font-family: 'Tajawal', sans-serif;
+  font-family: inherit;
 }
 
 .khmasiyat-quiz-inputs {
@@ -550,7 +550,7 @@
   color: #1f2937;
   font-size: 16px;
   font-weight: 700;
-  font-family: 'Tajawal', sans-serif;
+  font-family: inherit;
   text-align: right;
 }
 
@@ -562,7 +562,7 @@
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 18px;
-  font-family: 'Tajawal', sans-serif;
+  font-family: inherit;
   outline: none;
   background: #ffffff;
 }
@@ -655,7 +655,7 @@
   background: darkgreen;
   color: #ffffff;
   font-size: 18px;
-  font-family: 'Tajawal', sans-serif;
+  font-family: inherit;
   font-weight: 700;
   cursor: pointer;
 }
@@ -671,7 +671,7 @@
   font-size: 20px;
   font-weight: 700;
   color: #1f2937;
-  font-family: 'Tajawal', sans-serif;
+  font-family: inherit;
 }
 
 .surah-count-mode-switch {
@@ -713,14 +713,14 @@
   justify-content: center;
 }
 .font-size-ctrl button:hover { background: #e1e4e8; }
-.font-size-ctrl span { font-size: 18px; font-weight: bold; font-family: Arial, sans-serif; }
+.font-size-ctrl span { font-size: 18px; font-weight: bold; font-family: inherit; }
 
 .font-family-select {
   width: 100%;
   padding: 8px 12px;
   border-radius: 8px;
   border: 1px solid #e1e4e8;
-  font-family: 'Tajawal', sans-serif;
+  font-family: inherit;
   font-size: 16px;
   background: #f4f6f8;
   cursor: pointer;
@@ -743,7 +743,7 @@
   font-size: 16px;
   cursor: pointer;
   color: #555;
-  font-family: 'Tajawal', sans-serif;
+  font-family: inherit;
 }
 .segmented-control button.active {
   background: white;
@@ -813,7 +813,7 @@
   font-size: 24px;
   font-weight: bold;
   text-align: center;
-  font-family: Arial, sans-serif;
+  font-family: inherit;
   color: #333;
   position: relative;
   z-index: 2;
@@ -829,7 +829,7 @@
   border: none;
   background-color: darkgreen;
   color: white;
-  font-family: 'Tajawal', sans-serif;
+  font-family: inherit;
   font-size: 22px;
   font-weight: bold;
   border-radius: 8px;
@@ -894,15 +894,15 @@
   font-weight: bold;
   color: #444;
   margin-top: 0; /* Remove top margin as it's now horizontal */
-  font-family: Arial, sans-serif;
+  font-family: inherit;
 }
 
-.page-starts-progress .progress-container {
+.big-progress .progress-container {
   height: 14px;
   border-radius: 7px;
 }
 
-.page-starts-progress .progress-text {
+.big-progress .progress-text {
   font-size: 26px;
 }
 
