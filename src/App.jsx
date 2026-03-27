@@ -475,7 +475,7 @@ function App() {
       '--app-font-color': fontColor
     }}>
       {/* الأزرار العلوية */}
-      {!isQuizMode && (
+      {!isQuizMode && viewMode !== 'shared-verses' && (
       <div className="action-buttons-container upper-actions">
         {isPageStartsMode && (
           <button
@@ -488,7 +488,7 @@ function App() {
             </svg>
           </button>
         )}
-        {!isPageStartsMode && (
+        {!isPageStartsMode && viewMode !== 'shared-verses' && (
           <>
             <div className="icon-wrapper" ref={pageStartsMenuRef}>
               <button
@@ -719,7 +719,7 @@ function App() {
         </>
       ) : (
         <div className="content-layout" onTouchStart={onSwipeTouchStart} onTouchEnd={onSwipeTouchEnd}>
-          <div className="top-stars-container inside-text-field">
+          {viewMode !== 'shared-verses' && <div className="top-stars-container inside-text-field">
             <button 
               className="top-star-btn"
               title={isPageStartsMode ? "قائمة الصفحات للتثبيت" : "قائمة الخماسيات للتثبيت"}
@@ -743,7 +743,7 @@ function App() {
                 <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></svg>
               )}
             </button>
-          </div>
+          </div>}
 
           <button 
             onClick={() => {
@@ -810,39 +810,41 @@ function App() {
 
       {!isPageStartsMode && (
       <div className="action-buttons-container" ref={actionButtonsRef}>
-        <div className="icon-wrapper">
-          {activeTooltip === 'surah' && (
-            <div className="surah-tooltip">
-              {currentKhmasiyat.name} ({currentVersesText[0]?.s})
+        {viewMode !== 'shared-verses' && (
+          <>
+            <div className="icon-wrapper">
+              {activeTooltip === 'surah' && (
+                <div className="surah-tooltip">
+                  {currentKhmasiyat.name} ({currentVersesText[0]?.s})
+                </div>
+              )}
+              <button 
+                className="action-icon" 
+                title="فهرس السور"
+                onClick={() => setActiveTooltip(activeTooltip === 'surah' ? null : 'surah')}
+              >
+                <span style={{ fontSize: '26px', fontWeight: 'bold', fontStyle: 'italic' }}>i</span>
+              </button>
             </div>
-          )}
-          <button 
-            className="action-icon" 
-            title="فهرس السور"
-            onClick={() => setActiveTooltip(activeTooltip === 'surah' ? null : 'surah')}
-          >
-            <span style={{ fontSize: '26px', fontWeight: 'bold', fontStyle: 'italic' }}>i</span>
-          </button>
-        </div>
-        
-        <div className="icon-wrapper">
-          {activeTooltip === 'verses' && (
-            <div 
-              className="surah-tooltip"
-            >
-              عدد الآيات: {verseCount}
+            
+            <div className="icon-wrapper">
+              {activeTooltip === 'verses' && (
+                <div className="surah-tooltip">
+                  عدد الآيات: {verseCount}
+                </div>
+              )}
+              <button 
+                className="action-icon" 
+                title="عدد الآيات"
+                onClick={() => setActiveTooltip(activeTooltip === 'verses' ? null : 'verses')}
+              >
+                <span style={{ fontSize: '20px', fontWeight: 'bold' }}>
+                  {blinkValues[blinkIndex]}
+                </span>
+              </button>
             </div>
-          )}
-          <button 
-            className="action-icon" 
-            title="عدد الآيات"
-            onClick={() => setActiveTooltip(activeTooltip === 'verses' ? null : 'verses')}
-          >
-            <span style={{ fontSize: '20px', fontWeight: 'bold' }}>
-              {blinkValues[blinkIndex]}
-            </span>
-          </button>
-        </div>
+          </>
+        )}
 
         <button 
           className="action-icon" 
@@ -855,22 +857,24 @@ function App() {
           </svg>
         </button>
         
-        <button 
-          className="action-icon" 
-          title={isPlaying ? "إيقاف الصوت" : "تشغيل الصوت"}
-          onClick={toggleAudio}
-          style={{ backgroundColor: isPlaying ? '#f39c12' : '' }}
-        >
-          {isPlaying ? (
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-          )}
-        </button>
+        {viewMode !== 'shared-verses' && (
+          <button 
+            className="action-icon" 
+            title={isPlaying ? "إيقاف الصوت" : "تشغيل الصوت"}
+            onClick={toggleAudio}
+            style={{ backgroundColor: isPlaying ? '#f39c12' : '' }}
+          >
+            {isPlaying ? (
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            )}
+          </button>
+        )}
       </div>
       )}
 
