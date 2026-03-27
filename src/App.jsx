@@ -475,7 +475,7 @@ function App() {
       '--app-font-color': fontColor
     }}>
       {/* الأزرار العلوية */}
-      {!isQuizMode && viewMode !== 'shared-verses' && (
+      {!isQuizMode && viewMode !== 'shared-verses' && viewMode !== 'starred' && viewMode !== 'page-starred' && (
       <div className="action-buttons-container upper-actions">
         {isPageStartsMode && (
           <button
@@ -808,7 +808,7 @@ function App() {
         </div>
       )}
 
-      {!isPageStartsMode && (
+      {!isPageStartsMode && viewMode !== 'starred' && (
       <div className="action-buttons-container" ref={actionButtonsRef}>
         {viewMode !== 'shared-verses' && (
           <>
