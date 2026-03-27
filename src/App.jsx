@@ -610,7 +610,7 @@ function App() {
         </div>}
 
         {!isPageStartsMode && <button 
-          className="action-icon" 
+          className="action-icon calendar-icon" 
           title="التاريخ الهجري"
           style={{ width: '65px', height: '65px' }}
         >

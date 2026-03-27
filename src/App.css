@@ -183,8 +183,8 @@
 }
 
 .action-icon {
-  width: 55px;
-  height: 55px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
   background-color: darkgreen;
   color: #ffffff;
@@ -196,6 +196,16 @@
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   transition: all 0.2s ease;
   padding: 0;
+}
+
+.action-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.action-icon.calendar-icon {
+  width: 65px;
+  height: 65px;
 }
 
 .action-icon:hover {
@@ -986,12 +996,12 @@
     margin-bottom: 15px;
   }
   .action-icon {
-    width: 45px;
-    height: 45px;
+    width: 56px;
+    height: 56px;
   }
   .action-icon svg {
-    width: 20px;
-    height: 20px;
+    width: 26px;
+    height: 26px;
   }
   .jump-input {
     font-size: 20px;
