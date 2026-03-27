@@ -572,6 +572,14 @@
   box-shadow: 0 0 0 3px rgba(0, 100, 0, 0.12);
 }
 
+.khmasiyat-quiz-input.border-error {
+  border-color: #d9534f;
+}
+
+.khmasiyat-quiz-input.shake {
+  animation: shake 0.5s;
+}
+
 /* Style for the compact range inputs */
 .khmasiyat-quiz-input.khmasiyat-range-input {
   width: 60px; /* Fixed width for a small square look */
@@ -896,6 +904,23 @@
 
 .page-starts-progress .progress-text {
   font-size: 26px;
+}
+
+.page-starts-quiz-check {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-starts-quiz-check .input-inner-wrapper {
+  width: 140px;
+  flex-grow: 0;
+}
+
+.page-starts-quiz-check .jump-input {
+  padding: 10px 12px;
+  font-size: 20px;
 }
 
 /* Marquee Hint */

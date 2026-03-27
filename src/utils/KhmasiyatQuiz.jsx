@@ -1,18 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getSurahAndRange } from './quranLogic';
 import { QURAN_VERSES } from '../data/quranVerses';
+import TextDisplay from '../components/TextDisplay';
 import { buildShuffledIndices } from './quizUtils';
 
 export default function KhmasiyatQuiz({ onClose }) {
   const [quizKhmasiyaIndex, setQuizKhmasiyaIndex] = useState(null);
   const [quizFiveInSurahGuess, setQuizFiveInSurahGuess] = useState('');
   const [quizSurahGuess, setQuizSurahGuess] = useState('');
+  const [isSurahShaking, setIsSurahShaking] = useState(false);
+  const [isFiveShaking, setIsFiveShaking] = useState(false);
   const [quizRangeStart, setQuizRangeStart] = useState('1');
   const [quizRangeEnd, setQuizRangeEnd] = useState('1202');
   const [quizOrder, setQuizOrder] = useState([]);
   const [quizNextPointer, setQuizNextPointer] = useState(0);
   const [quizOrderRange, setQuizOrderRange] = useState({ start: 1, end: 1202 });
   const [quizResult, setQuizResult] = useState('');
+  const audioCtxRef = useRef(null);
 
   const createKhmasiyatQuestion = (forceNewCycle = false) => {
     const start = Number(quizRangeStart);
@@ -40,6 +44,8 @@ export default function KhmasiyatQuiz({ onClose }) {
 
     setQuizFiveInSurahGuess('');
     setQuizSurahGuess('');
+    setIsSurahShaking(false);
+    setIsFiveShaking(false);
     setQuizResult('');
   };
 
@@ -49,6 +55,44 @@ export default function KhmasiyatQuiz({ onClose }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const triggerShake = (setter) => {
+    setter(false);
+    setTimeout(() => setter(true), 0);
+    setTimeout(() => setter(false), 550);
+  };
+
+  const playCorrectSound = async () => {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+
+    try {
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioCtx();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') await ctx.resume();
+
+      const now = ctx.currentTime;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.15, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+      gain.connect(ctx.destination);
+
+      const playNote = (frequency, start) => {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(frequency, start);
+        osc.connect(gain);
+        osc.start(start);
+        osc.stop(start + 0.18);
+      };
+
+      playNote(880, now);
+      playNote(1175, now + 0.12);
+    } catch {
+      // ignore
+    }
+  };
+
   const checkKhmasiyatAnswer = () => {
     if (quizKhmasiyaIndex === null) {
       setQuizResult('لا يوجد سؤال حالي. اختر المدى ثم اضغط "تطبيق المدى".');
@@ -56,8 +100,12 @@ export default function KhmasiyatQuiz({ onClose }) {
     }
     const guessedFiveInSurah = Number(quizFiveInSurahGuess);
     const guessedSurah = Number(quizSurahGuess);
-    if (!Number.isInteger(guessedFiveInSurah) || !Number.isInteger(guessedSurah)) {
+    const fiveInvalid = !Number.isInteger(guessedFiveInSurah);
+    const surahInvalid = !Number.isInteger(guessedSurah);
+    if (fiveInvalid || surahInvalid) {
       setQuizResult('يرجى إدخال رقم الخماسية داخل السورة ورقم السورة.');
+      if (surahInvalid) triggerShake(setIsSurahShaking);
+      if (fiveInvalid) triggerShake(setIsFiveShaking);
       return;
     }
     
@@ -67,11 +115,14 @@ export default function KhmasiyatQuiz({ onClose }) {
     
     if (guessedFiveInSurah === correctFiveInSurah && guessedSurah === correctSurah) {
       setQuizResult('إجابة صحيحة');
+      playCorrectSound();
       setTimeout(() => {
         createKhmasiyatQuestion();
       }, 200);
     } else {
       setQuizResult(`غير صحيح. الخماسية داخل السورة: ${correctFiveInSurah} | السورة: ${correctSurah}`);
+      if (guessedSurah !== correctSurah) triggerShake(setIsSurahShaking);
+      if (guessedFiveInSurah !== correctFiveInSurah) triggerShake(setIsFiveShaking);
     }
   };
 
@@ -110,12 +161,40 @@ export default function KhmasiyatQuiz({ onClose }) {
         <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => createKhmasiyatQuestion(true)}>تطبيق</button>
       </div>
       <div className="khmasiyat-quiz-progress">المتبقي حتى إنهاء المدى: {quizRemainingCount}</div>
-      <div className="khmasiyat-quiz-verse">{quizLastVerse?.t || 'اختر مدى صحيحًا ثم اضغط "تطبيق المدى" لعرض سؤال عشوائي.'}</div>
+      {quizLastVerse ? (
+        <TextDisplay verses={[quizLastVerse]} hideVerseNumber />
+      ) : (
+        <div className="verse-container">اختر مدى صحيحًا ثم اضغط "تطبيق المدى" لعرض سؤال عشوائي.</div>
+      )}
       <div className="khmasiyat-quiz-inputs khmasiyat-quiz-guess-row">
-        <div className="khmasiyat-quiz-field"><label className="khmasiyat-quiz-label">رقم السورة</label><input type="number" className="khmasiyat-quiz-input" value={quizSurahGuess} onChange={(e) => setQuizSurahGuess(e.target.value)} placeholder="من 1 إلى 114" min="1" max="114" /></div>
-        <div className="khmasiyat-quiz-field"><label className="khmasiyat-quiz-label">الخماسية داخل السورة</label><input type="number" className="khmasiyat-quiz-input" value={quizFiveInSurahGuess} onChange={(e) => setQuizFiveInSurahGuess(e.target.value)} placeholder="مثال: 5 أو 10 أو 15" min="5" /></div>
+        <div className="khmasiyat-quiz-field">
+          <label className="khmasiyat-quiz-label">رقم السورة</label>
+          <input
+            type="number"
+            className={`khmasiyat-quiz-input ${isSurahShaking ? 'shake border-error' : ''}`}
+            value={quizSurahGuess}
+            onChange={(e) => setQuizSurahGuess(e.target.value)}
+            placeholder="من 1 إلى 114"
+            min="1"
+            max="114"
+          />
+        </div>
+        <div className="khmasiyat-quiz-field">
+          <label className="khmasiyat-quiz-label">رقم الآية</label>
+          <input
+            type="number"
+            className={`khmasiyat-quiz-input ${isFiveShaking ? 'shake border-error' : ''}`}
+            value={quizFiveInSurahGuess}
+            onChange={(e) => setQuizFiveInSurahGuess(e.target.value)}
+            placeholder="مثال: 5 أو 10 أو 15"
+            min="5"
+          />
+        </div>
       </div>
-      <div className="khmasiyat-quiz-actions"><button type="button" className="khmasiyat-quiz-btn" onClick={checkKhmasiyatAnswer}>تحقق</button><button type="button" className="khmasiyat-quiz-btn secondary" onClick={createKhmasiyatQuestion}>خماسية جديدة</button><button type="button" className="khmasiyat-quiz-btn secondary" onClick={onClose}>العودة للتصفح</button></div>
+      <div className="khmasiyat-quiz-actions">
+        <button type="button" className="khmasiyat-quiz-btn" onClick={checkKhmasiyatAnswer}>تحقق</button>
+        <button type="button" className="khmasiyat-quiz-btn secondary" onClick={onClose}>العودة للتصفح</button>
+      </div>
       {quizResult && <div className="khmasiyat-quiz-result">{quizResult}</div>}
     </div>
   );

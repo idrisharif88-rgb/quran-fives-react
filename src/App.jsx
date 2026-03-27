@@ -8,6 +8,7 @@ import menuMainIcon from './assets/menu-main-icon.png';
 import KhmasiyatQuiz from './utils/KhmasiyatQuiz';
 import RandomAyahQuiz from './utils/RandomAyahQuiz';
 import SurahCountQuiz from './utils/SurahCountQuiz';
+import PageStartsQuiz from './utils/PageStartsQuiz';
 import './App.css';
 
 // مصفوفة بأسماء السور الـ 114
@@ -53,6 +54,7 @@ function App() {
   // إعدادات الخط
   const [isAyahMenuOpen, setIsAyahMenuOpen] = useState(false);
   const [activeAyahTest, setActiveAyahTest] = useState(null);
+  const [activePageStartsTest, setActivePageStartsTest] = useState(null);
   const [isPageStartsMenuOpen, setIsPageStartsMenuOpen] = useState(false);
   const [pageStartsData, setPageStartsData] = useState([]);
   const [isPageStartsLoading, setIsPageStartsLoading] = useState(false);
@@ -224,12 +226,16 @@ function App() {
       setCurrentPageIndex(0);
       loadPageStartsData();
     } else if (option === 'اختبار بدايات صفحات') {
-      setPageStartsError('اختبار بدايات صفحات سيتم إضافته في الخطوة التالية.');
+      setActivePageStartsTest('page-starts');
     }
     setIsPageStartsMenuOpen(false);
   };
 
-  const isQuizMode = activeAyahTest === 'khmasiyat' || activeAyahTest === 'random-ayat' || activeAyahTest === 'surah-count';
+  const isQuizMode =
+    activeAyahTest === 'khmasiyat' ||
+    activeAyahTest === 'random-ayat' ||
+    activeAyahTest === 'surah-count' ||
+    activePageStartsTest === 'page-starts';
   useEffect(() => {
     const interval = setInterval(() => {
       setBlinkIndex(prev => (prev + 1) % blinkValues.length);
@@ -595,6 +601,10 @@ function App() {
 
       {activeAyahTest === 'surah-count' && (
         <SurahCountQuiz onClose={() => setActiveAyahTest(null)} />
+      )}
+
+      {activePageStartsTest === 'page-starts' && (
+        <PageStartsQuiz onClose={() => setActivePageStartsTest(null)} />
       )}
 
       {!isQuizMode && (
