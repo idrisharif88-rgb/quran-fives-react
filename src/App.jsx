@@ -3,6 +3,7 @@ import { getSurahAndRange } from './utils/quranLogic';
 import TextDisplay from './components/TextDisplay';
 import { QURAN_VERSES } from './data/quranVerses';
 import { SURAH_METADATA } from './data/quranConstants';
+import { PAGE_STARTS } from './data/pageStarts';
 import menuMainIcon from './assets/menu-main-icon.png';
 import KhmasiyatQuiz from './utils/KhmasiyatQuiz';
 import RandomAyahQuiz from './utils/RandomAyahQuiz';
@@ -43,6 +44,8 @@ function App() {
   const [blinkIndex, setBlinkIndex] = useState(0);
   const [jumpInput, setJumpInput] = useState('');
   const [jumpError, setJumpError] = useState('');
+  const [pageJumpInput, setPageJumpInput] = useState('');
+  const [pageJumpError, setPageJumpError] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [hijriData, setHijriData] = useState([]);
   const [hijriIndex, setHijriIndex] = useState(0);
@@ -73,6 +76,10 @@ function App() {
 
   const isPageStartsMode = viewMode === 'page-starts' || viewMode === 'page-starred';
 
+  useEffect(() => {
+    if (isPageStartsMode) setIsFontMenuOpen(false);
+  }, [isPageStartsMode]);
+
   // Logic: We pass the state to our pure function to get the exact Surah details
   const currentKhmasiyat = getSurahAndRange(currentIndex);
   const lastVerseIndex = currentKhmasiyat.absoluteEndIndex - 1;
@@ -101,6 +108,13 @@ function App() {
       return () => clearTimeout(timer);
     }
   }, [jumpError]);
+
+  useEffect(() => {
+    if (pageJumpError) {
+      const timer = setTimeout(() => setPageJumpError(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [pageJumpError]);
 
   // Hide tooltip when clicking/touching anywhere else outside the container
   useEffect(() => {
@@ -139,6 +153,24 @@ function App() {
     setIsPageStartsLoading(true);
     setPageStartsError('');
     try {
+      if (Array.isArray(PAGE_STARTS) && PAGE_STARTS.length === 604) {
+        setPageStartsData(PAGE_STARTS);
+        return;
+      }
+
+      const cachedRaw = localStorage.getItem('pageStartsDataV1');
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw);
+        if (Array.isArray(cached) && cached.length === 604) {
+          setPageStartsData(cached);
+          return;
+        }
+      }
+
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        throw new Error('offline');
+      }
+
       const res = await fetch('https://api.alquran.cloud/v1/quran/quran-uthmani');
       const json = await res.json();
       if (json.code !== 200 || !json.data?.surahs) {
@@ -166,6 +198,11 @@ function App() {
         throw new Error('missing-pages');
       }
       setPageStartsData(ordered);
+      try {
+        localStorage.setItem('pageStartsDataV1', JSON.stringify(ordered));
+      } catch {
+        // ignore
+      }
     } catch (e) {
       setPageStartsError('تعذر تحميل بدايات الصفحات حالياً. حاول مرة أخرى.');
     } finally {
@@ -202,7 +239,9 @@ function App() {
 
   // جلب التاريخ الهجري من واجهة Aladhan API تلقائياً
   useEffect(() => {
+    if (isPageStartsMode) return;
     if (hijriData.length === 0) {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
       const today = new Date();
       const dateStr = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
       fetch(`https://api.aladhan.com/v1/gToH?date=${dateStr}`)
@@ -218,7 +257,7 @@ function App() {
         })
         .catch(err => console.error("Error fetching Hijri date:", err));
     }
-  }, [hijriData.length]);
+  }, [hijriData.length, isPageStartsMode]);
 
   // حلقة وميض التاريخ الهجري
   useEffect(() => {
@@ -308,6 +347,19 @@ function App() {
       }
       return newSet;
     });
+  };
+
+  const handlePageJump = () => {
+    setPageJumpError('');
+
+    const page = parseInt(pageJumpInput, 10);
+    if (!Number.isInteger(page) || page < 1 || page > 604) {
+      setPageJumpError('الرجاء إدخال رقم صفحة من 1 إلى 604');
+      return;
+    }
+
+    setCurrentPageIndex(page - 1);
+    setPageJumpInput('');
   };
 
   const handleJump = () => {
@@ -469,7 +521,7 @@ function App() {
         )}
         
         {/* قائمة إعدادات الخط (الثانية من اليسار) */}
-        <div className="icon-wrapper" ref={fontMenuRef}>
+        {!isPageStartsMode && <div className="icon-wrapper" ref={fontMenuRef}>
           <button 
             className="action-icon" 
             title="إعدادات الخط"
@@ -515,9 +567,9 @@ function App() {
               </div>
             </div>
           )}
-        </div>
+        </div>}
 
-        <button 
+        {!isPageStartsMode && <button 
           className="action-icon" 
           title="التاريخ الهجري"
           style={{ width: '65px', height: '65px' }}
@@ -529,7 +581,7 @@ function App() {
           ) : (
             <span style={{ fontSize: '14px' }}>...</span>
           )}
-        </button>
+        </button>}
       </div>
       )}
 
@@ -815,7 +867,29 @@ function App() {
       )}
 
       {viewMode === 'page-starts' && !isPageStartsLoading && pageStartsData.length > 0 && (
-        <div className="progress-wrapper">
+        <>
+        <div className="jump-to-container">
+          <div className="jump-input-wrapper">
+            <div className={`input-inner-wrapper ${pageJumpError ? 'shake border-error' : ''}`}>
+              <input
+                type="number"
+                className="jump-input"
+                value={pageJumpInput}
+                onChange={(e) => setPageJumpInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handlePageJump()}
+                placeholder="1"
+                min="1"
+                max="604"
+                dir="ltr"
+              />
+            </div>
+            <button onClick={handlePageJump} className="jump-button">اذهب</button>
+          </div>
+          <div className="jump-error-container">
+            {pageJumpError && <p className="jump-error-message">{pageJumpError}</p>}
+          </div>
+        </div>
+        <div className="progress-wrapper page-starts-progress">
           <div className="progress-container">
             <div className="progress-bar" style={{ width: `${Math.min(((currentPageIndex + 1) / 604) * 100, 100)}%`, backgroundColor: '#f39c12' }}></div>
           </div>
@@ -823,6 +897,7 @@ function App() {
             صفحة {currentPageIndex + 1} / 604
           </div>
         </div>
+        </>
       )}
         </>
       )}

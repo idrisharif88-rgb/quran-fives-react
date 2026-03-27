@@ -860,6 +860,15 @@
   font-family: Arial, sans-serif;
 }
 
+.page-starts-progress .progress-container {
+  height: 14px;
+  border-radius: 7px;
+}
+
+.page-starts-progress .progress-text {
+  font-size: 26px;
+}
+
 /* Marquee Hint */
 .marquee-text {
   position: absolute;
