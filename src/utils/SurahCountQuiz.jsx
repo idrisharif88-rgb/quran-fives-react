@@ -1,15 +1,31 @@
 import { useState, useEffect } from 'react';
 import { SURAH_METADATA } from '../data/quranConstants';
 import { buildShuffledIndices } from './quizUtils';
+import { SURAH_COUNT_QUIZ_STORAGE_KEY, loadStoredState, saveStoredState } from './persistence';
 
 export default function SurahCountQuiz({ onClose }) {
-  const [surahCountMode, setSurahCountMode] = useState('name-to-count');
-  const [surahCountQuestionIndex, setSurahCountQuestionIndex] = useState(0);
-  const [surahCountOrder, setSurahCountOrder] = useState([]);
-  const [surahCountNextPointer, setSurahCountNextPointer] = useState(0);
-  const [surahCountGuess, setSurahCountGuess] = useState('');
-  const [surahCountInput, setSurahCountInput] = useState('');
-  const [surahCountResult, setSurahCountResult] = useState('');
+  const [persistedQuizState] = useState(() => loadStoredState(SURAH_COUNT_QUIZ_STORAGE_KEY) || {});
+  const [surahCountMode, setSurahCountMode] = useState(() => (
+    typeof persistedQuizState.surahCountMode === 'string' ? persistedQuizState.surahCountMode : 'name-to-count'
+  ));
+  const [surahCountQuestionIndex, setSurahCountQuestionIndex] = useState(() => (
+    Number.isInteger(persistedQuizState.surahCountQuestionIndex) ? persistedQuizState.surahCountQuestionIndex : 0
+  ));
+  const [surahCountOrder, setSurahCountOrder] = useState(() => (
+    Array.isArray(persistedQuizState.surahCountOrder) ? persistedQuizState.surahCountOrder : []
+  ));
+  const [surahCountNextPointer, setSurahCountNextPointer] = useState(() => (
+    Number.isInteger(persistedQuizState.surahCountNextPointer) ? persistedQuizState.surahCountNextPointer : 0
+  ));
+  const [surahCountGuess, setSurahCountGuess] = useState(() => (
+    typeof persistedQuizState.surahCountGuess === 'string' ? persistedQuizState.surahCountGuess : ''
+  ));
+  const [surahCountInput, setSurahCountInput] = useState(() => (
+    typeof persistedQuizState.surahCountInput === 'string' ? persistedQuizState.surahCountInput : ''
+  ));
+  const [surahCountResult, setSurahCountResult] = useState(() => (
+    typeof persistedQuizState.surahCountResult === 'string' ? persistedQuizState.surahCountResult : ''
+  ));
 
   const createSurahCountQuestion = (forceNewCycle = false) => {
     const needsNewCycle = forceNewCycle || surahCountOrder.length === 0 || surahCountNextPointer >= surahCountOrder.length;
@@ -28,9 +44,30 @@ export default function SurahCountQuiz({ onClose }) {
   };
 
   useEffect(() => {
+    if (surahCountOrder.length > 0 || Number.isInteger(persistedQuizState.surahCountQuestionIndex)) return;
     createSurahCountQuestion(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [persistedQuizState.surahCountQuestionIndex, surahCountOrder.length]);
+
+  useEffect(() => {
+    saveStoredState(SURAH_COUNT_QUIZ_STORAGE_KEY, {
+      surahCountMode,
+      surahCountQuestionIndex,
+      surahCountOrder,
+      surahCountNextPointer,
+      surahCountGuess,
+      surahCountInput,
+      surahCountResult,
+    });
+  }, [
+    surahCountGuess,
+    surahCountInput,
+    surahCountMode,
+    surahCountNextPointer,
+    surahCountOrder,
+    surahCountQuestionIndex,
+    surahCountResult,
+  ]);
 
   const checkSurahCountAnswer = () => {
     const guessed = Number(surahCountGuess);

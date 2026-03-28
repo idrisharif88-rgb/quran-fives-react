@@ -9,6 +9,17 @@ import KhmasiyatQuiz from './utils/KhmasiyatQuiz';
 import RandomAyahQuiz from './utils/RandomAyahQuiz';
 import SurahCountQuiz from './utils/SurahCountQuiz';
 import PageStartsQuiz from './utils/PageStartsQuiz';
+import {
+  APP_STORAGE_KEY,
+  KHMASIYAT_QUIZ_STORAGE_KEY,
+  PAGE_STARTS_QUIZ_STORAGE_KEY,
+  RANDOM_AYAH_QUIZ_STORAGE_KEY,
+  SURAH_COUNT_QUIZ_STORAGE_KEY,
+  hasStoredState,
+  loadStoredState,
+  removeStoredState,
+  saveStoredState
+} from './utils/persistence';
 import './App.css';
 
 // مصفوفة بأسماء السور الـ 114
@@ -34,18 +45,42 @@ const SHARED_VERSE_GROUPS = Object.keys(countGroups)
   .filter(count => countGroups[count].length > 1) // نأخذ فقط من يشتركون
   .sort((a, b) => a - b)
   .map(count => ({ count, surahs: countGroups[count] }));
+const SESSION_STORAGE_KEYS = [
+  APP_STORAGE_KEY,
+  KHMASIYAT_QUIZ_STORAGE_KEY,
+  RANDOM_AYAH_QUIZ_STORAGE_KEY,
+  SURAH_COUNT_QUIZ_STORAGE_KEY,
+  PAGE_STARTS_QUIZ_STORAGE_KEY
+];
 
 function App() {
+  const [persistedAppState] = useState(() => loadStoredState(APP_STORAGE_KEY) || {});
+  const [showSessionPrompt, setShowSessionPrompt] = useState(() => (
+    SESSION_STORAGE_KEYS.some(storageKey => hasStoredState(storageKey))
+  ));
+
   // State Management: This holds our current Khmasiyat index (starts at 0)
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [viewMode, setViewMode] = useState('khmasiyat'); // 'khmasiyat', 'shared-verses', 'starred'
-  const [sharedGroupIndex, setSharedGroupIndex] = useState(0);
-  const [starredIndices, setStarredIndices] = useState(new Set());
+  const [currentIndex, setCurrentIndex] = useState(() => (
+    Number.isInteger(persistedAppState.currentIndex) ? persistedAppState.currentIndex : 0
+  ));
+  const [viewMode, setViewMode] = useState(() => (
+    typeof persistedAppState.viewMode === 'string' ? persistedAppState.viewMode : 'khmasiyat'
+  )); // 'khmasiyat', 'shared-verses', 'starred'
+  const [sharedGroupIndex, setSharedGroupIndex] = useState(() => (
+    Number.isInteger(persistedAppState.sharedGroupIndex) ? persistedAppState.sharedGroupIndex : 0
+  ));
+  const [starredIndices, setStarredIndices] = useState(() => (
+    new Set(Array.isArray(persistedAppState.starredIndices) ? persistedAppState.starredIndices : [])
+  ));
   const [activeTooltip, setActiveTooltip] = useState(null);
   const [blinkIndex, setBlinkIndex] = useState(0);
-  const [jumpInput, setJumpInput] = useState('');
+  const [jumpInput, setJumpInput] = useState(() => (
+    typeof persistedAppState.jumpInput === 'string' ? persistedAppState.jumpInput : ''
+  ));
   const [jumpError, setJumpError] = useState('');
-  const [pageJumpInput, setPageJumpInput] = useState('');
+  const [pageJumpInput, setPageJumpInput] = useState(() => (
+    typeof persistedAppState.pageJumpInput === 'string' ? persistedAppState.pageJumpInput : ''
+  ));
   const [pageJumpError, setPageJumpError] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [hijriData, setHijriData] = useState([]);
@@ -53,19 +88,35 @@ function App() {
   
   // إعدادات الخط
   const [isAyahMenuOpen, setIsAyahMenuOpen] = useState(false);
-  const [activeAyahTest, setActiveAyahTest] = useState(null);
-  const [activePageStartsTest, setActivePageStartsTest] = useState(null);
+  const [activeAyahTest, setActiveAyahTest] = useState(() => (
+    typeof persistedAppState.activeAyahTest === 'string' ? persistedAppState.activeAyahTest : null
+  ));
+  const [activePageStartsTest, setActivePageStartsTest] = useState(() => (
+    typeof persistedAppState.activePageStartsTest === 'string' ? persistedAppState.activePageStartsTest : null
+  ));
   const [isPageStartsMenuOpen, setIsPageStartsMenuOpen] = useState(false);
   const [pageStartsData, setPageStartsData] = useState([]);
   const [isPageStartsLoading, setIsPageStartsLoading] = useState(false);
   const [pageStartsError, setPageStartsError] = useState('');
-  const [currentPageIndex, setCurrentPageIndex] = useState(0);
-  const [starredPages, setStarredPages] = useState(new Set());
+  const [currentPageIndex, setCurrentPageIndex] = useState(() => (
+    Number.isInteger(persistedAppState.currentPageIndex) ? persistedAppState.currentPageIndex : 0
+  ));
+  const [starredPages, setStarredPages] = useState(() => (
+    new Set(Array.isArray(persistedAppState.starredPages) ? persistedAppState.starredPages : [])
+  ));
   const [isFontMenuOpen, setIsFontMenuOpen] = useState(false);
-  const [fontSize, setFontSize] = useState(38);
-  const [fontFamily, setFontFamily] = useState("'Tajawal', sans-serif");
-  const [fontWeight, setFontWeight] = useState("bold");
-  const [fontColor, setFontColor] = useState("darkgreen");
+  const [fontSize, setFontSize] = useState(() => (
+    Number.isInteger(persistedAppState.fontSize) ? persistedAppState.fontSize : 38
+  ));
+  const [fontFamily, setFontFamily] = useState(() => (
+    typeof persistedAppState.fontFamily === 'string' ? persistedAppState.fontFamily : "'Tajawal', sans-serif"
+  ));
+  const [fontWeight, setFontWeight] = useState(() => (
+    typeof persistedAppState.fontWeight === 'string' ? persistedAppState.fontWeight : 'bold'
+  ));
+  const [fontColor, setFontColor] = useState(() => (
+    typeof persistedAppState.fontColor === 'string' ? persistedAppState.fontColor : 'darkgreen'
+  ));
 
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
@@ -82,6 +133,40 @@ function App() {
   useEffect(() => {
     if (isPageStartsMode) setIsFontMenuOpen(false);
   }, [isPageStartsMode]);
+
+  useEffect(() => {
+    saveStoredState(APP_STORAGE_KEY, {
+      currentIndex,
+      viewMode,
+      sharedGroupIndex,
+      starredIndices: Array.from(starredIndices),
+      jumpInput,
+      pageJumpInput,
+      activeAyahTest,
+      activePageStartsTest,
+      currentPageIndex,
+      starredPages: Array.from(starredPages),
+      fontSize,
+      fontFamily,
+      fontWeight,
+      fontColor,
+    });
+  }, [
+    activeAyahTest,
+    activePageStartsTest,
+    currentIndex,
+    currentPageIndex,
+    fontColor,
+    fontFamily,
+    fontSize,
+    fontWeight,
+    jumpInput,
+    pageJumpInput,
+    sharedGroupIndex,
+    starredIndices,
+    starredPages,
+    viewMode,
+  ]);
 
   // Logic: We pass the state to our pure function to get the exact Surah details
   const currentKhmasiyat = getSurahAndRange(currentIndex);
@@ -237,6 +322,13 @@ function App() {
     activeAyahTest === 'random-ayat' ||
     activeAyahTest === 'surah-count' ||
     activePageStartsTest === 'page-starts';
+
+  useEffect(() => {
+    if (viewMode === 'page-starts' || viewMode === 'page-starred') {
+      loadPageStartsData();
+    }
+  }, [viewMode]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setBlinkIndex(prev => (prev + 1) % blinkValues.length);
@@ -390,6 +482,42 @@ function App() {
     else handleSwipeNav('prev');
   };
 
+  const clearSavedSession = () => {
+    SESSION_STORAGE_KEYS.forEach(storageKey => removeStoredState(storageKey));
+  };
+
+  const handleStartFresh = () => {
+    clearSavedSession();
+    if (audioRef.current) audioRef.current.pause();
+    setCurrentIndex(0);
+    setViewMode('khmasiyat');
+    setSharedGroupIndex(0);
+    setStarredIndices(new Set());
+    setActiveTooltip(null);
+    setJumpInput('');
+    setJumpError('');
+    setPageJumpInput('');
+    setPageJumpError('');
+    setIsPlaying(false);
+    setIsAyahMenuOpen(false);
+    setActiveAyahTest(null);
+    setActivePageStartsTest(null);
+    setIsPageStartsMenuOpen(false);
+    setPageStartsError('');
+    setCurrentPageIndex(0);
+    setStarredPages(new Set());
+    setIsFontMenuOpen(false);
+    setFontSize(38);
+    setFontFamily("'Tajawal', sans-serif");
+    setFontWeight('bold');
+    setFontColor('darkgreen');
+    setShowSessionPrompt(false);
+  };
+
+  const handleResumeSession = () => {
+    setShowSessionPrompt(false);
+  };
+
   const handlePageJump = () => {
     setPageJumpError('');
 
@@ -474,6 +602,18 @@ function App() {
       '--app-font-weight': fontWeight,
       '--app-font-color': fontColor
     }}>
+      {showSessionPrompt && (
+        <div className="session-overlay" dir="rtl">
+          <div className="session-card">
+            <h2 className="session-title">متابعة الجلسة السابقة؟</h2>
+            <p className="session-text">يمكنك المتابعة من نفس المكان أو البدء من جديد.</p>
+            <div className="session-actions">
+              <button type="button" className="khmasiyat-quiz-btn" onClick={handleResumeSession}>متابعة</button>
+              <button type="button" className="khmasiyat-quiz-btn secondary" onClick={handleStartFresh}>بدء جديد</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* الأزرار العلوية */}
       {!isQuizMode && viewMode !== 'shared-verses' && viewMode !== 'starred' && viewMode !== 'page-starred' && (
       <div className="action-buttons-container upper-actions">

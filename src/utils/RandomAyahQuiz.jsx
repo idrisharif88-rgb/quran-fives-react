@@ -1,17 +1,41 @@
 import { useState, useEffect } from 'react';
 import { QURAN_VERSES } from '../data/quranVerses';
 import { buildShuffledIndices } from './quizUtils';
+import { RANDOM_AYAH_QUIZ_STORAGE_KEY, loadStoredState, saveStoredState } from './persistence';
 
 export default function RandomAyahQuiz({ onClose }) {
-  const [randomAyahIndex, setRandomAyahIndex] = useState(null);
-  const [randomAyahSurahGuess, setRandomAyahSurahGuess] = useState('');
-  const [randomAyahVerseGuess, setRandomAyahVerseGuess] = useState('');
-  const [randomAyahRangeStart, setRandomAyahRangeStart] = useState('1');
-  const [randomAyahRangeEnd, setRandomAyahRangeEnd] = useState(String(QURAN_VERSES.length));
-  const [randomAyahOrder, setRandomAyahOrder] = useState([]);
-  const [randomAyahNextPointer, setRandomAyahNextPointer] = useState(0);
-  const [randomAyahOrderRange, setRandomAyahOrderRange] = useState({ start: 1, end: QURAN_VERSES.length });
-  const [randomAyahResult, setRandomAyahResult] = useState('');
+  const [persistedQuizState] = useState(() => loadStoredState(RANDOM_AYAH_QUIZ_STORAGE_KEY) || {});
+  const [randomAyahIndex, setRandomAyahIndex] = useState(() => (
+    Number.isInteger(persistedQuizState.randomAyahIndex) ? persistedQuizState.randomAyahIndex : null
+  ));
+  const [randomAyahSurahGuess, setRandomAyahSurahGuess] = useState(() => (
+    typeof persistedQuizState.randomAyahSurahGuess === 'string' ? persistedQuizState.randomAyahSurahGuess : ''
+  ));
+  const [randomAyahVerseGuess, setRandomAyahVerseGuess] = useState(() => (
+    typeof persistedQuizState.randomAyahVerseGuess === 'string' ? persistedQuizState.randomAyahVerseGuess : ''
+  ));
+  const [randomAyahRangeStart, setRandomAyahRangeStart] = useState(() => (
+    typeof persistedQuizState.randomAyahRangeStart === 'string' ? persistedQuizState.randomAyahRangeStart : '1'
+  ));
+  const [randomAyahRangeEnd, setRandomAyahRangeEnd] = useState(() => (
+    typeof persistedQuizState.randomAyahRangeEnd === 'string' ? persistedQuizState.randomAyahRangeEnd : String(QURAN_VERSES.length)
+  ));
+  const [randomAyahOrder, setRandomAyahOrder] = useState(() => (
+    Array.isArray(persistedQuizState.randomAyahOrder) ? persistedQuizState.randomAyahOrder : []
+  ));
+  const [randomAyahNextPointer, setRandomAyahNextPointer] = useState(() => (
+    Number.isInteger(persistedQuizState.randomAyahNextPointer) ? persistedQuizState.randomAyahNextPointer : 0
+  ));
+  const [randomAyahOrderRange, setRandomAyahOrderRange] = useState(() => {
+    const { randomAyahOrderRange } = persistedQuizState;
+    if (randomAyahOrderRange && Number.isInteger(randomAyahOrderRange.start) && Number.isInteger(randomAyahOrderRange.end)) {
+      return randomAyahOrderRange;
+    }
+    return { start: 1, end: QURAN_VERSES.length };
+  });
+  const [randomAyahResult, setRandomAyahResult] = useState(() => (
+    typeof persistedQuizState.randomAyahResult === 'string' ? persistedQuizState.randomAyahResult : ''
+  ));
 
   const createRandomAyahQuestion = (forceNewCycle = false) => {
     const start = Number(randomAyahRangeStart);
@@ -44,9 +68,34 @@ export default function RandomAyahQuiz({ onClose }) {
   };
 
   useEffect(() => {
+    if (randomAyahOrder.length > 0 || randomAyahIndex !== null) return;
     createRandomAyahQuestion(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [randomAyahIndex, randomAyahOrder.length]);
+
+  useEffect(() => {
+    saveStoredState(RANDOM_AYAH_QUIZ_STORAGE_KEY, {
+      randomAyahIndex,
+      randomAyahSurahGuess,
+      randomAyahVerseGuess,
+      randomAyahRangeStart,
+      randomAyahRangeEnd,
+      randomAyahOrder,
+      randomAyahNextPointer,
+      randomAyahOrderRange,
+      randomAyahResult,
+    });
+  }, [
+    randomAyahIndex,
+    randomAyahNextPointer,
+    randomAyahOrder,
+    randomAyahOrderRange,
+    randomAyahRangeEnd,
+    randomAyahRangeStart,
+    randomAyahResult,
+    randomAyahSurahGuess,
+    randomAyahVerseGuess,
+  ]);
 
   const checkRandomAyahAnswer = () => {
     if (randomAyahIndex === null) {

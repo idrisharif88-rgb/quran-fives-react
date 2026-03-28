@@ -3,19 +3,43 @@ import { getSurahAndRange } from './quranLogic';
 import { QURAN_VERSES } from '../data/quranVerses';
 import TextDisplay from '../components/TextDisplay';
 import { buildShuffledIndices } from './quizUtils';
+import { KHMASIYAT_QUIZ_STORAGE_KEY, loadStoredState, saveStoredState } from './persistence';
 
 export default function KhmasiyatQuiz({ onClose }) {
-  const [quizKhmasiyaIndex, setQuizKhmasiyaIndex] = useState(null);
-  const [quizFiveInSurahGuess, setQuizFiveInSurahGuess] = useState('');
-  const [quizSurahGuess, setQuizSurahGuess] = useState('');
+  const [persistedQuizState] = useState(() => loadStoredState(KHMASIYAT_QUIZ_STORAGE_KEY) || {});
+  const [quizKhmasiyaIndex, setQuizKhmasiyaIndex] = useState(() => (
+    Number.isInteger(persistedQuizState.quizKhmasiyaIndex) ? persistedQuizState.quizKhmasiyaIndex : null
+  ));
+  const [quizFiveInSurahGuess, setQuizFiveInSurahGuess] = useState(() => (
+    typeof persistedQuizState.quizFiveInSurahGuess === 'string' ? persistedQuizState.quizFiveInSurahGuess : ''
+  ));
+  const [quizSurahGuess, setQuizSurahGuess] = useState(() => (
+    typeof persistedQuizState.quizSurahGuess === 'string' ? persistedQuizState.quizSurahGuess : ''
+  ));
   const [isSurahShaking, setIsSurahShaking] = useState(false);
   const [isFiveShaking, setIsFiveShaking] = useState(false);
-  const [quizRangeStart, setQuizRangeStart] = useState('1');
-  const [quizRangeEnd, setQuizRangeEnd] = useState('1202');
-  const [quizOrder, setQuizOrder] = useState([]);
-  const [quizNextPointer, setQuizNextPointer] = useState(0);
-  const [quizOrderRange, setQuizOrderRange] = useState({ start: 1, end: 1202 });
-  const [quizResult, setQuizResult] = useState('');
+  const [quizRangeStart, setQuizRangeStart] = useState(() => (
+    typeof persistedQuizState.quizRangeStart === 'string' ? persistedQuizState.quizRangeStart : '1'
+  ));
+  const [quizRangeEnd, setQuizRangeEnd] = useState(() => (
+    typeof persistedQuizState.quizRangeEnd === 'string' ? persistedQuizState.quizRangeEnd : '1202'
+  ));
+  const [quizOrder, setQuizOrder] = useState(() => (
+    Array.isArray(persistedQuizState.quizOrder) ? persistedQuizState.quizOrder : []
+  ));
+  const [quizNextPointer, setQuizNextPointer] = useState(() => (
+    Number.isInteger(persistedQuizState.quizNextPointer) ? persistedQuizState.quizNextPointer : 0
+  ));
+  const [quizOrderRange, setQuizOrderRange] = useState(() => {
+    const { quizOrderRange } = persistedQuizState;
+    if (quizOrderRange && Number.isInteger(quizOrderRange.start) && Number.isInteger(quizOrderRange.end)) {
+      return quizOrderRange;
+    }
+    return { start: 1, end: 1202 };
+  });
+  const [quizResult, setQuizResult] = useState(() => (
+    typeof persistedQuizState.quizResult === 'string' ? persistedQuizState.quizResult : ''
+  ));
   const audioCtxRef = useRef(null);
 
   const createKhmasiyatQuestion = (forceNewCycle = false) => {
@@ -51,9 +75,34 @@ export default function KhmasiyatQuiz({ onClose }) {
 
   // Initialize exactly once when mounted
   useEffect(() => {
+    if (quizOrder.length > 0 || quizKhmasiyaIndex !== null) return;
     createKhmasiyatQuestion(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [quizKhmasiyaIndex, quizOrder.length]);
+
+  useEffect(() => {
+    saveStoredState(KHMASIYAT_QUIZ_STORAGE_KEY, {
+      quizKhmasiyaIndex,
+      quizFiveInSurahGuess,
+      quizSurahGuess,
+      quizRangeStart,
+      quizRangeEnd,
+      quizOrder,
+      quizNextPointer,
+      quizOrderRange,
+      quizResult,
+    });
+  }, [
+    quizFiveInSurahGuess,
+    quizKhmasiyaIndex,
+    quizNextPointer,
+    quizOrder,
+    quizOrderRange,
+    quizRangeEnd,
+    quizRangeStart,
+    quizResult,
+    quizSurahGuess,
+  ]);
 
   const triggerShake = (setter) => {
     setter(false);

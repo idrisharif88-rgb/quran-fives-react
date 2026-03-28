@@ -2,16 +2,38 @@ import { useEffect, useRef, useState } from 'react';
 import { PAGE_STARTS } from '../data/pageStarts';
 import TextDisplay from '../components/TextDisplay';
 import { buildShuffledIndices } from './quizUtils';
+import { PAGE_STARTS_QUIZ_STORAGE_KEY, loadStoredState, saveStoredState } from './persistence';
 
 export default function PageStartsQuiz({ onClose }) {
-  const [rangeStart, setRangeStart] = useState('1');
-  const [rangeEnd, setRangeEnd] = useState('604');
-  const [order, setOrder] = useState([]);
-  const [nextPointer, setNextPointer] = useState(0);
-  const [orderRange, setOrderRange] = useState({ start: 1, end: 604 });
-  const [currentIndex, setCurrentIndex] = useState(null);
-  const [result, setResult] = useState('');
-  const [pageGuess, setPageGuess] = useState('');
+  const [persistedQuizState] = useState(() => loadStoredState(PAGE_STARTS_QUIZ_STORAGE_KEY) || {});
+  const [rangeStart, setRangeStart] = useState(() => (
+    typeof persistedQuizState.rangeStart === 'string' ? persistedQuizState.rangeStart : '1'
+  ));
+  const [rangeEnd, setRangeEnd] = useState(() => (
+    typeof persistedQuizState.rangeEnd === 'string' ? persistedQuizState.rangeEnd : '604'
+  ));
+  const [order, setOrder] = useState(() => (
+    Array.isArray(persistedQuizState.order) ? persistedQuizState.order : []
+  ));
+  const [nextPointer, setNextPointer] = useState(() => (
+    Number.isInteger(persistedQuizState.nextPointer) ? persistedQuizState.nextPointer : 0
+  ));
+  const [orderRange, setOrderRange] = useState(() => {
+    const { orderRange } = persistedQuizState;
+    if (orderRange && Number.isInteger(orderRange.start) && Number.isInteger(orderRange.end)) {
+      return orderRange;
+    }
+    return { start: 1, end: 604 };
+  });
+  const [currentIndex, setCurrentIndex] = useState(() => (
+    Number.isInteger(persistedQuizState.currentIndex) ? persistedQuizState.currentIndex : null
+  ));
+  const [result, setResult] = useState(() => (
+    typeof persistedQuizState.result === 'string' ? persistedQuizState.result : ''
+  ));
+  const [pageGuess, setPageGuess] = useState(() => (
+    typeof persistedQuizState.pageGuess === 'string' ? persistedQuizState.pageGuess : ''
+  ));
   const [isGuessShaking, setIsGuessShaking] = useState(false);
   const audioCtxRef = useRef(null);
 
@@ -45,9 +67,23 @@ export default function PageStartsQuiz({ onClose }) {
   };
 
   useEffect(() => {
+    if (order.length > 0 || currentIndex !== null) return;
     applyRange(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentIndex, order.length]);
+
+  useEffect(() => {
+    saveStoredState(PAGE_STARTS_QUIZ_STORAGE_KEY, {
+      rangeStart,
+      rangeEnd,
+      order,
+      nextPointer,
+      orderRange,
+      currentIndex,
+      result,
+      pageGuess,
+    });
+  }, [currentIndex, nextPointer, order, orderRange, pageGuess, rangeEnd, rangeStart, result]);
 
   const remaining = Math.max(0, order.length - nextPointer);
   const verse = currentIndex !== null ? PAGE_STARTS[currentIndex] : null;
