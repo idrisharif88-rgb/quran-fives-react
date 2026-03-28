@@ -1,17 +1,92 @@
 @import url('https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Scheherazade+New:wght@400;700&family=Tajawal:wght@400;500;700&display=swap');
 
+body {
+  margin: 0;
+  background-color: #f4f6f8;
+}
+
+body.night-mode {
+  background-color: #0c1116;
+  color-scheme: dark;
+}
+
 .app-container {
+  --app-bg: #f4f6f8;
+  --app-surface: #ffffff;
+  --app-surface-2: #f8faf9;
+  --app-surface-3: #f4f6f8;
+  --app-text: #1f2937;
+  --app-text-strong: #0f172a;
+  --app-muted: #6b7280;
+  --app-border: #e1e4e8;
+  --app-border-strong: #d9dee3;
+  --app-accent: darkgreen;
+  --app-accent-strong: #004d00;
+  --app-accent-contrast: #ffffff;
+  --app-accent-glow: rgba(34, 197, 94, 0.15);
+  --app-accent-shadow: rgba(0, 100, 0, 0.2);
+  --app-accent-border: rgba(34, 197, 94, 0.35);
+  --app-danger: #d9534f;
+  --app-warn: #f39c12;
+  --app-popover: #ffffff;
+  --app-popover-text: #1f2937;
+  --app-popover-hover: #f4f6f8;
+  --app-popover-active: #e1e4e8;
+  --app-input-bg: #ffffff;
+  --app-input-text: #333;
+  --app-overlay: rgba(15, 23, 42, 0.46);
+  --app-timer-bg: #d35400;
+  --app-timer-text: #e5f9ef;
+  --app-icon-border: #ffffff;
+  --app-shadow: rgba(0, 0, 0, 0.15);
+  --app-tooltip-bg: #2c3e50;
+  --app-tooltip-text: #ffffff;
+
   padding: 20px;
   font-family: var(--app-font-family, 'Tajawal', sans-serif);
   text-align: center;
   direction: rtl;
-  background-color: #f4f6f8;
+  background-color: var(--app-bg);
   min-height: 100vh;
-  color: #333;
+  color: var(--app-text);
+}
+
+.app-container.night-mode {
+  color-scheme: dark;
+  --app-bg: #0c1116;
+  --app-surface: #151b22;
+  --app-surface-2: #11161c;
+  --app-surface-3: #0f141a;
+  --app-text: #e6edf3;
+  --app-text-strong: #f8fafc;
+  --app-muted: #9aa4b2;
+  --app-border: #263241;
+  --app-border-strong: #314054;
+  --app-accent: #2bd17c;
+  --app-accent-strong: #20b36b;
+  --app-accent-contrast: #0b1117;
+  --app-accent-glow: rgba(43, 209, 124, 0.25);
+  --app-accent-shadow: rgba(43, 209, 124, 0.25);
+  --app-accent-border: rgba(43, 209, 124, 0.35);
+  --app-danger: #f87171;
+  --app-warn: #f59e0b;
+  --app-popover: #141a21;
+  --app-popover-text: #e5e7eb;
+  --app-popover-hover: #1a232d;
+  --app-popover-active: #253140;
+  --app-input-bg: #0f141a;
+  --app-input-text: #e6edf3;
+  --app-overlay: rgba(2, 6, 23, 0.72);
+  --app-timer-bg: #9a3412;
+  --app-timer-text: #fde68a;
+  --app-icon-border: #1b222c;
+  --app-shadow: rgba(0, 0, 0, 0.4);
+  --app-tooltip-bg: #1f2a37;
+  --app-tooltip-text: #e5e7eb;
 }
 
 .app-title {
-  color: #2c3e50;
+  color: var(--app-text-strong);
   margin-bottom: 20px;
 }
 
@@ -22,7 +97,7 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(15, 23, 42, 0.46);
+  background: var(--app-overlay);
   backdrop-filter: blur(8px);
   z-index: 1000;
 }
@@ -31,22 +106,22 @@
   width: min(100%, 420px);
   padding: 24px;
   border-radius: 18px;
-  background: linear-gradient(180deg, #ffffff 0%, #f7faf7 100%);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
-  border: 1px solid rgba(13, 99, 65, 0.12);
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-2) 100%);
+  box-shadow: 0 20px 60px var(--app-shadow);
+  border: 1px solid var(--app-border);
   text-align: center;
 }
 
 .session-title {
   margin: 0 0 10px;
-  color: darkgreen;
+  color: var(--app-accent);
   font-size: 30px;
   font-weight: 800;
 }
 
 .session-text {
   margin: 0;
-  color: #374151;
+  color: var(--app-muted);
   font-size: 18px;
   line-height: 1.8;
 }
@@ -61,14 +136,14 @@
 .verse-container {
   margin: 0 auto;
   padding: 50px 70px;
-  border: 1px solid #e1e4e8;
+  border: 1px solid var(--app-border);
   border-radius: 12px;
   max-width: 800px;
-  background-color: #ffffff;
+  background-color: var(--app-surface);
   line-height: 2.4;
   font-size: var(--app-font-size, 38px);
   font-family: var(--app-font-family, 'Tajawal', sans-serif);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 10px var(--app-shadow);
   flex: 1;
   height: 260px;
   box-sizing: border-box;
@@ -124,9 +199,9 @@
   width: clamp(400px, 90vw, 740px);
   height: clamp(400px, 90vw, 740px);
   border-radius: 50%;
-  border: 26px solid darkgreen;
-  background: #f4f6f8;
-  color: darkgreen;
+  border: 26px solid var(--app-accent);
+  background: var(--app-surface-3);
+  color: var(--app-accent);
   font-size: clamp(60px, 9vw, 96px);
   font-weight: 800;
   display: flex;
@@ -139,7 +214,7 @@
 
 .night-counter-circle:active {
   transform: scale(0.97);
-  box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.15);
+  box-shadow: 0 0 0 6px var(--app-accent-glow);
 }
 
 .night-counter-value {
@@ -150,7 +225,7 @@
   margin-top: 20px;
   font-size: 38px;
   font-weight: 900;
-  color: darkgreen;
+  color: var(--app-accent);
   letter-spacing: 1.5px;
   text-align: center;
   text-shadow: none;
@@ -194,8 +269,8 @@
   height: 88px;
   border-radius: 22px;
   padding: 0;
-  background: darkgreen;
-  color: #ffffff;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
   font-size: 52px;
   font-weight: 900;
   cursor: pointer;
@@ -206,9 +281,9 @@
 }
 
 .night-counter-btn.secondary {
-  background: #f4f6f8;
-  color: #1f2937;
-  border: 2px solid #d9dee3;
+  background: var(--app-surface-3);
+  color: var(--app-text);
+  border: 2px solid var(--app-border-strong);
 }
 
 .night-counter-btn svg {
@@ -217,7 +292,7 @@
 }
 
 .night-counter-reset-btn {
-  box-shadow: 0 8px 18px rgba(0, 100, 0, 0.22);
+  box-shadow: 0 8px 18px var(--app-accent-shadow);
 }
 
 .night-counter-minus-btn {
@@ -231,7 +306,7 @@
 }
 
 .verse-number {
-  color: darkgreen;
+  color: var(--app-accent);
   font-weight: bold;
   margin: 0 8px;
   font-size: 48px;
@@ -239,9 +314,9 @@
 }
 
 .expand-btn {
-  background-color: #f4f6f8;
-  border: 1px solid #e1e4e8;
-  color: darkgreen;
+  background-color: var(--app-surface-3);
+  border: 1px solid var(--app-border);
+  color: var(--app-accent);
   border-radius: 50%;
   width: 34px;
   height: 34px;
@@ -258,8 +333,8 @@
 }
 
 .expand-btn:hover {
-  background-color: #e1e4e8;
-  color: #004d00;
+  background-color: var(--app-popover-hover);
+  color: var(--app-accent-strong);
   transform: scale(1.05);
 }
 
@@ -280,7 +355,7 @@
   margin-top: -25px;
   z-index: 10;
   background-color: transparent;
-  color: darkgreen;
+  color: var(--app-accent);
   width: 50px;
   height: 50px;
   border: none;
@@ -312,7 +387,7 @@
 }
 
 .nav-arrow:hover:not(:disabled) {
-  color: #004d00;
+  color: var(--app-accent-strong);
   transform: scale(1.1);
 }
 
@@ -321,7 +396,7 @@
 }
 
 .nav-arrow:disabled {
-  color: #ccc;
+  color: var(--app-border-strong);
   cursor: not-allowed;
 }
 
@@ -378,14 +453,14 @@ button:focus-visible,
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  background-color: darkgreen;
-  color: #ffffff;
-  border: 3px solid #ffffff;
+  background-color: var(--app-accent);
+  color: var(--app-accent-contrast);
+  border: 3px solid var(--app-icon-border);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 8px var(--app-shadow);
   transition: all 0.2s ease;
   padding: 0;
 }
@@ -407,9 +482,9 @@ button:focus-visible,
   gap: 14px;
   padding: 14px 20px;
   border-radius: 18px;
-  background: #d35400;
-  border: 1px solid rgba(34, 197, 94, 0.35);
-  color: #e5f9ef;
+  background: var(--app-timer-bg);
+  border: 1px solid var(--app-accent-border);
+  color: var(--app-timer-text);
 }
 
 .night-timer-toolbar {
@@ -431,8 +506,8 @@ button:focus-visible,
   width: 52px;
   height: 52px;
   padding: 0;
-  background: darkgreen;
-  color: #ffffff;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
   font-size: 20px;
   font-weight: 800;
   cursor: pointer;
@@ -447,9 +522,9 @@ button:focus-visible,
 }
 
 .night-timer-btn.secondary {
-  background: #d1d5db;
-  color: #1f2937;
-  border: 1px solid #d9dee3;
+  background: var(--app-surface-3);
+  color: var(--app-text);
+  border: 1px solid var(--app-border-strong);
 }
 
 .settings-popover.night-counter-settings {
@@ -476,9 +551,9 @@ button:focus-visible,
 }
 
 .night-counter-chip {
-  border: 1px solid #e1e4e8;
-  background: #f4f6f8;
-  color: #1f2937;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-3);
+  color: var(--app-text);
   padding: 6px 10px;
   border-radius: 999px;
   font-size: 14px;
@@ -488,15 +563,15 @@ button:focus-visible,
 }
 
 .night-counter-chip.active {
-  background: darkgreen;
-  color: #ffffff;
-  border-color: darkgreen;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+  border-color: var(--app-accent);
 }
 
 .night-counter-chip.add {
-  background: #ffffff;
-  border-color: #cbd5f0;
-  color: #1f2937;
+  background: var(--app-surface);
+  border-color: var(--app-border-strong);
+  color: var(--app-text);
   width: 34px;
   height: 34px;
   padding: 0;
@@ -508,13 +583,14 @@ button:focus-visible,
 
 .night-counter-input {
   width: 100%;
-  border: 1px solid #e1e4e8;
+  border: 1px solid var(--app-border);
   border-radius: 10px;
   padding: 8px 10px;
   font-size: 16px;
   font-weight: 700;
   font-family: inherit;
-  background: #ffffff;
+  background: var(--app-input-bg);
+  color: var(--app-input-text);
 }
 
 .night-counter-numbers {
@@ -531,8 +607,8 @@ button:focus-visible,
   border: none;
   border-radius: 10px;
   padding: 10px 12px;
-  background: darkgreen;
-  color: #ffffff;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
@@ -540,9 +616,9 @@ button:focus-visible,
 }
 
 .action-icon:hover {
-  background-color: #004d00; /* درجة أغمق عند التمرير */
+  background-color: var(--app-accent-strong); /* درجة أغمق عند التمرير */
   transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0, 100, 0, 0.2);
+  box-shadow: 0 6px 12px var(--app-accent-shadow);
 }
 
 .action-icon:active {
@@ -627,41 +703,41 @@ button:focus-visible,
 }
 
 .starred-rectangle {
-  background-color: #fff;
-  border: 1px solid #e1e4e8;
+  background-color: var(--app-surface);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
   padding: 15px 20px;
   cursor: pointer;
   text-align: right;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 5px var(--app-shadow);
 }
 
 .starred-rectangle:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 100, 0, 0.15);
-  border-color: darkgreen;
+  box-shadow: 0 4px 10px var(--app-accent-shadow);
+  border-color: var(--app-accent);
 }
 
 .starred-title {
   font-weight: bold;
-  color: darkgreen;
+  color: var(--app-accent);
   font-size: 18px;
   margin-bottom: 10px;
-  border-bottom: 1px solid #e1e4e8;
+  border-bottom: 1px solid var(--app-border);
   padding-bottom: 8px;
   font-family: inherit;
 }
 
 .starred-preview {
-  color: #333;
+  color: var(--app-text);
   font-size: 24px;
   line-height: 1.8;
   font-family: inherit;
 }
 
 .starred-verse-num {
-  color: darkgreen;
+  color: var(--app-accent);
   font-weight: bold;
   margin: 0 5px;
   font-size: 20px;
@@ -670,7 +746,7 @@ button:focus-visible,
 
 .empty-starred {
   text-align: center;
-  color: #666;
+  color: var(--app-muted);
   font-size: 24px;
   margin-top: 40px;
   font-family: inherit;
@@ -687,14 +763,14 @@ button:focus-visible,
 .surah-tooltip {
   position: absolute;
   bottom: calc(100% + 12px);
-  background-color: #2c3e50;
-  color: #ffffff;
+  background-color: var(--app-tooltip-bg);
+  color: var(--app-tooltip-text);
   padding: 6px 14px;
   border-radius: 8px;
   font-size: 16px;
   font-family: inherit;
   white-space: nowrap;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 6px var(--app-shadow);
   z-index: 10;
   animation: fadeIn 0.2s ease;
 }
@@ -707,7 +783,7 @@ button:focus-visible,
   transform: translateX(-50%);
   border-width: 6px;
   border-style: solid;
-  border-color: #2c3e50 transparent transparent transparent;
+  border-color: var(--app-tooltip-bg) transparent transparent transparent;
 }
 
 @keyframes fadeIn {
@@ -721,10 +797,10 @@ button:focus-visible,
   top: calc(100% + 15px);
   left: 50%;
   transform: translateX(-50%);
-  background: white;
-  border: 1px solid #e1e4e8;
+  background: var(--app-popover);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 24px var(--app-shadow);
   padding: 15px;
   width: 240px;
   z-index: 100;
@@ -732,7 +808,7 @@ button:focus-visible,
   flex-direction: column;
   gap: 15px;
   animation: popoverFade 0.15s ease-out;
-  color: #333;
+  color: var(--app-popover-text);
   cursor: default;
 }
 
@@ -744,7 +820,7 @@ button:focus-visible,
   transform: translateX(-50%);
   border-width: 8px;
   border-style: solid;
-  border-color: transparent transparent white transparent;
+  border-color: transparent transparent var(--app-popover) transparent;
 }
 
 .settings-popover.more-menu-settings {
@@ -764,10 +840,10 @@ button:focus-visible,
   top: calc(100% + 15px);
   left: 50%;
   transform: translateX(-50%);
-  background: #ffffff;
-  border: 1px solid #e1e4e8;
+  background: var(--app-popover);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px var(--app-shadow);
   padding: 8px;
   min-width: 280px;
   z-index: 100;
@@ -785,7 +861,7 @@ button:focus-visible,
   transform: translateX(-50%);
   border-width: 8px;
   border-style: solid;
-  border-color: transparent transparent white transparent;
+  border-color: transparent transparent var(--app-popover) transparent;
 }
 
 .ayah-menu-popover.popover-align-right {
@@ -815,7 +891,7 @@ button:focus-visible,
 .ayah-menu-item {
   border: none;
   background: transparent;
-  color: #1f2937;
+  color: var(--app-popover-text);
   font-size: 18px;
   font-weight: 700;
   font-family: inherit;
@@ -827,22 +903,27 @@ button:focus-visible,
   white-space: nowrap;
 }
 
+.ayah-menu-item.active {
+  background-color: var(--app-popover-hover);
+  color: var(--app-accent);
+}
+
 .ayah-menu-item:hover {
-  background-color: #f4f6f8;
-  color: darkgreen;
+  background-color: var(--app-popover-hover);
+  color: var(--app-accent);
 }
 
 .ayah-menu-item:active {
-  background-color: #e1e4e8;
+  background-color: var(--app-popover-active);
 }
 
 .khmasiyat-quiz-panel {
   max-width: 800px;
   margin: 0 auto 20px;
-  background: #ffffff;
-  border: 1px solid #e1e4e8;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 14px var(--app-shadow);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -852,7 +933,7 @@ button:focus-visible,
 .khmasiyat-quiz-title {
   margin: 0;
   text-align: center;
-  color: darkgreen;
+  color: var(--app-accent);
   font-size: 30px;
   font-family: inherit;
   font-weight: 700;
@@ -865,7 +946,7 @@ button:focus-visible,
   font-weight: var(--app-font-weight, bold);
   font-size: calc(var(--app-font-size, 38px) * 0.8);
   line-height: 1.8;
-  background: #f8faf9;
+  background: var(--app-surface-2);
   border-radius: 10px;
   padding: 10px;
 }
@@ -881,7 +962,7 @@ button:focus-visible,
 .khmasiyat-range-label {
   font-size: 18px;
   font-weight: bold;
-  color: #333;
+  color: var(--app-text);
   white-space: nowrap;
 }
 
@@ -891,7 +972,7 @@ button:focus-visible,
 
 .khmasiyat-quiz-progress {
   text-align: center;
-  color: #374151;
+  color: var(--app-muted);
   font-size: 18px;
   font-weight: 700;
   font-family: inherit;
@@ -912,7 +993,7 @@ button:focus-visible,
 }
 
 .khmasiyat-quiz-label {
-  color: #1f2937;
+  color: var(--app-text);
   font-size: 16px;
   font-weight: 700;
   font-family: inherit;
@@ -923,22 +1004,23 @@ button:focus-visible,
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  border: 2px solid #d9dee3;
+  border: 2px solid var(--app-border-strong);
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 18px;
   font-family: inherit;
   outline: none;
-  background: #ffffff;
+  background: var(--app-input-bg);
+  color: var(--app-input-text);
 }
 
 .khmasiyat-quiz-input:focus {
-  border-color: darkgreen;
-  box-shadow: 0 0 0 3px rgba(0, 100, 0, 0.12);
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 3px var(--app-accent-glow);
 }
 
 .khmasiyat-quiz-input.border-error {
-  border-color: #d9534f;
+  border-color: var(--app-danger);
 }
 
 .khmasiyat-quiz-input.shake {
@@ -958,7 +1040,7 @@ button:focus-visible,
 .range-separator {
   font-size: 20px;
   font-weight: bold;
-  color: #555;
+  color: var(--app-muted);
 }
 
 /* Visually hidden class for accessibility */
@@ -1017,8 +1099,8 @@ button:focus-visible,
   border: none;
   border-radius: 10px;
   padding: 10px 16px;
-  background: darkgreen;
-  color: #ffffff;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
   font-size: 18px;
   font-family: inherit;
   font-weight: 700;
@@ -1026,16 +1108,16 @@ button:focus-visible,
 }
 
 .khmasiyat-quiz-btn.secondary {
-  background: #f4f6f8;
-  color: #1f2937;
-  border: 1px solid #d9dee3;
+  background: var(--app-surface-3);
+  color: var(--app-text);
+  border: 1px solid var(--app-border-strong);
 }
 
 .khmasiyat-quiz-result {
   text-align: center;
   font-size: 20px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--app-text);
   font-family: inherit;
 }
 
@@ -1046,9 +1128,9 @@ button:focus-visible,
 }
 
 .surah-count-mode-switch .khmasiyat-quiz-btn.active {
-  background: darkgreen;
-  color: #ffffff;
-  border-color: darkgreen;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+  border-color: var(--app-accent);
 }
 
 @keyframes popoverFade {
@@ -1067,9 +1149,9 @@ button:focus-visible,
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  border: 1px solid #e1e4e8;
-  background: #f4f6f8;
-  color: darkgreen;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-3);
+  color: var(--app-accent);
   font-size: 20px;
   font-weight: bold;
   cursor: pointer;
@@ -1077,17 +1159,18 @@ button:focus-visible,
   align-items: center;
   justify-content: center;
 }
-.font-size-ctrl button:hover { background: #e1e4e8; }
+.font-size-ctrl button:hover { background: var(--app-popover-hover); }
 .font-size-ctrl span { font-size: 18px; font-weight: bold; font-family: inherit; }
 
 .font-family-select {
   width: 100%;
   padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid #e1e4e8;
+  border: 1px solid var(--app-border);
   font-family: inherit;
   font-size: 16px;
-  background: #f4f6f8;
+  background: var(--app-surface-3);
+  color: var(--app-text);
   cursor: pointer;
   outline: none;
 }
@@ -1095,7 +1178,7 @@ button:focus-visible,
 .segmented-control {
   display: flex;
   width: 100%;
-  background: #f4f6f8;
+  background: var(--app-surface-3);
   border-radius: 8px;
   padding: 4px;
 }
@@ -1107,14 +1190,14 @@ button:focus-visible,
   border-radius: 6px;
   font-size: 16px;
   cursor: pointer;
-  color: #555;
+  color: var(--app-muted);
   font-family: inherit;
 }
 .segmented-control button.active {
-  background: white;
-  color: darkgreen;
+  background: var(--app-surface);
+  color: var(--app-accent);
   font-weight: bold;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px var(--app-shadow);
 }
 
 .colors-row {
@@ -1134,9 +1217,9 @@ button:focus-visible,
   transform: scale(1.1);
 }
 .color-btn.active {
-  border-color: #333;
+  border-color: var(--app-text);
   transform: scale(1.15);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 6px var(--app-shadow);
 }
 
 /* Jump To Section */
@@ -1156,18 +1239,18 @@ button:focus-visible,
   flex-grow: 1;
   overflow: hidden;
   border-radius: 8px;
-  border: 1px solid #e1e4e8;
-  background-color: #fff;
+  border: 1px solid var(--app-border);
+  background-color: var(--app-input-bg);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input-inner-wrapper:focus-within {
-  border-color: darkgreen;
-  box-shadow: 0 0 0 3px rgba(0, 100, 0, 0.2);
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 3px var(--app-accent-glow);
 }
 
 .input-inner-wrapper.border-error {
-  border-color: #d9534f;
+  border-color: var(--app-danger);
 }
 
 .jump-input {
@@ -1179,7 +1262,7 @@ button:focus-visible,
   font-weight: bold;
   text-align: center;
   font-family: inherit;
-  color: #333;
+  color: var(--app-input-text);
   position: relative;
   z-index: 2;
   box-sizing: border-box;
@@ -1192,8 +1275,8 @@ button:focus-visible,
 .jump-button {
   padding: 12px 30px;
   border: none;
-  background-color: darkgreen;
-  color: white;
+  background-color: var(--app-accent);
+  color: var(--app-accent-contrast);
   font-family: inherit;
   font-size: 22px;
   font-weight: bold;
@@ -1203,7 +1286,7 @@ button:focus-visible,
 }
 
 .jump-button:hover {
-  background-color: #004d00;
+  background-color: var(--app-accent-strong);
 }
 
 .jump-error-container {
@@ -1212,7 +1295,7 @@ button:focus-visible,
 }
 
 .jump-error-message {
-  color: #d9534f;
+  color: var(--app-danger);
   font-size: 16px;
   font-weight: bold;
   margin: 0;
@@ -1242,7 +1325,7 @@ button:focus-visible,
 .progress-container {
   flex-grow: 1; /* Allow the bar to take available space */
   height: 8px;
-  background-color: #e1e4e8;
+  background-color: var(--app-border);
   border-radius: 4px;
   overflow: hidden;
   min-width: 100px; /* Ensure it has a minimum width */
@@ -1250,14 +1333,14 @@ button:focus-visible,
 
 .progress-bar {
   height: 100%;
-  background-color: darkgreen;
+  background-color: var(--app-accent);
   transition: width 0.3s ease; /* Keep smooth transition */
 }
 
 .progress-text {
   font-size: 18px; /* Made the font smaller to fit next to the bar */
   font-weight: bold;
-  color: #444;
+  color: var(--app-muted);
   margin-top: 0; /* Remove top margin as it's now horizontal */
   font-family: inherit;
 }
@@ -1305,7 +1388,7 @@ button:focus-visible,
   animation: marquee 18s linear infinite;
   font-size: 22px;
   font-weight: bold;
-  color: #888;
+  color: var(--app-muted);
   z-index: 1;
   pointer-events: none;
 }

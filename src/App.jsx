@@ -153,6 +153,9 @@ function App() {
   const [fontColor, setFontColor] = useState(() => (
     typeof persistedAppState.fontColor === 'string' ? persistedAppState.fontColor : 'darkgreen'
   ));
+  const [isNightMode, setIsNightMode] = useState(() => (
+    Boolean(persistedAppState.isNightMode)
+  ));
 
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
@@ -219,6 +222,7 @@ function App() {
       fontFamily,
       fontWeight,
       fontColor,
+      isNightMode,
     });
   }, [
     activeAyahTest,
@@ -229,6 +233,7 @@ function App() {
     fontFamily,
     fontSize,
     fontWeight,
+    isNightMode,
     jumpInput,
     pageJumpInput,
     nightCounters,
@@ -240,6 +245,11 @@ function App() {
     starredPages,
     viewMode,
   ]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.classList.toggle('night-mode', isNightMode);
+  }, [isNightMode]);
 
   // Logic: We pass the state to our pure function to get the exact Surah details
   const currentKhmasiyat = getSurahAndRange(currentIndex);
@@ -651,6 +661,7 @@ function App() {
     setFontFamily("'Tajawal', sans-serif");
     setFontWeight('bold');
     setFontColor('darkgreen');
+    setIsNightMode(false);
     setShowSessionPrompt(false);
   };
 
@@ -770,12 +781,16 @@ function App() {
     setJumpInput('');
   };
 
+  const resolvedFontColor = isNightMode && fontColor === 'darkgreen'
+    ? 'var(--app-accent)'
+    : fontColor;
+
   return (
-    <div className="app-container" style={{
+    <div className={`app-container ${isNightMode ? 'night-mode' : ''}`} style={{
       '--app-font-size': `${fontSize}px`,
       '--app-font-family': fontFamily,
       '--app-font-weight': fontWeight,
-      '--app-font-color': fontColor
+      '--app-font-color': resolvedFontColor
     }}>
       {showSessionPrompt && (
         <div className="session-overlay" dir="rtl">
@@ -819,7 +834,7 @@ function App() {
                   setIsPageStartsMenuOpen(false);
                   setIsAyahMenuOpen(false);
                 }}
-                style={{ backgroundColor: isMoreMenuOpen ? '#f39c12' : '' }}
+                style={{ backgroundColor: isMoreMenuOpen ? 'var(--app-warn)' : '' }}
               >
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
                   <circle cx="12" cy="5" r="2.2" />
@@ -833,11 +848,17 @@ function App() {
                     <button
                       key={`more-${option}`}
                       type="button"
-                      className="ayah-menu-item"
+                      className={`ayah-menu-item ${option === 'الوضع الليلي' && isNightMode ? 'active' : ''}`}
                       onClick={() => {
                         if (option === 'العداد') {
                           setViewMode('night-counter');
                           setIsMoreMenuOpen(false);
+                          return;
+                        }
+                        if (option === 'الوضع الليلي') {
+                          setIsNightMode(prev => !prev);
+                          setIsMoreMenuOpen(false);
+                          setIsFontMenuOpen(false);
                           return;
                         }
                         if (option === 'الخط') {
@@ -896,7 +917,7 @@ function App() {
                   setIsAyahMenuOpen(false);
                   setIsFontMenuOpen(false);
                 }}
-                style={{ backgroundColor: isPageStartsMenuOpen ? '#f39c12' : '' }}
+                style={{ backgroundColor: isPageStartsMenuOpen ? 'var(--app-warn)' : '' }}
               >
                 <img src={menuMainIcon} alt="القائمة" className="menu-main-icon" />
               </button>
@@ -925,7 +946,7 @@ function App() {
                   setIsMoreMenuOpen(false);
                   setIsFontMenuOpen(false);
                 }}
-                style={{ backgroundColor: isAyahMenuOpen ? '#f39c12' : '' }}
+                style={{ backgroundColor: isAyahMenuOpen ? 'var(--app-warn)' : '' }}
               >
                 <span
                   style={{
@@ -999,7 +1020,7 @@ function App() {
               className="top-star-btn"
               title="العودة للقراءة"
               onClick={() => setViewMode(viewMode === 'page-starred' ? 'page-starts' : 'khmasiyat')}
-              style={{ color: '#f39c12' }}
+              style={{ color: 'var(--app-warn)' }}
             >
               <span style={{ fontSize: '26px', fontWeight: 'bold', paddingTop: '2px' }}>{viewMode === 'page-starred' ? starredPages.size : starredIndices.size}</span>
               <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
@@ -1009,7 +1030,7 @@ function App() {
             <button 
               className="top-star-btn"
               disabled={true}
-              style={{ color: 'darkgreen', opacity: 0.5 }}
+              style={{ color: 'var(--app-accent)', opacity: 0.5 }}
             >
               <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></svg>
             </button>
@@ -1073,7 +1094,7 @@ function App() {
               className="top-star-btn"
               title={isPageStartsMode ? "قائمة الصفحات للتثبيت" : "قائمة الخماسيات للتثبيت"}
               onClick={() => setViewMode(isPageStartsMode ? 'page-starred' : 'starred')}
-              style={{ color: 'darkgreen' }}
+              style={{ color: 'var(--app-accent)' }}
             >
               <span style={{ fontSize: '26px', fontWeight: 'bold', paddingTop: '2px' }}>{isPageStartsMode ? starredPages.size : starredIndices.size}</span>
               <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
@@ -1084,7 +1105,7 @@ function App() {
               className="top-star-btn"
               title={isPageStartsMode ? "تثبيت الصفحة" : "تثبيت الخماسية"}
               onClick={() => isPageStartsMode ? togglePageStar(currentPageIndex) : toggleStar(currentIndex)}
-              style={{ color: (isPageStartsMode ? starredPages.has(currentPageIndex) : starredIndices.has(currentIndex)) ? '#f39c12' : 'darkgreen' }}
+              style={{ color: (isPageStartsMode ? starredPages.has(currentPageIndex) : starredIndices.has(currentIndex)) ? 'var(--app-warn)' : 'var(--app-accent)' }}
             >
               {(isPageStartsMode ? starredPages.has(currentPageIndex) : starredIndices.has(currentIndex)) ? (
                 <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
@@ -1124,7 +1145,7 @@ function App() {
                     className="action-icon night-counter-top-btn"
                     title="الإعدادات"
                     onClick={() => setIsNightCounterSettingsOpen(prev => !prev)}
-                    style={{ backgroundColor: isNightCounterSettingsOpen ? '#f39c12' : '' }}
+                    style={{ backgroundColor: isNightCounterSettingsOpen ? 'var(--app-warn)' : '' }}
                   >
                     <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
                       <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.42 7.42 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54a7.42 7.42 0 0 0-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.81 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.5.38 1.05.7 1.63.94l.36 2.54a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54c.58-.24 1.13-.56 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/>
@@ -1323,7 +1344,7 @@ function App() {
             </div>
           ) : viewMode === 'page-starts' && pageStartsError ? (
             <div className="verse-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <div style={{ color: '#d9534f', fontWeight: fontWeight, fontSize: `calc(${fontSize}px * 0.85)` }}>{pageStartsError}</div>
+              <div style={{ color: 'var(--app-danger)', fontWeight: fontWeight, fontSize: `calc(${fontSize}px * 0.85)` }}>{pageStartsError}</div>
             </div>
           ) : (
             <TextDisplay verses={currentVersesText} />
@@ -1395,7 +1416,7 @@ function App() {
           className="action-icon" 
           title="السور المتشابهة في العدد"
           onClick={() => setViewMode(prev => prev === 'khmasiyat' ? 'shared-verses' : 'khmasiyat')}
-          style={{ backgroundColor: viewMode === 'shared-verses' ? '#f39c12' : '' }}
+          style={{ backgroundColor: viewMode === 'shared-verses' ? 'var(--app-warn)' : '' }}
         >
           <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
             <path d="M5 8h14v2H5zm0 6h14v2H5z"/>
@@ -1407,7 +1428,7 @@ function App() {
             className="action-icon" 
             title={isPlaying ? "إيقاف الصوت" : "تشغيل الصوت"}
             onClick={toggleAudio}
-            style={{ backgroundColor: isPlaying ? '#f39c12' : '' }}
+            style={{ backgroundColor: isPlaying ? 'var(--app-warn)' : '' }}
           >
             {isPlaying ? (
               <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
@@ -1484,7 +1505,7 @@ function App() {
         </div>
         <div className="progress-wrapper big-progress">
           <div className="progress-container">
-            <div className="progress-bar" style={{ width: `${Math.min(((currentPageIndex + 1) / 604) * 100, 100)}%`, backgroundColor: '#f39c12' }}></div>
+            <div className="progress-bar" style={{ width: `${Math.min(((currentPageIndex + 1) / 604) * 100, 100)}%`, backgroundColor: 'var(--app-warn)' }}></div>
           </div>
           <div className="progress-text">
             صفحة {currentPageIndex + 1} / 604
