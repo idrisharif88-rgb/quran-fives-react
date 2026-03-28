@@ -95,6 +95,7 @@ function App() {
     typeof persistedAppState.activePageStartsTest === 'string' ? persistedAppState.activePageStartsTest : null
   ));
   const [isPageStartsMenuOpen, setIsPageStartsMenuOpen] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [pageStartsData, setPageStartsData] = useState([]);
   const [isPageStartsLoading, setIsPageStartsLoading] = useState(false);
   const [pageStartsError, setPageStartsError] = useState('');
@@ -120,9 +121,9 @@ function App() {
 
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
+  const moreMenuRef = useRef(null);
   const pageStartsMenuRef = useRef(null);
   const ayahMenuRef = useRef(null);
-  const fontMenuRef = useRef(null);
   const swipeStartRef = useRef(null);
 
   const starredArray = Array.from(starredIndices).sort((a, b) => a - b);
@@ -210,7 +211,8 @@ function App() {
       if (actionButtonsRef.current && !actionButtonsRef.current.contains(event.target)) {
         setActiveTooltip(null);
       }
-      if (fontMenuRef.current && !fontMenuRef.current.contains(event.target)) {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
+        setIsMoreMenuOpen(false);
         setIsFontMenuOpen(false);
       }
       if (ayahMenuRef.current && !ayahMenuRef.current.contains(event.target)) {
@@ -305,6 +307,7 @@ function App() {
       setActiveAyahTest(null);
     }
     setIsAyahMenuOpen(false);
+    setIsMoreMenuOpen(false);
   };
   const handlePageStartsOptionClick = (option) => {
     if (option === 'بدايات صفحات') {
@@ -315,6 +318,7 @@ function App() {
       setActivePageStartsTest('page-starts');
     }
     setIsPageStartsMenuOpen(false);
+    setIsMoreMenuOpen(false);
   };
 
   const isQuizMode =
@@ -630,12 +634,85 @@ function App() {
         )}
         {!isPageStartsMode && viewMode !== 'shared-verses' && (
           <>
+            <div className="icon-wrapper" ref={moreMenuRef}>
+              <button
+                className="action-icon"
+                title="المزيد"
+                onClick={() => {
+                  setIsMoreMenuOpen(prev => !prev);
+                  setIsFontMenuOpen(false);
+                  setIsPageStartsMenuOpen(false);
+                  setIsAyahMenuOpen(false);
+                }}
+                style={{ backgroundColor: isMoreMenuOpen ? '#f39c12' : '' }}
+              >
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
+                  <circle cx="12" cy="5" r="2.2" />
+                  <circle cx="12" cy="12" r="2.2" />
+                  <circle cx="12" cy="19" r="2.2" />
+                </svg>
+              </button>
+              {isMoreMenuOpen && (
+                <div className="ayah-menu-popover more-menu-popover" dir="rtl">
+                  {['العداد', 'الوضع الليلي', 'الخط'].map(option => (
+                    <button
+                      key={`more-${option}`}
+                      type="button"
+                      className="ayah-menu-item"
+                      onClick={() => {
+                        if (option === 'الخط') {
+                          setIsMoreMenuOpen(false);
+                          setIsFontMenuOpen(true);
+                          return;
+                        }
+                        setIsMoreMenuOpen(false);
+                      }}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {isFontMenuOpen && (
+                <div className="settings-popover more-menu-settings">
+                  <div className="settings-row font-size-ctrl">
+                    <button type="button" onClick={() => setFontSize(s => Math.max(16, s - 2))}>-</button>
+                    <span>{fontSize}</span>
+                    <button type="button" onClick={() => setFontSize(s => Math.min(100, s + 2))}>+</button>
+                  </div>
+                  <div className="settings-row">
+                    <select className="font-family-select" value={fontFamily} onChange={(e) => setFontFamily(e.target.value)}>
+                      <option value="'Tajawal', sans-serif">تجوال</option>
+                      <option value="'Amiri Quran', serif">أميري قرآني</option>
+                      <option value="'Scheherazade New', serif">شهرزاد</option>
+                      <option value="'Noto Naskh Arabic', serif">نوتو نسخ</option>
+                      <option value="'Amiri', serif">أميري (عادي)</option>
+                    </select>
+                  </div>
+                  <div className="segmented-control">
+                    <button type="button" className={fontWeight === 'normal' ? 'active' : ''} onClick={() => setFontWeight('normal')}>عادي</button>
+                    <button type="button" className={fontWeight === 'bold' ? 'active' : ''} onClick={() => setFontWeight('bold')}>عريض</button>
+                  </div>
+                  <div className="settings-row colors-row">
+                  {['#000000', 'darkgreen', '#d9534f', '#007bff', '#ffffff', '#be185d', '#b45309'].map(c => (
+                      <button 
+                        key={c} 
+                        style={{backgroundColor: c, border: c === '#ffffff' && fontColor !== '#ffffff' ? '1px solid #ccc' : ''}} 
+                        className={`color-btn ${fontColor === c ? 'active' : ''}`} 
+                        onClick={() => setFontColor(c)} 
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="icon-wrapper" ref={pageStartsMenuRef}>
               <button
                 className="action-icon menu-main-btn"
                 title="القائمة"
                 onClick={() => {
                   setIsPageStartsMenuOpen(prev => !prev);
+                  setIsMoreMenuOpen(false);
                   setIsAyahMenuOpen(false);
                   setIsFontMenuOpen(false);
                 }}
@@ -665,6 +742,7 @@ function App() {
                 onClick={() => {
                   setIsAyahMenuOpen(prev => !prev);
                   setIsPageStartsMenuOpen(false);
+                  setIsMoreMenuOpen(false);
                   setIsFontMenuOpen(false);
                 }}
                 style={{ backgroundColor: isAyahMenuOpen ? '#f39c12' : '' }}
@@ -700,55 +778,6 @@ function App() {
           </>
         )}
         
-        {/* قائمة إعدادات الخط (الثانية من اليسار) */}
-        {!isPageStartsMode && <div className="icon-wrapper" ref={fontMenuRef}>
-          <button 
-            className="action-icon" 
-            title="إعدادات الخط"
-            onClick={() => {
-              setIsFontMenuOpen(prev => !prev);
-              setIsAyahMenuOpen(false);
-              setIsPageStartsMenuOpen(false);
-            }}
-            style={{ backgroundColor: isFontMenuOpen ? '#f39c12' : '' }}
-          >
-            <span style={{ fontSize: '28px', fontWeight: 'bold' }}>A</span>
-          </button>
-          
-          {isFontMenuOpen && (
-            <div className="settings-popover">
-              <div className="settings-row font-size-ctrl">
-                <button type="button" onClick={() => setFontSize(s => Math.max(16, s - 2))}>-</button>
-                <span>{fontSize}</span>
-                <button type="button" onClick={() => setFontSize(s => Math.min(100, s + 2))}>+</button>
-              </div>
-              <div className="settings-row">
-                <select className="font-family-select" value={fontFamily} onChange={(e) => setFontFamily(e.target.value)}>
-                  <option value="'Tajawal', sans-serif">تجوال</option>
-                  <option value="'Amiri Quran', serif">أميري قرآني</option>
-                  <option value="'Scheherazade New', serif">شهرزاد</option>
-                  <option value="'Noto Naskh Arabic', serif">نوتو نسخ</option>
-                  <option value="'Amiri', serif">أميري (عادي)</option>
-                </select>
-              </div>
-              <div className="segmented-control">
-                <button type="button" className={fontWeight === 'normal' ? 'active' : ''} onClick={() => setFontWeight('normal')}>عادي</button>
-                <button type="button" className={fontWeight === 'bold' ? 'active' : ''} onClick={() => setFontWeight('bold')}>عريض</button>
-              </div>
-              <div className="settings-row colors-row">
-              {['#000000', 'darkgreen', '#d9534f', '#007bff', '#ffffff', '#be185d', '#b45309'].map(c => (
-                  <button 
-                    key={c} 
-                    style={{backgroundColor: c, border: c === '#ffffff' && fontColor !== '#ffffff' ? '1px solid #ccc' : ''}} 
-                    className={`color-btn ${fontColor === c ? 'active' : ''}`} 
-                    onClick={() => setFontColor(c)} 
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>}
-
         {!isPageStartsMode && <button 
           className="action-icon calendar-icon" 
           title="التاريخ الهجري"

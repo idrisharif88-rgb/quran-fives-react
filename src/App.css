@@ -459,6 +459,18 @@
   border-color: transparent transparent white transparent;
 }
 
+.settings-popover.more-menu-settings {
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+}
+
+.settings-popover.more-menu-settings::after {
+  left: auto;
+  right: 16px;
+  transform: translateX(0);
+}
+
 .ayah-menu-popover {
   position: absolute;
   top: calc(100% + 15px);
@@ -497,6 +509,18 @@
 .ayah-menu-popover.popover-align-right::after {
   left: auto;
   right: 20px; /* Center arrow over 55px icon */
+  transform: translateX(0);
+}
+
+.ayah-menu-popover.more-menu-popover {
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+}
+
+.ayah-menu-popover.more-menu-popover::after {
+  left: auto;
+  right: 16px;
   transform: translateX(0);
 }
 
@@ -1006,13 +1030,13 @@
 /* Mobile Responsiveness */
 @media (max-width: 600px) {
   .verse-container {
-    font-size: 28px;
+    font-size: calc(var(--app-font-size, 38px) * 0.75);
     padding: 40px 45px;
     margin: 0 auto;
     height: 55vh;
   }
   .verse-number {
-    font-size: 32px;
+    font-size: calc(var(--app-font-size, 38px) * 0.85);
   }
   .app-container {
     padding: 10px;
