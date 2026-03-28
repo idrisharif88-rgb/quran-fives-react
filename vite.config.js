@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/quran-fives-react/', // 👈 This must match your GitHub repository name
+  // استخدم './' ليتمكن الأندرويد من العثور على الملفات في أي بيئة
+  base: './', 
   plugins: [react()],
 })

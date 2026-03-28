@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Quran Fives</string>
+    <string name="title_activity_main">Quran Fives</string>
+    <string name="package_name">com.shoaib.quranfives</string>
+    <string name="custom_url_scheme">com.shoaib.quranfives</string>
+</resources>
