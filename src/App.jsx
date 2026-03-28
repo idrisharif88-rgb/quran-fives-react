@@ -1266,8 +1266,10 @@ function App() {
               </div>
 
               {Number.isInteger(activeNightCounter?.limit) && (
-                <div className="night-counter-limit">
-                  {activeNightCounter?.value ?? 0} / {activeNightCounter?.limit}
+                <div className="night-counter-limit" dir="ltr">
+                  <span className="night-counter-pagination">{activeNightCounter?.limit}</span>
+                  <span className="night-counter-separator">/</span>
+                  <span className="night-counter-pagination">{activeNightCounter?.value ?? 0}</span>
                 </div>
               )}
 
