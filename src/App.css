@@ -78,6 +78,134 @@
   animation: fadeIn 0.4s ease-out;
 }
 
+.night-counter-mode {
+  width: min(100%, 800px);
+  margin: 0 auto;
+}
+
+.night-counter-toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  direction: ltr;
+  gap: 16px;
+  margin: 0 auto 18px;
+}
+
+.night-counter-toolbar-side {
+  display: flex;
+  align-items: center;
+}
+
+.night-counter-toolbar-left {
+  grid-column: 1;
+  justify-content: flex-start;
+  position: relative;
+}
+
+.night-counter-toolbar-right {
+  grid-column: 3;
+  justify-content: flex-end;
+}
+
+.night-counter-screen {
+  margin: 52px auto 0;
+  width: 100%;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.night-counter-circle {
+  width: clamp(380px, 88vw, 600px);
+  height: clamp(380px, 88vw, 600px);
+  border-radius: 50%;
+  border: 22px solid darkgreen;
+  background: #f4f6f8;
+  color: darkgreen;
+  font-size: clamp(42px, 8vw, 64px);
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+  margin-top: 32px;
+}
+
+.night-counter-circle:active {
+  transform: scale(0.97);
+  box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.15);
+}
+
+.night-counter-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.night-counter-limit {
+  margin-top: 14px;
+  font-size: 30px;
+  font-weight: 900;
+  color: darkgreen;
+  letter-spacing: 1.5px;
+  text-align: center;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.night-counter-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  direction: ltr;
+  width: 100%;
+  margin-top: 18px;
+}
+
+.night-counter-top-btn {
+  width: 52px;
+  height: 52px;
+}
+
+.night-counter-btn {
+  border: none;
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  padding: 0;
+  background: darkgreen;
+  color: #ffffff;
+  font-size: 42px;
+  font-weight: 900;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.night-counter-btn.secondary {
+  background: #f4f6f8;
+  color: #1f2937;
+  border: 2px solid #d9dee3;
+}
+
+.night-counter-btn svg {
+  width: 34px;
+  height: 34px;
+}
+
+.night-counter-reset-btn {
+  box-shadow: 0 8px 18px rgba(0, 100, 0, 0.22);
+}
+
+.night-counter-minus-btn {
+  line-height: 1;
+}
+
 .verse-text {
   color: var(--app-font-color, darkgreen);
   font-weight: var(--app-font-weight, bold);
@@ -183,6 +311,8 @@
   filter: none;
 }
 
+button,
+[role="button"],
 .action-icon,
 .nav-arrow,
 .top-star-btn,
@@ -193,23 +323,24 @@
   -webkit-touch-callout: none;
 }
 
+button:focus,
+button:focus-visible,
+[role="button"]:focus,
+[role="button"]:focus-visible,
 .action-icon:focus,
 .nav-arrow:focus,
 .top-star-btn:focus,
 .expand-btn:focus,
 .color-btn:focus,
-.ayah-menu-item:focus {
-  outline: none;
-}
-
+.ayah-menu-item:focus,
 .action-icon:focus-visible,
 .nav-arrow:focus-visible,
 .top-star-btn:focus-visible,
 .expand-btn:focus-visible,
 .color-btn:focus-visible,
 .ayah-menu-item:focus-visible {
-  outline: 3px solid #f39c12;
-  outline-offset: 3px;
+  outline: none;
+  box-shadow: none;
 }
 
 .action-buttons-container {
@@ -249,6 +380,140 @@
 .action-icon.calendar-icon {
   width: 65px;
   height: 65px;
+}
+
+.night-timer {
+  display: flex;
+  align-items: center;
+  direction: ltr;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(6, 8, 15, 0.65);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #e5f9ef;
+}
+
+.night-timer-toolbar {
+  grid-column: 2;
+  justify-self: center;
+}
+
+.night-timer-display {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  min-width: 72px;
+  text-align: center;
+}
+
+.night-timer-btn {
+  border: none;
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: darkgreen;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.night-timer-btn.secondary {
+  background: #f4f6f8;
+  color: #1f2937;
+  border: 1px solid #d9dee3;
+}
+
+.settings-popover.night-counter-settings {
+  width: 280px;
+  gap: 12px;
+}
+
+.settings-popover.night-counter-settings.night-counter-settings-popover {
+  left: 0;
+  right: auto;
+  transform: none;
+}
+
+.settings-popover.night-counter-settings.night-counter-settings-popover::after {
+  left: 18px;
+  right: auto;
+  transform: none;
+}
+
+.night-counter-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.night-counter-chip {
+  border: 1px solid #e1e4e8;
+  background: #f4f6f8;
+  color: #1f2937;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.night-counter-chip.active {
+  background: darkgreen;
+  color: #ffffff;
+  border-color: darkgreen;
+}
+
+.night-counter-chip.add {
+  background: #ffffff;
+  border-color: #cbd5f0;
+  color: #1f2937;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.night-counter-input {
+  width: 100%;
+  border: 1px solid #e1e4e8;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  background: #ffffff;
+}
+
+.night-counter-numbers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.night-counter-numbers .night-counter-input {
+  width: 100%;
+}
+
+.night-counter-apply {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: darkgreen;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .action-icon:hover {
@@ -1079,6 +1344,38 @@
   .action-icon {
     width: 56px;
     height: 56px;
+  }
+  .night-counter-toolbar {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .night-counter-screen {
+    height: auto;
+    min-height: 0;
+  }
+  .night-timer-toolbar {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .night-timer-display {
+    font-size: 18px;
+    min-width: 64px;
+  }
+  .night-timer-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .night-counter-limit {
+    font-size: 24px;
+    margin-top: 12px;
+  }
+  .night-counter-actions {
+    margin-top: 14px;
+  }
+  .night-counter-btn {
+    width: 64px;
+    height: 64px;
+    font-size: 36px;
   }
   .action-icon svg {
     width: 26px;

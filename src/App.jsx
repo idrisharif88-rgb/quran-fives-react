@@ -82,6 +82,41 @@ function App() {
     typeof persistedAppState.pageJumpInput === 'string' ? persistedAppState.pageJumpInput : ''
   ));
   const [pageJumpError, setPageJumpError] = useState('');
+  const [nightCounters, setNightCounters] = useState(() => {
+    if (Array.isArray(persistedAppState.nightCounters) && persistedAppState.nightCounters.length > 0) {
+      return persistedAppState.nightCounters;
+    }
+    const initialValue = Number.isInteger(persistedAppState.nightCounterValue)
+      ? persistedAppState.nightCounterValue
+      : 0;
+    return [
+      {
+        id: 'counter-1',
+        name: 'العداد',
+        value: initialValue,
+        limit: null
+      }
+    ];
+  });
+  const [activeNightCounterId, setActiveNightCounterId] = useState(() => {
+    if (typeof persistedAppState.activeNightCounterId === 'string') {
+      return persistedAppState.activeNightCounterId;
+    }
+    if (Array.isArray(persistedAppState.nightCounters) && persistedAppState.nightCounters[0]?.id) {
+      return persistedAppState.nightCounters[0].id;
+    }
+    return 'counter-1';
+  });
+  const [isNightCounterSettingsOpen, setIsNightCounterSettingsOpen] = useState(false);
+  const [nightCounterNameInput, setNightCounterNameInput] = useState('');
+  const [nightCounterValueInput, setNightCounterValueInput] = useState('0');
+  const [nightCounterLimitInput, setNightCounterLimitInput] = useState('');
+  const [nightTimerSeconds, setNightTimerSeconds] = useState(() => (
+    Number.isInteger(persistedAppState.nightTimerSeconds) ? persistedAppState.nightTimerSeconds : 0
+  ));
+  const [isNightTimerRunning, setIsNightTimerRunning] = useState(() => (
+    Boolean(persistedAppState.isNightTimerRunning)
+  ));
   const [isPlaying, setIsPlaying] = useState(false);
   const [hijriData, setHijriData] = useState([]);
   const [hijriIndex, setHijriIndex] = useState(0);
@@ -121,19 +156,48 @@ function App() {
 
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
+  const nightCounterAudioCtxRef = useRef(null);
   const moreMenuRef = useRef(null);
   const pageStartsMenuRef = useRef(null);
   const ayahMenuRef = useRef(null);
+  const nightCounterSettingsRef = useRef(null);
   const swipeStartRef = useRef(null);
 
   const starredArray = Array.from(starredIndices).sort((a, b) => a - b);
   const starredPagesArray = Array.from(starredPages).sort((a, b) => a - b);
 
   const isPageStartsMode = viewMode === 'page-starts' || viewMode === 'page-starred';
+  const isNightCounterMode = viewMode === 'night-counter';
+  const activeNightCounter = nightCounters.find(counter => counter.id === activeNightCounterId) || nightCounters[0];
 
   useEffect(() => {
     if (isPageStartsMode) setIsFontMenuOpen(false);
   }, [isPageStartsMode]);
+
+  useEffect(() => {
+    if (!nightCounters.length) {
+      setNightCounters([{
+        id: 'counter-1',
+        name: 'العداد',
+        value: 0,
+        limit: null
+      }]);
+      setActiveNightCounterId('counter-1');
+      return;
+    }
+    if (!activeNightCounter) {
+      setActiveNightCounterId(nightCounters[0].id);
+    }
+  }, [activeNightCounter, nightCounters]);
+
+  useEffect(() => {
+    if (!activeNightCounter) return;
+    setNightCounterNameInput(activeNightCounter.name || '');
+    setNightCounterValueInput(String(activeNightCounter.value ?? 0));
+    setNightCounterLimitInput(
+      Number.isInteger(activeNightCounter.limit) ? String(activeNightCounter.limit) : ''
+    );
+  }, [activeNightCounterId, activeNightCounter?.id]);
 
   useEffect(() => {
     saveStoredState(APP_STORAGE_KEY, {
@@ -143,6 +207,10 @@ function App() {
       starredIndices: Array.from(starredIndices),
       jumpInput,
       pageJumpInput,
+      nightCounters,
+      activeNightCounterId,
+      nightTimerSeconds,
+      isNightTimerRunning,
       activeAyahTest,
       activePageStartsTest,
       currentPageIndex,
@@ -163,6 +231,10 @@ function App() {
     fontWeight,
     jumpInput,
     pageJumpInput,
+    nightCounters,
+    activeNightCounterId,
+    nightTimerSeconds,
+    isNightTimerRunning,
     sharedGroupIndex,
     starredIndices,
     starredPages,
@@ -210,6 +282,9 @@ function App() {
     function handleClickOutside(event) {
       if (actionButtonsRef.current && !actionButtonsRef.current.contains(event.target)) {
         setActiveTooltip(null);
+      }
+      if (nightCounterSettingsRef.current && !nightCounterSettingsRef.current.contains(event.target)) {
+        setIsNightCounterSettingsOpen(false);
       }
       if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
         setIsMoreMenuOpen(false);
@@ -452,6 +527,46 @@ function App() {
     });
   };
 
+  const playNightCounterSound = async (type) => {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+
+    try {
+      if (!nightCounterAudioCtxRef.current) {
+        nightCounterAudioCtxRef.current = new AudioCtx();
+      }
+      const ctx = nightCounterAudioCtxRef.current;
+      if (ctx.state === 'suspended') await ctx.resume();
+
+      const now = ctx.currentTime;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(type === 'up' ? 0.14 : 0.08, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + (type === 'up' ? 0.06 : 0.12));
+      gain.connect(ctx.destination);
+
+      if (type === 'up') {
+        const osc = ctx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(780, now);
+        osc.frequency.exponentialRampToValueAtTime(520, now + 0.06);
+        osc.connect(gain);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      } else {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(420, now);
+        osc.frequency.exponentialRampToValueAtTime(300, now + 0.08);
+        osc.connect(gain);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   const handleSwipeNav = (direction) => {
     if (viewMode !== 'khmasiyat') return;
     if (direction === 'next') setCurrentIndex(prev => Math.min(1201, prev + 1));
@@ -486,6 +601,14 @@ function App() {
     else handleSwipeNav('prev');
   };
 
+  useEffect(() => {
+    if (!isNightTimerRunning) return;
+    const timer = setInterval(() => {
+      setNightTimerSeconds(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isNightTimerRunning]);
+
   const clearSavedSession = () => {
     SESSION_STORAGE_KEYS.forEach(storageKey => removeStoredState(storageKey));
   };
@@ -502,6 +625,19 @@ function App() {
     setJumpError('');
     setPageJumpInput('');
     setPageJumpError('');
+    setNightCounters([{
+      id: 'counter-1',
+      name: 'العداد',
+      value: 0,
+      limit: null
+    }]);
+    setActiveNightCounterId('counter-1');
+    setNightCounterNameInput('العداد');
+    setNightCounterValueInput('0');
+    setNightCounterLimitInput('');
+    setIsNightCounterSettingsOpen(false);
+    setNightTimerSeconds(0);
+    setIsNightTimerRunning(false);
     setIsPlaying(false);
     setIsAyahMenuOpen(false);
     setActiveAyahTest(null);
@@ -520,6 +656,41 @@ function App() {
 
   const handleResumeSession = () => {
     setShowSessionPrompt(false);
+  };
+
+  const applyNightCounterInputs = () => {
+    if (!activeNightCounter) return;
+    const name = nightCounterNameInput.trim() || 'العداد';
+    const parsedValue = parseInt(nightCounterValueInput, 10);
+    const parsedLimit = parseInt(nightCounterLimitInput, 10);
+    const value = Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0;
+    const limit = Number.isFinite(parsedLimit) ? Math.max(0, parsedLimit) : null;
+    const finalValue = limit !== null ? Math.min(value, limit) : value;
+
+    setNightCounters(prev => prev.map(counter => (
+      counter.id === activeNightCounterId
+        ? { ...counter, name, value: finalValue, limit }
+        : counter
+    )));
+    setNightCounterNameInput(name);
+    setNightCounterValueInput(String(finalValue));
+    setNightCounterLimitInput(limit !== null ? String(limit) : '');
+  };
+
+  const handleAddNightCounter = () => {
+    const nextIndex = nightCounters.length + 1;
+    const newCounter = {
+      id: `counter-${Date.now()}`,
+      name: `عداد ${nextIndex}`,
+      value: 0,
+      limit: null
+    };
+    setNightCounters(prev => [...prev, newCounter]);
+    setActiveNightCounterId(newCounter.id);
+    setIsNightCounterSettingsOpen(true);
+    setNightCounterNameInput(newCounter.name);
+    setNightCounterValueInput('0');
+    setNightCounterLimitInput('');
   };
 
   const handlePageJump = () => {
@@ -619,20 +790,24 @@ function App() {
         </div>
       )}
       {/* الأزرار العلوية */}
-      {!isQuizMode && viewMode !== 'shared-verses' && viewMode !== 'starred' && viewMode !== 'page-starred' && (
+      {!isQuizMode && viewMode !== 'shared-verses' && viewMode !== 'starred' && viewMode !== 'page-starred' && viewMode !== 'night-counter' && (
       <div className="action-buttons-container upper-actions">
-        {isPageStartsMode && (
-          <button
-            className="action-icon"
-            title="العودة للقراءة"
-            onClick={() => setViewMode('khmasiyat')}
-          >
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-            </svg>
-          </button>
+        {(isPageStartsMode || isNightCounterMode) && (
+          <>
+            {!isNightCounterMode && (
+              <button
+                className="action-icon"
+                title="العودة للقراءة"
+                onClick={() => setViewMode('khmasiyat')}
+              >
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+                  <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+                </svg>
+              </button>
+            )}
+          </>
         )}
-        {!isPageStartsMode && viewMode !== 'shared-verses' && (
+        {!isPageStartsMode && !isNightCounterMode && viewMode !== 'shared-verses' && (
           <>
             <div className="icon-wrapper" ref={moreMenuRef}>
               <button
@@ -660,6 +835,11 @@ function App() {
                       type="button"
                       className="ayah-menu-item"
                       onClick={() => {
+                        if (option === 'العداد') {
+                          setViewMode('night-counter');
+                          setIsMoreMenuOpen(false);
+                          return;
+                        }
                         if (option === 'الخط') {
                           setIsMoreMenuOpen(false);
                           setIsFontMenuOpen(true);
@@ -778,7 +958,7 @@ function App() {
           </>
         )}
         
-        {!isPageStartsMode && <button 
+        {!isPageStartsMode && !isNightCounterMode && <button 
           className="action-icon calendar-icon" 
           title="التاريخ الهجري"
           style={{ width: '65px', height: '65px' }}
@@ -888,7 +1068,7 @@ function App() {
         </>
       ) : (
         <div className="content-layout" onTouchStart={onSwipeTouchStart} onTouchEnd={onSwipeTouchEnd}>
-          {viewMode !== 'shared-verses' && <div className="top-stars-container inside-text-field">
+          {viewMode !== 'shared-verses' && viewMode !== 'night-counter' && <div className="top-stars-container inside-text-field">
             <button 
               className="top-star-btn"
               title={isPageStartsMode ? "قائمة الصفحات للتثبيت" : "قائمة الخماسيات للتثبيت"}
@@ -914,27 +1094,219 @@ function App() {
             </button>
           </div>}
 
-          <button 
-            onClick={() => {
-              if (viewMode === 'khmasiyat') {
-                setCurrentIndex(prev => Math.max(0, prev - 1));
-              } else if (viewMode === 'shared-verses') {
-                setSharedGroupIndex(prev => Math.max(0, prev - 1));
-              } else if (viewMode === 'page-starts') {
-                setCurrentPageIndex(prev => Math.max(0, prev - 1));
-              }
-            }}
-            className="nav-arrow prev-arrow"
-            disabled={(viewMode === 'khmasiyat' && currentIndex === 0) || 
-                      (viewMode === 'shared-verses' && sharedGroupIndex === 0) ||
-                      (viewMode === 'page-starts' && currentPageIndex === 0)}
-            title="السابق">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-            </svg>
-          </button>
+          {viewMode !== 'night-counter' && (
+            <button 
+              onClick={() => {
+                if (viewMode === 'khmasiyat') {
+                  setCurrentIndex(prev => Math.max(0, prev - 1));
+                } else if (viewMode === 'shared-verses') {
+                  setSharedGroupIndex(prev => Math.max(0, prev - 1));
+                } else if (viewMode === 'page-starts') {
+                  setCurrentPageIndex(prev => Math.max(0, prev - 1));
+                }
+              }}
+              className="nav-arrow prev-arrow"
+              disabled={(viewMode === 'khmasiyat' && currentIndex === 0) || 
+                        (viewMode === 'shared-verses' && sharedGroupIndex === 0) ||
+                        (viewMode === 'page-starts' && currentPageIndex === 0)}
+              title="السابق">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
+          )}
           
-          {viewMode === 'shared-verses' ? (
+          {viewMode === 'night-counter' ? (
+            <div className="night-counter-mode">
+              <div className="night-counter-toolbar">
+                <div className="night-counter-toolbar-side night-counter-toolbar-left" ref={nightCounterSettingsRef}>
+                  <button
+                    className="action-icon night-counter-top-btn"
+                    title="الإعدادات"
+                    onClick={() => setIsNightCounterSettingsOpen(prev => !prev)}
+                    style={{ backgroundColor: isNightCounterSettingsOpen ? '#f39c12' : '' }}
+                  >
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+                      <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.42 7.42 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54a7.42 7.42 0 0 0-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.81 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.5.38 1.05.7 1.63.94l.36 2.54a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54c.58-.24 1.13-.56 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/>
+                    </svg>
+                  </button>
+                  {isNightCounterSettingsOpen && (
+                    <div className="settings-popover night-counter-settings night-counter-settings-popover" dir="rtl">
+                      <div className="night-counter-list">
+                        {nightCounters.map(counter => (
+                          <button
+                            key={counter.id}
+                            type="button"
+                            className={`night-counter-chip ${counter.id === activeNightCounterId ? 'active' : ''}`}
+                            onClick={() => setActiveNightCounterId(counter.id)}
+                          >
+                            {counter.name || 'العداد'}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          className="night-counter-chip add"
+                          onClick={handleAddNightCounter}
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div className="settings-row">
+                        <input
+                          type="text"
+                          className="night-counter-input"
+                          value={nightCounterNameInput}
+                          onChange={(e) => setNightCounterNameInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && applyNightCounterInputs()}
+                          placeholder="اسم العداد"
+                        />
+                      </div>
+                      <div className="settings-row night-counter-numbers">
+                        <input
+                          type="number"
+                          className="night-counter-input"
+                          value={nightCounterValueInput}
+                          onChange={(e) => setNightCounterValueInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && applyNightCounterInputs()}
+                          placeholder="العدد"
+                          min="0"
+                        />
+                        <input
+                          type="number"
+                          className="night-counter-input"
+                          value={nightCounterLimitInput}
+                          onChange={(e) => setNightCounterLimitInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && applyNightCounterInputs()}
+                          placeholder="الحد"
+                          min="0"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="night-counter-apply"
+                        onClick={applyNightCounterInputs}
+                      >
+                        تحديث
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="night-timer night-timer-toolbar">
+                  <button
+                    type="button"
+                    className="night-timer-btn secondary"
+                    onClick={() => {
+                      setIsNightTimerRunning(false);
+                      setNightTimerSeconds(0);
+                    }}
+                    aria-label="إعادة"
+                  >
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                      <path d="M12 5V2L7 7l5 5V8c2.97 0 5.44 2.16 5.91 5h2.02A8.004 8.004 0 0 0 12 5zm-5.91 6H4.07A8.004 8.004 0 0 0 12 19v3l5-5-5-5v3c-2.97 0-5.44-2.16-5.91-5z"/>
+                    </svg>
+                  </button>
+                  <div className="night-timer-display">
+                    {String(Math.floor(nightTimerSeconds / 60)).padStart(2, '0')}:{String(nightTimerSeconds % 60).padStart(2, '0')}
+                  </div>
+                  <button
+                    type="button"
+                    className="night-timer-btn"
+                    onClick={() => setIsNightTimerRunning(prev => !prev)}
+                    aria-label={isNightTimerRunning ? 'إيقاف' : 'تشغيل'}
+                  >
+                    {isNightTimerRunning ? (
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+
+                <div className="night-counter-toolbar-side night-counter-toolbar-right">
+                  <button
+                    className="action-icon night-counter-top-btn"
+                    title="العودة للقراءة"
+                    onClick={() => setViewMode('khmasiyat')}
+                  >
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                      <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="night-counter-screen">
+                <button
+                  type="button"
+                  className="night-counter-circle"
+                  onPointerDown={() => {
+                    if (!activeNightCounter) return;
+                    setIsNightTimerRunning(true);
+                    playNightCounterSound('up');
+                    setNightCounters(prev => prev.map(counter => {
+                      if (counter.id !== activeNightCounterId) return counter;
+                      const hasLimit = Number.isInteger(counter.limit);
+                      const nextValue = hasLimit
+                        ? Math.min(counter.limit, counter.value + 1)
+                        : counter.value + 1;
+                      return { ...counter, value: nextValue };
+                    }));
+                  }}
+                  aria-label="night counter"
+                >
+                  <span className="night-counter-value">
+                    {activeNightCounter?.value ?? 0}
+                  </span>
+                </button>
+              </div>
+
+              {Number.isInteger(activeNightCounter?.limit) && (
+                <div className="night-counter-limit">
+                  {activeNightCounter?.value ?? 0} / {activeNightCounter?.limit}
+                </div>
+              )}
+
+              <div className="night-counter-actions">
+                <button
+                  type="button"
+                  className="night-counter-btn night-counter-reset-btn"
+                  onClick={() => {
+                    if (!activeNightCounter) return;
+                    setNightCounters(prev => prev.map(counter => (
+                      counter.id === activeNightCounterId
+                        ? { ...counter, value: 0 }
+                        : counter
+                    )));
+                  }}
+                  aria-label="تصفير"
+                >
+                  <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true">
+                    <path d="M12 5V2L7 7l5 5V8c2.97 0 5.44 2.16 5.91 5h2.02A8.004 8.004 0 0 0 12 5zm-5.91 6H4.07A8.004 8.004 0 0 0 12 19v3l5-5-5-5v3c-2.97 0-5.44-2.16-5.91-5z"/>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className="night-counter-btn secondary night-counter-minus-btn"
+                  onClick={() => {
+                    if (!activeNightCounter) return;
+                    playNightCounterSound('down');
+                    setNightCounters(prev => prev.map(counter => (
+                      counter.id === activeNightCounterId
+                        ? { ...counter, value: Math.max(0, counter.value - 1) }
+                        : counter
+                    )));
+                  }}
+                >
+                  -
+                </button>
+              </div>
+            </div>
+          ) : viewMode === 'shared-verses' ? (
             <div className="verse-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div style={{ color: fontColor, fontWeight: fontWeight, fontSize: '48px', marginBottom: '20px' }}>
                 {SHARED_VERSE_GROUPS[sharedGroupIndex].count}
@@ -955,29 +1327,31 @@ function App() {
             <TextDisplay verses={currentVersesText} />
           )}
           
-          <button 
-            onClick={() => {
-              if (viewMode === 'khmasiyat') {
-                setCurrentIndex(prev => Math.min(1201, prev + 1));
-              } else if (viewMode === 'shared-verses') {
-                setSharedGroupIndex(prev => Math.min(SHARED_VERSE_GROUPS.length - 1, prev + 1));
-              } else if (viewMode === 'page-starts') {
-                setCurrentPageIndex(prev => Math.min(pageStartsData.length - 1, prev + 1));
-              }
-            }}
-            className="nav-arrow next-arrow"
-            disabled={(viewMode === 'khmasiyat' && currentIndex === 1201) || 
-                      (viewMode === 'shared-verses' && sharedGroupIndex === SHARED_VERSE_GROUPS.length - 1) ||
-                      (viewMode === 'page-starts' && currentPageIndex === pageStartsData.length - 1)}
-            title="التالي">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-            </svg>
-          </button>
+          {viewMode !== 'night-counter' && (
+            <button 
+              onClick={() => {
+                if (viewMode === 'khmasiyat') {
+                  setCurrentIndex(prev => Math.min(1201, prev + 1));
+                } else if (viewMode === 'shared-verses') {
+                  setSharedGroupIndex(prev => Math.min(SHARED_VERSE_GROUPS.length - 1, prev + 1));
+                } else if (viewMode === 'page-starts') {
+                  setCurrentPageIndex(prev => Math.min(pageStartsData.length - 1, prev + 1));
+                }
+              }}
+              className="nav-arrow next-arrow"
+              disabled={(viewMode === 'khmasiyat' && currentIndex === 1201) || 
+                        (viewMode === 'shared-verses' && sharedGroupIndex === SHARED_VERSE_GROUPS.length - 1) ||
+                        (viewMode === 'page-starts' && currentPageIndex === pageStartsData.length - 1)}
+              title="التالي">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
+          )}
         </div>
       )}
 
-      {!isPageStartsMode && viewMode !== 'starred' && (
+      {!isPageStartsMode && !isNightCounterMode && viewMode !== 'starred' && (
       <div className="action-buttons-container" ref={actionButtonsRef}>
         {viewMode !== 'shared-verses' && (
           <>
