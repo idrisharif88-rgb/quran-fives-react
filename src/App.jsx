@@ -1025,7 +1025,7 @@ function App() {
               <div className={`input-inner-wrapper ${jumpError ? 'shake border-error' : ''}`}>
                 {!jumpInput && !jumpError && (
                   <div className="marquee-text">
-                    أدخل رقم السورة + : + رقم الخماسية، مثلاً 55 : 5 أو أدخل رقم الخماسية
+                    أدخل رقم السورة + : + رقم الخماسية، مثلاً 55 : 5 أو أدخل رقم الخماسية مثلاً 120 
                   </div>
                 )}
                 <input

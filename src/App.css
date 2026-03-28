@@ -979,16 +979,18 @@
 /* Marquee Hint */
 .marquee-text {
   position: absolute;
-  width: 100%;
+  width: max-content;
+  min-width: max-content;
   height: 100%;
   top: 0;
   left: 0;
   margin: 0;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   white-space: nowrap;
-  transform: translateX(-100%);
-  animation: marquee 15s linear infinite;
+  padding-inline: 24px;
+  transform: translateX(calc(-100% - 48px));
+  animation: marquee 18s linear infinite;
   font-size: 22px;
   font-weight: bold;
   color: #888;
@@ -997,7 +999,7 @@
 }
 
 @keyframes marquee {
-  0% { transform: translateX(-100%); }
+  0% { transform: translateX(calc(-100% - 48px)); }
   100% { transform: translateX(100%); }
 }
 
