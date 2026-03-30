@@ -139,6 +139,8 @@ function App() {
     Boolean(persistedAppState.isNightTimerRunning)
   ));
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hijriData, setHijriData] = useState([]);
+  const [hijriIndex, setHijriIndex] = useState(0);
   
   // إعدادات الخط
   const [isAyahMenuOpen, setIsAyahMenuOpen] = useState(false);
@@ -465,6 +467,36 @@ function App() {
     }, 800); // Changes the number every 800 milliseconds
     return () => clearInterval(interval);
   }, []);
+
+  // جلب التاريخ الهجري للمشهد الرئيسي فقط
+  useEffect(() => {
+    if (isPageStartsMode || isSurahFivesMode) return;
+    if (hijriData.length !== 0) return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+
+    const today = new Date();
+    const dateStr = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
+
+    fetch(`https://api.aladhan.com/v1/gToH?date=${dateStr}`)
+      .then(res => res.json())
+      .then(json => {
+        if (json.code !== 200) return;
+        const hijri = json.data.hijri;
+        const dayNameWithoutAl = hijri.weekday.ar.replace('ال', '').trim();
+        setHijriData([dayNameWithoutAl, hijri.day, hijri.month.ar, hijri.year]);
+      })
+      .catch((err) => console.error('Error fetching Hijri date:', err));
+  }, [hijriData.length, isPageStartsMode, isSurahFivesMode]);
+
+  useEffect(() => {
+    if (hijriData.length === 0) return undefined;
+
+    const interval = setInterval(() => {
+      setHijriIndex(prev => (prev + 1) % hijriData.length);
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [hijriData.length]);
 
   // إيقاف الصوت تلقائياً عند الانتقال لخماسية أخرى أو تغيير وضع العرض
   useEffect(() => {
@@ -1070,7 +1102,21 @@ function App() {
           </>
         )}
         
-        
+
+        {!isPageStartsMode && !isNightCounterMode && !isSurahFivesMode && <button
+          className="action-icon calendar-icon"
+          title="التاريخ الهجري"
+          style={{ width: '65px', height: '65px' }}
+        >
+          {hijriData.length > 0 ? (
+            <span style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>
+              {hijriData[hijriIndex]}
+            </span>
+          ) : (
+            <span style={{ fontSize: '14px' }}>...</span>
+          )}
+        </button>}
+
       </div>
       )}
 
