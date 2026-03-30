@@ -827,6 +827,10 @@ button:focus-visible,
   left: auto;
   right: 0;
   transform: translateX(0);
+  padding: 0;
+  gap: 0;
+  width: max-content;
+  min-width: 0;
 }
 
 .settings-popover.more-menu-settings::after {
@@ -844,12 +848,14 @@ button:focus-visible,
   border: 1px solid var(--app-border);
   border-radius: 12px;
   box-shadow: 0 8px 24px var(--app-shadow);
-  padding: 8px;
-  min-width: 280px;
+  padding: 0;
+  width: max-content;
+  min-width: 0;
+  max-width: calc(100vw - 24px);
   z-index: 100;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
   animation: popoverFade 0.15s ease-out;
 }
 
@@ -890,17 +896,22 @@ button:focus-visible,
 
 .ayah-menu-item {
   border: none;
+  border-bottom: 1px solid darkgreen;
   background: transparent;
   color: var(--app-popover-text);
   font-size: 18px;
   font-weight: 700;
   font-family: inherit;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 8px 12px;
+  border-radius: 0;
   text-align: right;
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
   white-space: nowrap;
+}
+
+.ayah-menu-item:last-child {
+  border-bottom: none;
 }
 
 .ayah-menu-item.active {
@@ -1143,6 +1154,24 @@ button:focus-visible,
   justify-content: space-between;
   align-items: center;
   gap: 10px;
+}
+
+.settings-popover.more-menu-settings .settings-row,
+.settings-popover.more-menu-settings .segmented-control,
+.settings-popover.more-menu-settings .colors-row {
+  padding: 8px 10px;
+  border-bottom: 1px solid darkgreen;
+}
+
+.settings-popover.more-menu-settings .settings-row:last-child,
+.settings-popover.more-menu-settings .segmented-control:last-child,
+.settings-popover.more-menu-settings .colors-row:last-child {
+  border-bottom: none;
+}
+
+.settings-popover.more-menu-settings .font-family-select,
+.settings-popover.more-menu-settings .segmented-control {
+  width: max-content;
 }
 
 .font-size-ctrl button {
