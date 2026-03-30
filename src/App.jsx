@@ -1198,6 +1198,11 @@ function App() {
                 صفحة {khmasiyatPageNumber}
               </div>
             )}
+            {isPageStartsMode && pageStartsData.length > 0 && (
+              <div className="khmasiyat-page-display">
+                صفحة {currentPageIndex + 1}
+              </div>
+            )}
             <button 
               className="top-star-btn"
               title={isPageStartsMode ? "تثبيت الصفحة" : "تثبيت الخماسية"}
