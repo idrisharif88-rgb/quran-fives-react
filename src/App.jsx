@@ -397,7 +397,6 @@ function App() {
   const handlePageStartsOptionClick = (option) => {
     if (option === 'بدايات صفحات') {
       setViewMode('page-starts');
-      setCurrentPageIndex(0);
       loadPageStartsData();
     } else if (option === 'اختبار بدايات صفحات') {
       setActivePageStartsTest('page-starts');
