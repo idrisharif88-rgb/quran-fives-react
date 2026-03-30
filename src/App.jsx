@@ -26,6 +26,9 @@ import './App.css';
 // مصفوفة بأسماء السور الـ 114
 const SURAH_NAMES = "الفاتحة,البقرة,آل عمران,النساء,المائدة,الأنعام,الأعراف,الأنفال,التوبة,يونس,هود,يوسف,الرعد,إبراهيم,الحجر,النحل,الإسراء,الكهف,مريم,طه,الأنبياء,الحج,المؤمنون,النور,الفرقان,الشعراء,النمل,القصص,العنكبوت,الروم,لقمان,السجدة,الأحزاب,سبأ,فاطر,يس,الصافات,ص,الزمر,غافر,فصلت,الشورى,الزخرف,الدخان,الجاثية,الأحقاف,محمد,الفتح,الحجرات,ق,الذاريات,الطور,النجم,القمر,الرحمن,الواقعة,الحديد,المجادلة,الحشر,الممتحنة,الصف,الجمعة,المنافقون,التغابن,الطلاق,التحريم,الملك,القلم,الحاقة,المعارج,نوح,الجن,المزمل,المدثر,القيامة,الإنسان,المرسلات,النبأ,النازعات,عبس,التكوير,الانفطار,المطففين,الانشقاق,البروج,الطارق,الأعلى,الغاشية,الفجر,البلد,الشمس,الليل,الضحى,الشرح,التين,العلق,القدر,البينة,الزلزلة,العاديات,القارعة,التكاثر,العصر,الهمزة,الفيل,قريش,الماعون,الكوثر,الكافرون,النصر,المسد,الإخلاص,الفلق,الناس".split(",");
 
+// خماسيات السور: 1 (الفاتحة) ثم 5، 10، 15... حتى 110
+const SURAH_FIVES_ORDER = [1, ...Array.from({ length: Math.floor(114 / 5) }, (_, i) => (i + 1) * 5)];
+
 const getPageNumberForVerse = (surah, ayah) => {
   if (!PAGE_STARTS || PAGE_STARTS.length === 0) {
     return null;
@@ -81,6 +84,9 @@ function App() {
   const [viewMode, setViewMode] = useState(() => (
     typeof persistedAppState.viewMode === 'string' ? persistedAppState.viewMode : 'khmasiyat'
   )); // 'khmasiyat', 'shared-verses', 'starred'
+  const [surahFivesIndex, setSurahFivesIndex] = useState(() => (
+    Number.isInteger(persistedAppState.surahFivesIndex) ? persistedAppState.surahFivesIndex : 0
+  ));
   const [sharedGroupIndex, setSharedGroupIndex] = useState(() => (
     Number.isInteger(persistedAppState.sharedGroupIndex) ? persistedAppState.sharedGroupIndex : 0
   ));
@@ -189,11 +195,24 @@ function App() {
 
   const isPageStartsMode = viewMode === 'page-starts' || viewMode === 'page-starred';
   const isNightCounterMode = viewMode === 'night-counter';
+  const isSurahFivesMode = viewMode === 'surah-fives';
+  const clampedSurahFivesIndex = Math.min(
+    Math.max(surahFivesIndex, 0),
+    SURAH_FIVES_ORDER.length - 1
+  );
+  const surahFivesSurahNumber = SURAH_FIVES_ORDER[clampedSurahFivesIndex];
+  const surahFivesSurahName = SURAH_NAMES[surahFivesSurahNumber - 1];
   const activeNightCounter = nightCounters.find(counter => counter.id === activeNightCounterId) || nightCounters[0];
 
   useEffect(() => {
     if (isPageStartsMode) setIsFontMenuOpen(false);
   }, [isPageStartsMode]);
+
+  useEffect(() => {
+    if (surahFivesIndex < 0 || surahFivesIndex >= SURAH_FIVES_ORDER.length) {
+      setSurahFivesIndex(Math.min(Math.max(surahFivesIndex, 0), SURAH_FIVES_ORDER.length - 1));
+    }
+  }, [surahFivesIndex]);
 
   useEffect(() => {
     if (!nightCounters.length) {
@@ -224,6 +243,7 @@ function App() {
     saveStoredState(APP_STORAGE_KEY, {
       currentIndex,
       viewMode,
+      surahFivesIndex,
       sharedGroupIndex,
       starredIndices: Array.from(starredIndices),
       jumpInput,
@@ -261,6 +281,7 @@ function App() {
     sharedGroupIndex,
     starredIndices,
     starredPages,
+    surahFivesIndex,
     viewMode,
   ]);
 
@@ -650,6 +671,11 @@ function App() {
       if (direction === 'prev') setCurrentIndex(prev => Math.max(0, prev - 1));
       return;
     }
+    if (viewMode === 'surah-fives') {
+      if (direction === 'next') setSurahFivesIndex(prev => Math.min(SURAH_FIVES_ORDER.length - 1, prev + 1));
+      if (direction === 'prev') setSurahFivesIndex(prev => Math.max(0, prev - 1));
+      return;
+    }
     if (viewMode === 'page-starts') {
       if (direction === 'next') setCurrentPageIndex(prev => Math.min(pageStartsData.length - 1, prev + 1));
       if (direction === 'prev') setCurrentPageIndex(prev => Math.max(0, prev - 1));
@@ -657,14 +683,14 @@ function App() {
   };
 
   const onSwipeTouchStart = (e) => {
-    if (viewMode !== 'khmasiyat' && viewMode !== 'page-starts') return;
+    if (viewMode !== 'khmasiyat' && viewMode !== 'page-starts' && viewMode !== 'surah-fives') return;
     const t = e.touches?.[0];
     if (!t) return;
     swipeStartRef.current = { x: t.clientX, y: t.clientY };
   };
 
   const onSwipeTouchEnd = (e) => {
-    if (viewMode !== 'khmasiyat' && viewMode !== 'page-starts') return;
+    if (viewMode !== 'khmasiyat' && viewMode !== 'page-starts' && viewMode !== 'surah-fives') return;
     const start = swipeStartRef.current;
     swipeStartRef.current = null;
     if (!start) return;
@@ -701,6 +727,7 @@ function App() {
     if (audioRef.current) audioRef.current.pause();
     setCurrentIndex(0);
     setViewMode('khmasiyat');
+    setSurahFivesIndex(0);
     setSharedGroupIndex(0);
     setStarredIndices(new Set());
     setActiveTooltip(null);
@@ -899,7 +926,7 @@ function App() {
       {/* الأزرار العلوية */}
       {!isQuizMode && viewMode !== 'shared-verses' && viewMode !== 'starred' && viewMode !== 'page-starred' && viewMode !== 'night-counter' && (
       <div className="action-buttons-container upper-actions">
-        {(isPageStartsMode || isNightCounterMode) && (
+        {(isPageStartsMode || isNightCounterMode || isSurahFivesMode) && (
           <>
             {!isNightCounterMode && (
               <button
@@ -914,7 +941,7 @@ function App() {
             )}
           </>
         )}
-        {!isPageStartsMode && !isNightCounterMode && viewMode !== 'shared-verses' && (
+        {!isPageStartsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' && (
           <>
             <div className="icon-wrapper" ref={moreMenuRef}>
               <button
@@ -936,7 +963,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl">
-                  {['العداد', 'الوضع الليلي', 'الخط'].map(option => (
+                  {['العداد', 'الوضع الليلي', 'الخط', 'خماسيات - سور'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -945,6 +972,13 @@ function App() {
                         if (option === 'العداد') {
                           setViewMode('night-counter');
                           setIsMoreMenuOpen(false);
+                          return;
+                        }
+                        if (option === 'خماسيات - سور') {
+                          setSurahFivesIndex(0);
+                          setViewMode('surah-fives');
+                          setIsMoreMenuOpen(false);
+                          setIsFontMenuOpen(false);
                           return;
                         }
                         if (option === 'الوضع الليلي') {
@@ -1181,7 +1215,7 @@ function App() {
         </>
       ) : (
         <div className="content-layout" onTouchStart={onSwipeTouchStart} onTouchEnd={onSwipeTouchEnd}>
-          {viewMode !== 'shared-verses' && viewMode !== 'night-counter' && <div className="top-stars-container inside-text-field">
+          {viewMode !== 'shared-verses' && viewMode !== 'night-counter' && viewMode !== 'surah-fives' && <div className="top-stars-container inside-text-field">
             <button 
               className="top-star-btn"
               title={isPageStartsMode ? "قائمة الصفحات للتثبيت" : "قائمة الخماسيات للتثبيت"}
@@ -1226,12 +1260,15 @@ function App() {
                   setSharedGroupIndex(prev => Math.max(0, prev - 1));
                 } else if (viewMode === 'page-starts') {
                   setCurrentPageIndex(prev => Math.max(0, prev - 1));
+                } else if (viewMode === 'surah-fives') {
+                  setSurahFivesIndex(prev => Math.max(0, prev - 1));
                 }
               }}
               className="nav-arrow prev-arrow"
               disabled={(viewMode === 'khmasiyat' && currentIndex === 0) || 
                         (viewMode === 'shared-verses' && sharedGroupIndex === 0) ||
-                        (viewMode === 'page-starts' && currentPageIndex === 0)}
+                        (viewMode === 'page-starts' && currentPageIndex === 0) ||
+                        (viewMode === 'surah-fives' && clampedSurahFivesIndex === 0)}
               title="السابق">
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
@@ -1509,6 +1546,18 @@ function App() {
                 {SHARED_VERSE_GROUPS[sharedGroupIndex].surahs.map(s => `[${SURAH_NAMES[s - 1]}]`).join(' ، ')}
               </div>
             </div>
+          ) : viewMode === 'surah-fives' ? (
+            <div className="verse-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{ color: fontColor, fontWeight: fontWeight, fontSize: '54px', marginBottom: '12px' }}>
+                {surahFivesSurahNumber}
+              </div>
+              <div style={{ color: fontColor, fontWeight: fontWeight, fontSize: `calc(${fontSize}px * 0.95)`, lineHeight: '1.8' }}>
+                سورة {surahFivesSurahName}
+              </div>
+              <div style={{ marginTop: '12px', color: 'var(--app-muted)', fontWeight: 800, fontSize: '18px' }} dir="ltr">
+                {clampedSurahFivesIndex + 1} / {SURAH_FIVES_ORDER.length}
+              </div>
+            </div>
           ) : viewMode === 'page-starts' && isPageStartsLoading ? (
             <div className="verse-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <div style={{ color: fontColor, fontWeight: fontWeight, fontSize: `calc(${fontSize}px * 0.85)` }}>جاري تحميل بيانات الصفحات...</div>
@@ -1530,12 +1579,15 @@ function App() {
                   setSharedGroupIndex(prev => Math.min(SHARED_VERSE_GROUPS.length - 1, prev + 1));
                 } else if (viewMode === 'page-starts') {
                   setCurrentPageIndex(prev => Math.min(pageStartsData.length - 1, prev + 1));
+                } else if (viewMode === 'surah-fives') {
+                  setSurahFivesIndex(prev => Math.min(SURAH_FIVES_ORDER.length - 1, prev + 1));
                 }
               }}
               className="nav-arrow next-arrow"
               disabled={(viewMode === 'khmasiyat' && currentIndex === 1201) || 
                         (viewMode === 'shared-verses' && sharedGroupIndex === SHARED_VERSE_GROUPS.length - 1) ||
-                        (viewMode === 'page-starts' && currentPageIndex === pageStartsData.length - 1)}
+                        (viewMode === 'page-starts' && currentPageIndex === pageStartsData.length - 1) ||
+                        (viewMode === 'surah-fives' && clampedSurahFivesIndex === SURAH_FIVES_ORDER.length - 1)}
               title="التالي">
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
@@ -1545,7 +1597,7 @@ function App() {
         </div>
       )}
 
-      {!isPageStartsMode && !isNightCounterMode && viewMode !== 'starred' && (
+      {!isPageStartsMode && !isNightCounterMode && viewMode !== 'starred' && viewMode !== 'surah-fives' && (
       <div className="action-buttons-container" ref={actionButtonsRef}>
         {viewMode !== 'shared-verses' && (
           <>
