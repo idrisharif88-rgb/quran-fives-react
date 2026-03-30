@@ -26,6 +26,20 @@ import './App.css';
 // مصفوفة بأسماء السور الـ 114
 const SURAH_NAMES = "الفاتحة,البقرة,آل عمران,النساء,المائدة,الأنعام,الأعراف,الأنفال,التوبة,يونس,هود,يوسف,الرعد,إبراهيم,الحجر,النحل,الإسراء,الكهف,مريم,طه,الأنبياء,الحج,المؤمنون,النور,الفرقان,الشعراء,النمل,القصص,العنكبوت,الروم,لقمان,السجدة,الأحزاب,سبأ,فاطر,يس,الصافات,ص,الزمر,غافر,فصلت,الشورى,الزخرف,الدخان,الجاثية,الأحقاف,محمد,الفتح,الحجرات,ق,الذاريات,الطور,النجم,القمر,الرحمن,الواقعة,الحديد,المجادلة,الحشر,الممتحنة,الصف,الجمعة,المنافقون,التغابن,الطلاق,التحريم,الملك,القلم,الحاقة,المعارج,نوح,الجن,المزمل,المدثر,القيامة,الإنسان,المرسلات,النبأ,النازعات,عبس,التكوير,الانفطار,المطففين,الانشقاق,البروج,الطارق,الأعلى,الغاشية,الفجر,البلد,الشمس,الليل,الضحى,الشرح,التين,العلق,القدر,البينة,الزلزلة,العاديات,القارعة,التكاثر,العصر,الهمزة,الفيل,قريش,الماعون,الكوثر,الكافرون,النصر,المسد,الإخلاص,الفلق,الناس".split(",");
 
+const getPageNumberForVerse = (surah, ayah) => {
+  if (!PAGE_STARTS || PAGE_STARTS.length === 0) {
+    return null;
+  }
+  // Find the last page start that is before or at the current verse
+  for (let i = PAGE_STARTS.length - 1; i >= 0; i--) {
+    const pageStart = PAGE_STARTS[i];
+    if (pageStart.s < surah || (pageStart.s === surah && pageStart.a <= ayah)) {
+      return pageStart.page;
+    }
+  }
+  return 1; // Default to page 1 if not found (e.g., for Surah Al-Fatiha)
+};
+
 // حساب مجاميع السور التي تشترك في نفس عدد الآيات تلقائياً
 const surahVerseCounts = {};
 QURAN_VERSES.forEach(v => {
@@ -263,6 +277,11 @@ function App() {
   const currentVersesText = isPageStartsMode
     ? (currentPageStartVerse ? [currentPageStartVerse] : [])
     : khmasiyatVersesText;
+
+  const lastVerseOfKhmasiya = QURAN_VERSES[currentKhmasiyat.absoluteEndIndex - 1];
+  const khmasiyatPageNumber = (viewMode === 'khmasiyat' && lastVerseOfKhmasiya)
+    ? getPageNumberForVerse(lastVerseOfKhmasiya.s, lastVerseOfKhmasiya.a)
+    : null;
 
   // Data: Calculate total verses in the currently displayed Surah
   const currentSurahNumber = currentVersesText[0]?.s;
@@ -1174,6 +1193,11 @@ function App() {
                 <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
               </svg>
             </button>
+            {viewMode === 'khmasiyat' && khmasiyatPageNumber && (
+              <div className="khmasiyat-page-display">
+                صفحة {khmasiyatPageNumber}
+              </div>
+            )}
             <button 
               className="top-star-btn"
               title={isPageStartsMode ? "تثبيت الصفحة" : "تثبيت الخماسية"}

@@ -796,6 +796,17 @@ button:focus-visible,
   pointer-events: auto;
 }
 
+.khmasiyat-page-display {
+  color: var(--app-muted);
+  font-weight: bold;
+  font-size: 22px;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+  text-shadow: 0 1px 2px var(--app-shadow);
+}
+
 .starred-mode-stars {
   margin-bottom: 15px;
   padding: 0 5px;
