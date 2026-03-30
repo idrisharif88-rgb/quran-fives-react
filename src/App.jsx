@@ -203,7 +203,7 @@ function App() {
     setNightCounterLimitInput(
       Number.isInteger(activeNightCounter.limit) ? String(activeNightCounter.limit) : ''
     );
-  }, [activeNightCounterId, activeNightCounter?.id]);
+  }, [activeNightCounterId, activeNightCounter]);
 
   useEffect(() => {
     saveStoredState(APP_STORAGE_KEY, {
@@ -757,6 +757,25 @@ function App() {
     setNightCounterLimitInput('');
   };
 
+  const handleEditNightCounter = (counterId) => {
+    setActiveNightCounterId(counterId);
+  };
+
+  const handleResetNightCounter = (counterId) => {
+    setNightCounters(prev => prev.map(counter => (
+      counter.id === counterId
+        ? { ...counter, value: 0 }
+        : counter
+    )));
+  };
+
+  const handleDeleteNightCounter = (counterId) => {
+    setNightCounters(prev => {
+      if (prev.length <= 1) return prev;
+      return prev.filter(counter => counter.id !== counterId);
+    });
+  };
+
   const handlePageJump = () => {
     setPageJumpError('');
 
@@ -1206,6 +1225,76 @@ function App() {
                   </button>
                   {isNightCounterSettingsOpen && (
                     <div className="settings-popover night-counter-settings night-counter-settings-popover" dir="rtl">
+                      <div className="night-counter-manager-header">
+                        <div className="night-counter-manager-title">عدادات</div>
+                        <button
+                          type="button"
+                          className="night-counter-manager-add"
+                          onClick={handleAddNightCounter}
+                        >
+                          إضافة
+                        </button>
+                      </div>
+                      <div className="night-counter-manager-list">
+                        {nightCounters.map(counter => {
+                          const isActiveCounter = counter.id === activeNightCounterId;
+                          return (
+                            <div
+                              key={`manager-${counter.id}`}
+                              className={`night-counter-manager-card ${isActiveCounter ? 'active' : ''}`}
+                            >
+                              <div className="night-counter-manager-card-head">
+                                <div className="night-counter-manager-name">
+                                  {counter.name || 'عداد'}
+                                </div>
+                                {isActiveCounter && (
+                                  <span className="night-counter-manager-badge">نشط</span>
+                                )}
+                              </div>
+                              <div className="night-counter-manager-meta">
+                                <span>العد الحالي: {counter.value}</span>
+                                <span>الحد: {Number.isInteger(counter.limit) ? counter.limit : '-'}</span>
+                              </div>
+                              <div className="night-counter-manager-actions">
+                                <button
+                                  type="button"
+                                  className="night-counter-manager-btn primary"
+                                  onClick={() => handleEditNightCounter(counter.id)}
+                                  title="تعديل"
+                                >
+                                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm2.92 2.83H5v-.92l9.06-9.06.92.92L5.92 20.08zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.12 1.12 3.75 3.75 1.12-1.12z"/>
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="night-counter-manager-btn"
+                                  onClick={() => handleResetNightCounter(counter.id)}
+                                  title="تصفير"
+                                >
+                                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 5V2L7 7l5 5V8c2.97 0 5.44 2.16 5.91 5h2.02A8.004 8.004 0 0 0 12 5zm-5.91 6H4.07A8.004 8.004 0 0 0 12 19v3l5-5-5-5v3c-2.97 0-5.44-2.16-5.91-5z"/>
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="night-counter-manager-btn danger"
+                                  onClick={() => handleDeleteNightCounter(counter.id)}
+                                  disabled={nightCounters.length <= 1}
+                                  title="حذف"
+                                >
+                                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z"/>
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="night-counter-editor-label">
+                        تعديل: {activeNightCounter?.name || 'عداد'}
+                      </div>
                       <div className="night-counter-list">
                         {nightCounters.map(counter => (
                           <button

@@ -528,7 +528,7 @@ button:focus-visible,
 }
 
 .settings-popover.night-counter-settings {
-  width: 280px;
+  width: min(380px, calc(100vw - 24px));
   gap: 12px;
 }
 
@@ -542,6 +542,139 @@ button:focus-visible,
   left: 18px;
   right: auto;
   transform: none;
+}
+
+.night-counter-list {
+  display: none !important;
+}
+
+.night-counter-manager-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.night-counter-manager-title {
+  color: var(--app-text-strong);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.night-counter-manager-add {
+  border: 1px solid var(--app-accent);
+  border-radius: 10px;
+  padding: 7px 12px;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.night-counter-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.night-counter-manager-card {
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-3);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.night-counter-manager-card.active {
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 1px var(--app-accent-border);
+  background: var(--app-surface);
+}
+
+.night-counter-manager-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.night-counter-manager-name {
+  color: var(--app-text);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.night-counter-manager-badge {
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: var(--app-accent-glow);
+  color: var(--app-accent);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.night-counter-manager-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--app-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.night-counter-manager-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.night-counter-manager-btn {
+  border: 1px solid var(--app-border-strong);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.night-counter-manager-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.night-counter-manager-btn.primary {
+  border-color: var(--app-accent);
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+}
+
+.night-counter-manager-btn.danger {
+  border-color: rgba(220, 38, 38, 0.35);
+  color: var(--app-danger);
+}
+
+.night-counter-manager-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.night-counter-editor-label {
+  color: var(--app-muted);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .night-counter-list {
