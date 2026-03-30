@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import CustomKeyboard, { useCustomKeyboard } from '../components/CustomKeyboard';
 import { SURAH_METADATA } from '../data/quranConstants';
 import { buildShuffledIndices } from './quizUtils';
 import { SURAH_COUNT_QUIZ_STORAGE_KEY, loadStoredState, saveStoredState } from './persistence';
@@ -102,6 +103,24 @@ export default function SurahCountQuiz({ onClose }) {
   };
 
   const surahCountRemaining = Math.max(0, surahCountOrder.length - surahCountNextPointer);
+  const keyboard = useCustomKeyboard({
+    surahCountGuess: {
+      value: surahCountGuess,
+      setValue: setSurahCountGuess,
+      maxLength: 3,
+      label: 'عدد الآيات',
+      submitLabel: 'تحقق',
+      onSubmit: checkSurahCountAnswer,
+    },
+    surahCountInput: {
+      value: surahCountInput,
+      setValue: setSurahCountInput,
+      maxLength: 3,
+      label: 'عدد الآيات',
+      submitLabel: 'ابحث',
+      onSubmit: findSurahsByVerseCount,
+    },
+  });
 
   return (
     <div className="khmasiyat-quiz-panel" dir="rtl">
@@ -115,16 +134,56 @@ export default function SurahCountQuiz({ onClose }) {
         <>
           <div className="khmasiyat-quiz-progress">المتبقي حتى إنهاء جميع السور: {surahCountRemaining}</div>
           <div className="khmasiyat-quiz-verse">سورة {SURAH_METADATA[surahCountQuestionIndex]?.name}</div>
-          <div className="khmasiyat-quiz-inputs"><div className="khmasiyat-quiz-field"><label className="khmasiyat-quiz-label">عدد الآيات</label><input type="number" className="khmasiyat-quiz-input" value={surahCountGuess} onChange={(e) => setSurahCountGuess(e.target.value)} placeholder="أدخل عدد الآيات" min="1" /></div></div>
-          <div className="khmasiyat-quiz-actions"><button type="button" className="khmasiyat-quiz-btn" onClick={checkSurahCountAnswer}>تحقق</button><button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => createSurahCountQuestion()}>سورة جديدة</button><button type="button" className="khmasiyat-quiz-btn secondary" onClick={onClose}>العودة للتصفح</button></div>
+          <div className="khmasiyat-quiz-inputs">
+            <div className="khmasiyat-quiz-field">
+              <label className="khmasiyat-quiz-label">عدد الآيات</label>
+              <input
+                type="text"
+                value={surahCountGuess}
+                placeholder="أدخل عدد الآيات"
+                min="1"
+                {...keyboard.getInputProps('surahCountGuess', { className: 'khmasiyat-quiz-input' })}
+              />
+            </div>
+          </div>
+          <div className="khmasiyat-quiz-actions">
+            <button type="button" className="khmasiyat-quiz-btn" onClick={() => { keyboard.closeKeyboard(); checkSurahCountAnswer(); }}>تحقق</button>
+            <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => { keyboard.closeKeyboard(); createSurahCountQuestion(); }}>سورة جديدة</button>
+            <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => { keyboard.closeKeyboard(); onClose(); }}>العودة للتصفح</button>
+          </div>
         </>
       ) : (
         <>
-          <div className="khmasiyat-quiz-inputs"><div className="khmasiyat-quiz-field"><label className="khmasiyat-quiz-label">عدد الآيات</label><input type="number" className="khmasiyat-quiz-input" value={surahCountInput} onChange={(e) => setSurahCountInput(e.target.value)} placeholder="أدخل العدد" min="1" /></div></div>
-          <div className="khmasiyat-quiz-actions"><button type="button" className="khmasiyat-quiz-btn" onClick={findSurahsByVerseCount}>ابحث</button><button type="button" className="khmasiyat-quiz-btn secondary" onClick={onClose}>العودة للتصفح</button></div>
+          <div className="khmasiyat-quiz-inputs">
+            <div className="khmasiyat-quiz-field">
+              <label className="khmasiyat-quiz-label">عدد الآيات</label>
+              <input
+                type="text"
+                value={surahCountInput}
+                placeholder="أدخل العدد"
+                min="1"
+                {...keyboard.getInputProps('surahCountInput', { className: 'khmasiyat-quiz-input' })}
+              />
+            </div>
+          </div>
+          <div className="khmasiyat-quiz-actions">
+            <button type="button" className="khmasiyat-quiz-btn" onClick={() => { keyboard.closeKeyboard(); findSurahsByVerseCount(); }}>ابحث</button>
+            <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => { keyboard.closeKeyboard(); onClose(); }}>العودة للتصفح</button>
+          </div>
         </>
       )}
       {surahCountResult && <div className="khmasiyat-quiz-result">{surahCountResult}</div>}
+      <CustomKeyboard
+        visible={keyboard.showKeyboard}
+        label={keyboard.activeConfig?.label}
+        value={keyboard.activeConfig?.value}
+        allowColon={Boolean(keyboard.activeConfig?.allowColon)}
+        submitLabel={keyboard.activeConfig?.submitLabel}
+        onInsert={keyboard.handleKeyboardKeyPress}
+        onBackspace={keyboard.handleKeyboardBackspace}
+        onSubmit={keyboard.handleKeyboardSubmit}
+        onClose={keyboard.closeKeyboard}
+      />
     </div>
   );
 }

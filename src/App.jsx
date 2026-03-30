@@ -4,6 +4,7 @@ import TextDisplay from './components/TextDisplay';
 import { QURAN_VERSES } from './data/quranVerses';
 import { SURAH_METADATA } from './data/quranConstants';
 import CounterRing from './components/CounterRing';
+import CustomKeyboard, { useCustomKeyboard } from './components/CustomKeyboard';
 import { PAGE_STARTS } from './data/pageStarts';
 import menuMainIcon from './assets/menu-main-icon.png';
 import KhmasiyatQuiz from './utils/KhmasiyatQuiz';
@@ -900,6 +901,27 @@ function App() {
   const resolvedFontColor = isNightMode && fontColor === 'darkgreen'
     ? 'var(--app-accent)'
     : fontColor;
+  const mainKeyboard = useCustomKeyboard({
+    jump: {
+      value: jumpInput,
+      setValue: setJumpInput,
+      allowColon: true,
+      maxLength: 8,
+      label: 'إدخال خماسية أو سورة:خماسية',
+      showPlaceholder: false,
+      submitLabel: 'اذهب',
+      onSubmit: handleJump,
+    },
+    pageJump: {
+      value: pageJumpInput,
+      setValue: setPageJumpInput,
+      allowColon: false,
+      maxLength: 3,
+      label: 'إدخال رقم الصفحة',
+      submitLabel: 'اذهب',
+      onSubmit: handlePageJump,
+    },
+  });
 
   return (
     <div className={`app-container ${isNightMode ? 'night-mode' : ''}`} style={{
@@ -1678,14 +1700,12 @@ function App() {
                 )}
                 <input
                   type="text"
-                  className="jump-input"
                   value={jumpInput}
-                  onChange={(e) => setJumpInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleJump()}
                   dir="ltr"
+                  {...mainKeyboard.getInputProps('jump', { className: 'jump-input' })}
                 />
               </div>
-              <button onClick={handleJump} className="jump-button">اذهب</button>
+              <button onClick={() => { mainKeyboard.closeKeyboard(); handleJump(); }} className="jump-button">اذهب</button>
             </div>
             <div className="jump-error-container">
               {jumpError && <p className="jump-error-message">{jumpError}</p>}
@@ -1708,18 +1728,16 @@ function App() {
           <div className="jump-input-wrapper">
             <div className={`input-inner-wrapper ${pageJumpError ? 'shake border-error' : ''}`}>
               <input
-                type="number"
-                className="jump-input"
+                type="text"
                 value={pageJumpInput}
-                onChange={(e) => setPageJumpInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handlePageJump()}
                 placeholder="1"
                 min="1"
                 max="604"
                 dir="ltr"
+                {...mainKeyboard.getInputProps('pageJump', { className: 'jump-input' })}
               />
             </div>
-            <button onClick={handlePageJump} className="jump-button">اذهب</button>
+            <button onClick={() => { mainKeyboard.closeKeyboard(); handlePageJump(); }} className="jump-button">اذهب</button>
           </div>
           <div className="jump-error-container">
             {pageJumpError && <p className="jump-error-message">{pageJumpError}</p>}
@@ -1735,6 +1753,18 @@ function App() {
         </div>
         </>
       )}
+      <CustomKeyboard
+        visible={mainKeyboard.showKeyboard}
+        label={mainKeyboard.activeConfig?.label}
+        value={mainKeyboard.activeConfig?.value}
+        allowColon={Boolean(mainKeyboard.activeConfig?.allowColon)}
+        submitLabel={mainKeyboard.activeConfig?.submitLabel}
+        showPlaceholder={mainKeyboard.activeConfig?.showPlaceholder !== false}
+        onInsert={mainKeyboard.handleKeyboardKeyPress}
+        onBackspace={mainKeyboard.handleKeyboardBackspace}
+        onSubmit={mainKeyboard.handleKeyboardSubmit}
+        onClose={mainKeyboard.closeKeyboard}
+      />
         </>
       )}
     </div>

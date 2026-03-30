@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { getSurahAndRange } from './quranLogic';
 import { QURAN_VERSES } from '../data/quranVerses';
+import CustomKeyboard, { useCustomKeyboard } from '../components/CustomKeyboard';
 import TextDisplay from '../components/TextDisplay';
 import { buildShuffledIndices } from './quizUtils';
 import { KHMASIYAT_QUIZ_STORAGE_KEY, loadStoredState, saveStoredState } from './persistence';
@@ -178,6 +179,40 @@ export default function KhmasiyatQuiz({ onClose }) {
   const quizKhmasiyaData = quizKhmasiyaIndex !== null ? getSurahAndRange(quizKhmasiyaIndex) : null;
   const quizLastVerse = quizKhmasiyaData ? QURAN_VERSES[quizKhmasiyaData.absoluteEndIndex - 1] : null;
   const quizRemainingCount = Math.max(0, quizOrder.length - quizNextPointer);
+  const keyboard = useCustomKeyboard({
+    rangeStart: {
+      value: quizRangeStart,
+      setValue: setQuizRangeStart,
+      maxLength: 4,
+      label: 'بداية مدى الخماسيات',
+      submitLabel: 'تطبيق',
+      onSubmit: () => createKhmasiyatQuestion(true),
+    },
+    rangeEnd: {
+      value: quizRangeEnd,
+      setValue: setQuizRangeEnd,
+      maxLength: 4,
+      label: 'نهاية مدى الخماسيات',
+      submitLabel: 'تطبيق',
+      onSubmit: () => createKhmasiyatQuestion(true),
+    },
+    surahGuess: {
+      value: quizSurahGuess,
+      setValue: setQuizSurahGuess,
+      maxLength: 3,
+      label: 'رقم السورة',
+      submitLabel: 'تحقق',
+      onSubmit: checkKhmasiyatAnswer,
+    },
+    fiveGuess: {
+      value: quizFiveInSurahGuess,
+      setValue: setQuizFiveInSurahGuess,
+      maxLength: 3,
+      label: 'رقم الآية',
+      submitLabel: 'تحقق',
+      onSubmit: checkKhmasiyatAnswer,
+    },
+  });
 
   return (
     <div className="khmasiyat-quiz-panel" dir="rtl">
@@ -185,29 +220,27 @@ export default function KhmasiyatQuiz({ onClose }) {
       <div className="khmasiyat-quiz-range">
         <span className="khmasiyat-range-label">من</span>
         <input
-          type="number"
-          className="khmasiyat-quiz-input khmasiyat-range-input"
+          type="text"
           value={quizRangeStart}
-          onChange={(e) => setQuizRangeStart(e.target.value)}
           placeholder="0001"
           min="1"
           max="1202"
           aria-label="من خماسية"
           maxLength="4"
+          {...keyboard.getInputProps('rangeStart', { className: 'khmasiyat-quiz-input khmasiyat-range-input' })}
         />
         <span className="khmasiyat-range-label">إلى</span>
         <input
-          type="number"
-          className="khmasiyat-quiz-input khmasiyat-range-input"
+          type="text"
           value={quizRangeEnd}
-          onChange={(e) => setQuizRangeEnd(e.target.value)}
           placeholder="1202"
           min="1"
           max="1202"
           aria-label="إلى خماسية"
           maxLength="4"
+          {...keyboard.getInputProps('rangeEnd', { className: 'khmasiyat-quiz-input khmasiyat-range-input' })}
         />
-        <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => createKhmasiyatQuestion(true)}>تطبيق</button>
+        <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => { keyboard.closeKeyboard(); createKhmasiyatQuestion(true); }}>تطبيق</button>
       </div>
       <div className="khmasiyat-quiz-progress">المتبقي حتى إنهاء المدى: {quizRemainingCount}</div>
       {quizLastVerse ? (
@@ -219,32 +252,41 @@ export default function KhmasiyatQuiz({ onClose }) {
         <div className="khmasiyat-quiz-field">
           <label className="khmasiyat-quiz-label">رقم السورة</label>
           <input
-            type="number"
-            className={`khmasiyat-quiz-input ${isSurahShaking ? 'shake border-error' : ''}`}
+            type="text"
             value={quizSurahGuess}
-            onChange={(e) => setQuizSurahGuess(e.target.value)}
             placeholder="من 1 إلى 114"
             min="1"
             max="114"
+            {...keyboard.getInputProps('surahGuess', { className: `khmasiyat-quiz-input ${isSurahShaking ? 'shake border-error' : ''}` })}
           />
         </div>
         <div className="khmasiyat-quiz-field">
           <label className="khmasiyat-quiz-label">رقم الآية</label>
           <input
-            type="number"
-            className={`khmasiyat-quiz-input ${isFiveShaking ? 'shake border-error' : ''}`}
+            type="text"
             value={quizFiveInSurahGuess}
-            onChange={(e) => setQuizFiveInSurahGuess(e.target.value)}
             placeholder="مثال: 5 أو 10 أو 15"
             min="5"
+            {...keyboard.getInputProps('fiveGuess', { className: `khmasiyat-quiz-input ${isFiveShaking ? 'shake border-error' : ''}` })}
           />
         </div>
       </div>
       <div className="khmasiyat-quiz-actions">
-        <button type="button" className="khmasiyat-quiz-btn" onClick={checkKhmasiyatAnswer}>تحقق</button>
-        <button type="button" className="khmasiyat-quiz-btn secondary" onClick={onClose}>العودة للتصفح</button>
+        <button type="button" className="khmasiyat-quiz-btn" onClick={() => { keyboard.closeKeyboard(); checkKhmasiyatAnswer(); }}>تحقق</button>
+        <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => { keyboard.closeKeyboard(); onClose(); }}>العودة للتصفح</button>
       </div>
       {quizResult && <div className="khmasiyat-quiz-result">{quizResult}</div>}
+      <CustomKeyboard
+        visible={keyboard.showKeyboard}
+        label={keyboard.activeConfig?.label}
+        value={keyboard.activeConfig?.value}
+        allowColon={Boolean(keyboard.activeConfig?.allowColon)}
+        submitLabel={keyboard.activeConfig?.submitLabel}
+        onInsert={keyboard.handleKeyboardKeyPress}
+        onBackspace={keyboard.handleKeyboardBackspace}
+        onSubmit={keyboard.handleKeyboardSubmit}
+        onClose={keyboard.closeKeyboard}
+      />
     </div>
   );
 }

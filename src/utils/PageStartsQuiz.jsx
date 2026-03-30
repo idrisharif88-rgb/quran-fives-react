@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { PAGE_STARTS } from '../data/pageStarts';
+import CustomKeyboard, { useCustomKeyboard } from '../components/CustomKeyboard';
 import TextDisplay from '../components/TextDisplay';
 import { buildShuffledIndices } from './quizUtils';
 import { PAGE_STARTS_QUIZ_STORAGE_KEY, loadStoredState, saveStoredState } from './persistence';
@@ -149,6 +150,33 @@ export default function PageStartsQuiz({ onClose }) {
     }
   };
 
+  const keyboard = useCustomKeyboard({
+    rangeStart: {
+      value: rangeStart,
+      setValue: setRangeStart,
+      maxLength: 3,
+      label: 'بداية مدى الصفحات',
+      submitLabel: 'تطبيق',
+      onSubmit: () => applyRange(true),
+    },
+    rangeEnd: {
+      value: rangeEnd,
+      setValue: setRangeEnd,
+      maxLength: 3,
+      label: 'نهاية مدى الصفحات',
+      submitLabel: 'تطبيق',
+      onSubmit: () => applyRange(true),
+    },
+    pageGuess: {
+      value: pageGuess,
+      setValue: setPageGuess,
+      maxLength: 3,
+      label: 'رقم الصفحة',
+      submitLabel: 'تحقق',
+      onSubmit: checkAnswer,
+    },
+  });
+
   return (
     <div className="khmasiyat-quiz-panel" dir="rtl">
       <h2 className="khmasiyat-quiz-title">اختبار بدايات صفحات</h2>
@@ -156,27 +184,25 @@ export default function PageStartsQuiz({ onClose }) {
       <div className="khmasiyat-quiz-range">
         <span className="khmasiyat-range-label">من</span>
         <input
-          type="number"
-          className="khmasiyat-quiz-input khmasiyat-range-input"
+          type="text"
           value={rangeStart}
-          onChange={(e) => setRangeStart(e.target.value)}
           placeholder="1"
           min="1"
           max="604"
           aria-label="من"
+          {...keyboard.getInputProps('rangeStart', { className: 'khmasiyat-quiz-input khmasiyat-range-input' })}
         />
         <span className="khmasiyat-range-label">إلى</span>
         <input
-          type="number"
-          className="khmasiyat-quiz-input khmasiyat-range-input"
+          type="text"
           value={rangeEnd}
-          onChange={(e) => setRangeEnd(e.target.value)}
           placeholder="604"
           min="1"
           max="604"
           aria-label="إلى"
+          {...keyboard.getInputProps('rangeEnd', { className: 'khmasiyat-quiz-input khmasiyat-range-input' })}
         />
-        <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => applyRange(true)}>
+        <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => { keyboard.closeKeyboard(); applyRange(true); }}>
           تطبيق
         </button>
       </div>
@@ -192,30 +218,39 @@ export default function PageStartsQuiz({ onClose }) {
       <div className="page-starts-quiz-check">
         <div className={`input-inner-wrapper ${isGuessShaking ? 'shake border-error' : ''}`}>
           <input
-            type="number"
-            className="jump-input"
+            type="text"
             value={pageGuess}
-            onChange={(e) => setPageGuess(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && checkAnswer()}
             placeholder="1"
             min="1"
             max="604"
             dir="ltr"
             aria-label="page number"
+            {...keyboard.getInputProps('pageGuess', { className: 'jump-input' })}
           />
         </div>
-        <button type="button" className="khmasiyat-quiz-btn" onClick={checkAnswer}>
+        <button type="button" className="khmasiyat-quiz-btn" onClick={() => { keyboard.closeKeyboard(); checkAnswer(); }}>
           تحقق
         </button>
       </div>
 
       <div className="khmasiyat-quiz-actions">
-        <button type="button" className="khmasiyat-quiz-btn secondary" onClick={onClose}>
+        <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => { keyboard.closeKeyboard(); onClose(); }}>
           عودة
         </button>
       </div>
 
       {result && <div className="khmasiyat-quiz-result">{result}</div>}
+      <CustomKeyboard
+        visible={keyboard.showKeyboard}
+        label={keyboard.activeConfig?.label}
+        value={keyboard.activeConfig?.value}
+        allowColon={Boolean(keyboard.activeConfig?.allowColon)}
+        submitLabel={keyboard.activeConfig?.submitLabel}
+        onInsert={keyboard.handleKeyboardKeyPress}
+        onBackspace={keyboard.handleKeyboardBackspace}
+        onSubmit={keyboard.handleKeyboardSubmit}
+        onClose={keyboard.closeKeyboard}
+      />
     </div>
   );
 }

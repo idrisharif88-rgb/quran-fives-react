@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import CustomKeyboard, { useCustomKeyboard } from '../components/CustomKeyboard';
 import { QURAN_VERSES } from '../data/quranVerses';
 import { buildShuffledIndices } from './quizUtils';
 import { RANDOM_AYAH_QUIZ_STORAGE_KEY, loadStoredState, saveStoredState } from './persistence';
@@ -125,6 +126,40 @@ export default function RandomAyahQuiz({ onClose }) {
 
   const randomAyahData = randomAyahIndex !== null ? QURAN_VERSES[randomAyahIndex] : null;
   const randomAyahRemainingCount = Math.max(0, randomAyahOrder.length - randomAyahNextPointer);
+  const keyboard = useCustomKeyboard({
+    rangeStart: {
+      value: randomAyahRangeStart,
+      setValue: setRandomAyahRangeStart,
+      maxLength: 4,
+      label: 'بداية مدى الآيات',
+      submitLabel: 'تطبيق',
+      onSubmit: () => createRandomAyahQuestion(true),
+    },
+    rangeEnd: {
+      value: randomAyahRangeEnd,
+      setValue: setRandomAyahRangeEnd,
+      maxLength: 4,
+      label: 'نهاية مدى الآيات',
+      submitLabel: 'تطبيق',
+      onSubmit: () => createRandomAyahQuestion(true),
+    },
+    surahGuess: {
+      value: randomAyahSurahGuess,
+      setValue: setRandomAyahSurahGuess,
+      maxLength: 3,
+      label: 'رقم السورة',
+      submitLabel: 'تحقق',
+      onSubmit: checkRandomAyahAnswer,
+    },
+    verseGuess: {
+      value: randomAyahVerseGuess,
+      setValue: setRandomAyahVerseGuess,
+      maxLength: 3,
+      label: 'رقم الآية',
+      submitLabel: 'تحقق',
+      onSubmit: checkRandomAyahAnswer,
+    },
+  });
 
   return (
     <div className="khmasiyat-quiz-panel" dir="rtl">
@@ -132,33 +167,68 @@ export default function RandomAyahQuiz({ onClose }) {
       <div className="khmasiyat-quiz-range">
         <span className="khmasiyat-range-label">من</span>
         <input
-          type="number"
-          className="khmasiyat-quiz-input khmasiyat-range-input"
+          type="text"
           value={randomAyahRangeStart}
-          onChange={(e) => setRandomAyahRangeStart(e.target.value)}
           placeholder="1"
           min="1"
           max={QURAN_VERSES.length}
           aria-label="من"
+          {...keyboard.getInputProps('rangeStart', { className: 'khmasiyat-quiz-input khmasiyat-range-input' })}
         />
         <span className="khmasiyat-range-label">إلى</span>
         <input
-          type="number"
-          className="khmasiyat-quiz-input khmasiyat-range-input"
+          type="text"
           value={randomAyahRangeEnd}
-          onChange={(e) => setRandomAyahRangeEnd(e.target.value)}
           placeholder={String(QURAN_VERSES.length)}
           min="1"
           max={QURAN_VERSES.length}
           aria-label="إلى"
+          {...keyboard.getInputProps('rangeEnd', { className: 'khmasiyat-quiz-input khmasiyat-range-input' })}
         />
-        <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => createRandomAyahQuestion(true)}>تطبيق</button>
+        <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => { keyboard.closeKeyboard(); createRandomAyahQuestion(true); }}>تطبيق</button>
       </div>
       <div className="khmasiyat-quiz-progress">المتبقي حتى إنهاء المدى: {randomAyahRemainingCount}</div>
       <div className="khmasiyat-quiz-verse">{randomAyahData?.t || 'اختر مدى صحيحًا ثم اضغط "تطبيق" لعرض سؤال عشوائي.'}</div>
-      <div className="khmasiyat-quiz-inputs khmasiyat-quiz-guess-row"><div className="khmasiyat-quiz-field"><label className="khmasiyat-quiz-label">رقم السورة</label><input type="number" className="khmasiyat-quiz-input" value={randomAyahSurahGuess} onChange={(e) => setRandomAyahSurahGuess(e.target.value)} placeholder="من 1 إلى 114" min="1" max="114" /></div><div className="khmasiyat-quiz-field"><label className="khmasiyat-quiz-label">رقم الآية</label><input type="number" className="khmasiyat-quiz-input" value={randomAyahVerseGuess} onChange={(e) => setRandomAyahVerseGuess(e.target.value)} placeholder="مثال: 1 أو 23" min="1" /></div></div>
-      <div className="khmasiyat-quiz-actions"><button type="button" className="khmasiyat-quiz-btn" onClick={checkRandomAyahAnswer}>تحقق</button><button type="button" className="khmasiyat-quiz-btn secondary" onClick={createRandomAyahQuestion}>آية جديدة</button><button type="button" className="khmasiyat-quiz-btn secondary" onClick={onClose}>العودة للتصفح</button></div>
+      <div className="khmasiyat-quiz-inputs khmasiyat-quiz-guess-row">
+        <div className="khmasiyat-quiz-field">
+          <label className="khmasiyat-quiz-label">رقم السورة</label>
+          <input
+            type="text"
+            value={randomAyahSurahGuess}
+            placeholder="من 1 إلى 114"
+            min="1"
+            max="114"
+            {...keyboard.getInputProps('surahGuess', { className: 'khmasiyat-quiz-input' })}
+          />
+        </div>
+        <div className="khmasiyat-quiz-field">
+          <label className="khmasiyat-quiz-label">رقم الآية</label>
+          <input
+            type="text"
+            value={randomAyahVerseGuess}
+            placeholder="مثال: 1 أو 23"
+            min="1"
+            {...keyboard.getInputProps('verseGuess', { className: 'khmasiyat-quiz-input' })}
+          />
+        </div>
+      </div>
+      <div className="khmasiyat-quiz-actions">
+        <button type="button" className="khmasiyat-quiz-btn" onClick={() => { keyboard.closeKeyboard(); checkRandomAyahAnswer(); }}>تحقق</button>
+        <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => { keyboard.closeKeyboard(); createRandomAyahQuestion(); }}>آية جديدة</button>
+        <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => { keyboard.closeKeyboard(); onClose(); }}>العودة للتصفح</button>
+      </div>
       {randomAyahResult && <div className="khmasiyat-quiz-result">{randomAyahResult}</div>}
+      <CustomKeyboard
+        visible={keyboard.showKeyboard}
+        label={keyboard.activeConfig?.label}
+        value={keyboard.activeConfig?.value}
+        allowColon={Boolean(keyboard.activeConfig?.allowColon)}
+        submitLabel={keyboard.activeConfig?.submitLabel}
+        onInsert={keyboard.handleKeyboardKeyPress}
+        onBackspace={keyboard.handleKeyboardBackspace}
+        onSubmit={keyboard.handleKeyboardSubmit}
+        onClose={keyboard.closeKeyboard}
+      />
     </div>
   );
 }

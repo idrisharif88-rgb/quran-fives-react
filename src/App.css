@@ -41,6 +41,7 @@ body.night-mode {
   --app-shadow: rgba(0, 0, 0, 0.15);
   --app-tooltip-bg: #2c3e50;
   --app-tooltip-text: #ffffff;
+  --custom-keyboard-height: min(315px, 50vh);
 
   padding: 20px;
   font-family: var(--app-font-family, 'Tajawal', sans-serif);
@@ -1445,6 +1446,189 @@ button:focus-visible,
   outline: none;
 }
 
+.custom-keyboard-target {
+  caret-color: transparent;
+  cursor: pointer;
+  user-select: none;
+}
+
+.custom-keyboard-spacer {
+  height: calc(var(--custom-keyboard-height) + 16px);
+  pointer-events: none;
+}
+
+.custom-keyboard-shell {
+  position: fixed;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+  z-index: 980;
+  pointer-events: none;
+}
+
+.custom-keyboard-sheet {
+  width: min(100%, 350px);
+  max-height: var(--custom-keyboard-height);
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-2) 100%);
+  border: 1px solid var(--app-border);
+  border-radius: 18px;
+  box-shadow: 0 18px 38px var(--app-shadow);
+  padding: 12px;
+  pointer-events: auto;
+  animation: customKeyboardSlideUp 0.22s ease-out;
+}
+
+.custom-keyboard-entry-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 10px;
+  direction: ltr;
+}
+
+.custom-keyboard-preview {
+  flex: 1 1 auto;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-input-bg);
+  color: var(--app-input-text);
+  font-size: 20px;
+  font-weight: 800;
+  box-shadow: inset 0 1px 3px var(--app-shadow);
+  font-variant-numeric: tabular-nums;
+}
+
+.custom-keyboard-preview-text {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-keyboard-cursor {
+  display: inline-block;
+  font-weight: 900;
+  color: var(--app-text);
+  animation: customKeyboardCursorBlink 1s steps(2, start) infinite;
+}
+
+@keyframes customKeyboardCursorBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.custom-keyboard-submit-top {
+  flex: 0 0 auto;
+  min-width: 90px;
+  min-height: 44px;
+  border: 1px solid var(--app-accent);
+  border-radius: 12px;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 18px var(--app-accent-shadow);
+}
+
+.custom-keyboard-submit-top:hover {
+  background: var(--app-accent-strong);
+}
+
+.custom-keyboard-close-top {
+  flex: 0 0 auto;
+  min-width: 72px;
+  min-height: 44px;
+  border: 1px solid #e67e22;
+  border-radius: 12px;
+  background: #f39c12;
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(230, 126, 34, 0.35);
+}
+
+.custom-keyboard-close-top:hover {
+  background: #e67e22;
+}
+
+.custom-keyboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    'one two three'
+    'four five six'
+    'seven eight nine'
+    'erase zero colon';
+  gap: 8px;
+  direction: ltr;
+}
+
+.custom-keyboard-key {
+  min-height: 46px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+}
+
+.custom-keyboard-key:hover {
+  background: var(--app-popover-hover);
+}
+
+.custom-keyboard-key:active {
+  transform: scale(0.97);
+}
+
+.custom-keyboard-key:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.custom-keyboard-key-alt {
+  background: var(--app-surface-3);
+}
+
+.custom-keyboard-key-one { grid-area: one; }
+.custom-keyboard-key-two { grid-area: two; }
+.custom-keyboard-key-three { grid-area: three; }
+.custom-keyboard-key-four { grid-area: four; }
+.custom-keyboard-key-five { grid-area: five; }
+.custom-keyboard-key-six { grid-area: six; }
+.custom-keyboard-key-seven { grid-area: seven; }
+.custom-keyboard-key-eight { grid-area: eight; }
+.custom-keyboard-key-nine { grid-area: nine; }
+.custom-keyboard-key-erase { grid-area: erase; }
+.custom-keyboard-key-zero { grid-area: zero; }
+.custom-keyboard-key-colon { grid-area: colon; }
+
+@keyframes customKeyboardSlideUp {
+  from {
+    transform: translateY(calc(100% + 20px));
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 .jump-button {
   padding: 12px 30px;
   border: none;
@@ -1765,6 +1949,29 @@ button:focus-visible,
   }
   .khmasiyat-quiz-input {
     font-size: 17px;
+  }
+  .custom-keyboard-sheet {
+    width: 100%;
+    padding: 10px;
+    border-radius: 16px;
+  }
+  .custom-keyboard-key {
+    min-height: 44px;
+    font-size: 19px;
+  }
+  .custom-keyboard-preview {
+    font-size: 18px;
+    min-height: 42px;
+  }
+  .custom-keyboard-submit-top {
+    min-height: 42px;
+    min-width: 78px;
+    font-size: 14px;
+  }
+  .custom-keyboard-close-top {
+    min-height: 42px;
+    min-width: 66px;
+    font-size: 13px;
   }
   .ayah-menu-popover {
     max-height: 60vh; /* تحديد أقصى ارتفاع للقائمة */
