@@ -12,4 +12,5 @@
   font-size: 75px;
   font-weight: 900; /* Make it extra bold and clear */
   fill: var(--app-font-color, darkgreen);
+  text-shadow: 0 0 8px var(--app-accent-glow); /* Subtle background glow */
 }
