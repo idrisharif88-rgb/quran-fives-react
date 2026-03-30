@@ -160,6 +160,9 @@ function App() {
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
   const nightCounterAudioCtxRef = useRef(null);
+  const navAudioCtxRef = useRef(null);
+  const lastKhmasiyatIndexRef = useRef(currentIndex);
+  const skipKhmasiyatNavSoundRef = useRef(true);
   const moreMenuRef = useRef(null);
   const pageStartsMenuRef = useRef(null);
   const ayahMenuRef = useRef(null);
@@ -465,6 +468,21 @@ function App() {
     }
   }, [currentIndex, currentPageIndex, viewMode]);
 
+  useEffect(() => {
+    if (viewMode !== 'khmasiyat') {
+      lastKhmasiyatIndexRef.current = currentIndex;
+      return;
+    }
+    if (skipKhmasiyatNavSoundRef.current) {
+      skipKhmasiyatNavSoundRef.current = false;
+      lastKhmasiyatIndexRef.current = currentIndex;
+      return;
+    }
+    if (currentIndex === lastKhmasiyatIndexRef.current) return;
+    playKhmasiyatNavSound();
+    lastKhmasiyatIndexRef.current = currentIndex;
+  }, [currentIndex, viewMode]);
+
   const toggleAudio = async () => {
     if (isPlaying) {
       if (audioRef.current) audioRef.current.pause();
@@ -576,21 +594,57 @@ function App() {
     }
   };
 
+  const playKhmasiyatNavSound = async () => {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+
+    try {
+      if (!navAudioCtxRef.current) {
+        navAudioCtxRef.current = new AudioCtx();
+      }
+      const ctx = navAudioCtxRef.current;
+      if (ctx.state === 'suspended') await ctx.resume();
+
+      const now = ctx.currentTime;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+      gain.connect(ctx.destination);
+
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(780, now + 0.06);
+      osc.connect(gain);
+      osc.start(now);
+      osc.stop(now + 0.14);
+    } catch {
+      // ignore
+    }
+  };
+
   const handleSwipeNav = (direction) => {
-    if (viewMode !== 'khmasiyat') return;
-    if (direction === 'next') setCurrentIndex(prev => Math.min(1201, prev + 1));
-    if (direction === 'prev') setCurrentIndex(prev => Math.max(0, prev - 1));
+    if (viewMode === 'khmasiyat') {
+      if (direction === 'next') setCurrentIndex(prev => Math.min(1201, prev + 1));
+      if (direction === 'prev') setCurrentIndex(prev => Math.max(0, prev - 1));
+      return;
+    }
+    if (viewMode === 'page-starts') {
+      if (direction === 'next') setCurrentPageIndex(prev => Math.min(pageStartsData.length - 1, prev + 1));
+      if (direction === 'prev') setCurrentPageIndex(prev => Math.max(0, prev - 1));
+    }
   };
 
   const onSwipeTouchStart = (e) => {
-    if (viewMode !== 'khmasiyat') return;
+    if (viewMode !== 'khmasiyat' && viewMode !== 'page-starts') return;
     const t = e.touches?.[0];
     if (!t) return;
     swipeStartRef.current = { x: t.clientX, y: t.clientY };
   };
 
   const onSwipeTouchEnd = (e) => {
-    if (viewMode !== 'khmasiyat') return;
+    if (viewMode !== 'khmasiyat' && viewMode !== 'page-starts') return;
     const start = swipeStartRef.current;
     swipeStartRef.current = null;
     if (!start) return;
