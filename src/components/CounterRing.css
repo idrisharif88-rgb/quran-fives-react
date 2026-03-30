@@ -1,0 +1,15 @@
+.counter-ring-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.counter-ring-circle {
+  stroke: var(--app-font-color, darkgreen);
+}
+
+.counter-ring-number {
+  font-family: var(--app-font-family); /* Use the app's main font */
+  font-size: 75px;
+  font-weight: 900; /* Make it extra bold and clear */
+  fill: var(--app-font-color, darkgreen);
+}

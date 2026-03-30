@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { getSurahAndRange } from './utils/quranLogic';
 import TextDisplay from './components/TextDisplay';
 import { QURAN_VERSES } from './data/quranVerses';
 import { SURAH_METADATA } from './data/quranConstants';
+import CounterRing from './components/CounterRing';
 import { PAGE_STARTS } from './data/pageStarts';
 import menuMainIcon from './assets/menu-main-icon.png';
 import KhmasiyatQuiz from './utils/KhmasiyatQuiz';
@@ -1407,6 +1408,7 @@ function App() {
                 <button
                   type="button"
                   className="night-counter-circle"
+                  style={{ background: 'none', border: 'none' }}
                   onPointerDown={() => {
                     if (!activeNightCounter) return;
                     setIsNightTimerRunning(true);
@@ -1422,9 +1424,7 @@ function App() {
                   }}
                   aria-label="night counter"
                 >
-                  <span className="night-counter-value">
-                    {activeNightCounter?.value ?? 0}
-                  </span>
+                  <CounterRing value={activeNightCounter?.value ?? 0} />
                 </button>
               </div>
 
