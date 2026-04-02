@@ -37,6 +37,12 @@ export default function RandomAyahQuiz({ onClose }) {
   const [randomAyahResult, setRandomAyahResult] = useState(() => (
     typeof persistedQuizState.randomAyahResult === 'string' ? persistedQuizState.randomAyahResult : ''
   ));
+  const [correctCount, setCorrectCount] = useState(() => (
+    Number.isInteger(persistedQuizState.correctCount) ? persistedQuizState.correctCount : 0
+  ));
+  const [incorrectCount, setIncorrectCount] = useState(() => (
+    Number.isInteger(persistedQuizState.incorrectCount) ? persistedQuizState.incorrectCount : 0
+  ));
   const [isSurahShaking, setIsSurahShaking] = useState(false);
   const [isVerseShaking, setIsVerseShaking] = useState(false);
   const audioCtxRef = useRef(null);
@@ -61,6 +67,8 @@ export default function RandomAyahQuiz({ onClose }) {
       setRandomAyahNextPointer(firstIndex === null ? 0 : 1);
       setRandomAyahOrderRange({ start, end });
       setRandomAyahIndex(firstIndex);
+      setCorrectCount(0);
+      setIncorrectCount(0);
     } else {
       setRandomAyahIndex(randomAyahOrder[randomAyahNextPointer]);
       setRandomAyahNextPointer(prev => prev + 1);
@@ -90,6 +98,8 @@ export default function RandomAyahQuiz({ onClose }) {
       randomAyahNextPointer,
       randomAyahOrderRange,
       randomAyahResult,
+      correctCount,
+      incorrectCount,
     });
   }, [
     randomAyahIndex,
@@ -101,6 +111,8 @@ export default function RandomAyahQuiz({ onClose }) {
     randomAyahResult,
     randomAyahSurahGuess,
     randomAyahVerseGuess,
+    correctCount,
+    incorrectCount,
   ]);
 
   const triggerShake = (setter) => {
@@ -164,12 +176,14 @@ export default function RandomAyahQuiz({ onClose }) {
     
     if (guessedSurah === correctSurah && guessedVerse === correctVerse) {
       setRandomAyahResult('إجابة صحيحة');
+      setCorrectCount(c => c + 1);
       playCorrectSound();
       setTimeout(() => {
         createRandomAyahQuestion();
       }, 200);
     } else {
       setRandomAyahResult(`غير صحيح. السورة: ${correctSurah} | الآية: ${correctVerse}`);
+      setIncorrectCount(c => c + 1);
       if (guessedSurah !== correctSurah) triggerShake(setIsSurahShaking);
       if (guessedVerse !== correctVerse) triggerShake(setIsVerseShaking);
     }
@@ -238,7 +252,16 @@ export default function RandomAyahQuiz({ onClose }) {
         />
         <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => { keyboard.closeKeyboard(); createRandomAyahQuestion(true); }}>تطبيق</button>
       </div>
-      <div className="khmasiyat-quiz-progress">المتبقي حتى إنهاء المدى: {randomAyahRemainingCount}</div>
+      <div className="khmasiyat-quiz-progress" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+        <span>المتبقي: {randomAyahRemainingCount}</span>
+        <span style={{ color: 'var(--app-accent)' }}>صحيح: {correctCount}</span>
+        <span style={{ color: 'var(--app-danger)' }}>خاطئ: {incorrectCount}</span>
+        <button type="button" className="quiz-stat-reset-btn" onClick={() => { setCorrectCount(0); setIncorrectCount(0); }} title="تصفير العداد">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M12 5V2L7 7l5 5V8c2.97 0 5.44 2.16 5.91 5h2.02A8.004 8.004 0 0 0 12 5zm-5.91 6H4.07A8.004 8.004 0 0 0 12 19v3l5-5-5-5v3c-2.97 0-5.44-2.16-5.91-5z"/>
+          </svg>
+        </button>
+      </div>
       <div className="khmasiyat-quiz-verse">{randomAyahData?.t || 'اختر مدى صحيحًا ثم اضغط "تطبيق" لعرض سؤال عشوائي.'}</div>
       <div className="khmasiyat-quiz-inputs khmasiyat-quiz-guess-row">
         <div className="khmasiyat-quiz-field">

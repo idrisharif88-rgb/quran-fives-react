@@ -546,18 +546,18 @@ button:focus-visible,
 }
 
 .settings-popover.night-counter-settings {
-  width: min(380px, calc(100vw - 24px));
+  width: min(380px, calc(100vw - 45px));
   gap: 12px;
 }
 
 .settings-popover.night-counter-settings.night-counter-settings-popover {
-  left: 0;
+  left: -5px;
   right: auto;
   transform: none;
 }
 
 .settings-popover.night-counter-settings.night-counter-settings-popover::after {
-  left: 18px;
+  left: 23px;
   right: auto;
   transform: none;
 }
@@ -1149,6 +1149,23 @@ button:focus-visible,
   font-size: 18px;
   font-weight: 700;
   font-family: inherit;
+}
+
+.quiz-stat-reset-btn {
+  background: transparent;
+  border: none;
+  color: var(--app-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+.quiz-stat-reset-btn:hover {
+  color: var(--app-accent);
+  transform: rotate(-45deg);
 }
 
 .khmasiyat-quiz-inputs {

@@ -41,6 +41,12 @@ export default function KhmasiyatQuiz({ onClose }) {
   const [quizResult, setQuizResult] = useState(() => (
     typeof persistedQuizState.quizResult === 'string' ? persistedQuizState.quizResult : ''
   ));
+  const [correctCount, setCorrectCount] = useState(() => (
+    Number.isInteger(persistedQuizState.correctCount) ? persistedQuizState.correctCount : 0
+  ));
+  const [incorrectCount, setIncorrectCount] = useState(() => (
+    Number.isInteger(persistedQuizState.incorrectCount) ? persistedQuizState.incorrectCount : 0
+  ));
   const audioCtxRef = useRef(null);
 
   const createKhmasiyatQuestion = (forceNewCycle = false) => {
@@ -62,6 +68,8 @@ export default function KhmasiyatQuiz({ onClose }) {
       setQuizNextPointer(firstIndex === null ? 0 : 1);
       setQuizOrderRange({ start, end });
       setQuizKhmasiyaIndex(firstIndex);
+      setCorrectCount(0);
+      setIncorrectCount(0);
     } else {
       setQuizKhmasiyaIndex(quizOrder[quizNextPointer]);
       setQuizNextPointer(prev => prev + 1);
@@ -92,6 +100,8 @@ export default function KhmasiyatQuiz({ onClose }) {
       quizNextPointer,
       quizOrderRange,
       quizResult,
+      correctCount,
+      incorrectCount,
     });
   }, [
     quizFiveInSurahGuess,
@@ -103,6 +113,8 @@ export default function KhmasiyatQuiz({ onClose }) {
     quizRangeStart,
     quizResult,
     quizSurahGuess,
+    correctCount,
+    incorrectCount,
   ]);
 
   const triggerShake = (setter) => {
@@ -165,12 +177,14 @@ export default function KhmasiyatQuiz({ onClose }) {
     
     if (guessedFiveInSurah === correctFiveInSurah && guessedSurah === correctSurah) {
       setQuizResult('إجابة صحيحة');
+      setCorrectCount(c => c + 1);
       playCorrectSound();
       setTimeout(() => {
         createKhmasiyatQuestion();
       }, 200);
     } else {
       setQuizResult(`غير صحيح. الخماسية داخل السورة: ${correctFiveInSurah} | السورة: ${correctSurah}`);
+      setIncorrectCount(c => c + 1);
       if (guessedSurah !== correctSurah) triggerShake(setIsSurahShaking);
       if (guessedFiveInSurah !== correctFiveInSurah) triggerShake(setIsFiveShaking);
     }
@@ -242,7 +256,16 @@ export default function KhmasiyatQuiz({ onClose }) {
         />
         <button type="button" className="khmasiyat-quiz-btn secondary khmasiyat-range-apply" onClick={() => { keyboard.closeKeyboard(); createKhmasiyatQuestion(true); }}>تطبيق</button>
       </div>
-      <div className="khmasiyat-quiz-progress">المتبقي حتى إنهاء المدى: {quizRemainingCount}</div>
+      <div className="khmasiyat-quiz-progress" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+        <span>المتبقي: {quizRemainingCount}</span>
+        <span style={{ color: 'var(--app-accent)' }}>صحيح: {correctCount}</span>
+        <span style={{ color: 'var(--app-danger)' }}>خاطئ: {incorrectCount}</span>
+        <button type="button" className="quiz-stat-reset-btn" onClick={() => { setCorrectCount(0); setIncorrectCount(0); }} title="تصفير العداد">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M12 5V2L7 7l5 5V8c2.97 0 5.44 2.16 5.91 5h2.02A8.004 8.004 0 0 0 12 5zm-5.91 6H4.07A8.004 8.004 0 0 0 12 19v3l5-5-5-5v3c-2.97 0-5.44-2.16-5.91-5z"/>
+          </svg>
+        </button>
+      </div>
       {quizLastVerse ? (
         <TextDisplay verses={[quizLastVerse]} hideVerseNumber />
       ) : (

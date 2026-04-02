@@ -11,6 +11,7 @@ import KhmasiyatQuiz from './utils/KhmasiyatQuiz';
 import RandomAyahQuiz from './utils/RandomAyahQuiz';
 import QuranicWonders from './components/QuranicWonders'; // استيراد المكون الجديد
 import SurahCountQuiz from './utils/SurahCountQuiz';
+import SurahNamesQuiz from './utils/SurahNamesQuiz';
 import PageStartsQuiz from './utils/PageStartsQuiz';
 import {
   APP_STORAGE_KEY,
@@ -70,7 +71,8 @@ const SESSION_STORAGE_KEYS = [
   KHMASIYAT_QUIZ_STORAGE_KEY,
   RANDOM_AYAH_QUIZ_STORAGE_KEY,
   SURAH_COUNT_QUIZ_STORAGE_KEY,
-  PAGE_STARTS_QUIZ_STORAGE_KEY
+  PAGE_STARTS_QUIZ_STORAGE_KEY,
+  'quran_fives_surah_names_quiz_state'
 ];
 
 function App() {
@@ -182,6 +184,7 @@ function App() {
   const [quranicWondersNotes, setQuranicWondersNotes] = useState(() => (
     Array.isArray(persistedAppState.quranicWondersNotes) ? persistedAppState.quranicWondersNotes : []
   ));
+  const [activeSurahNamesQuiz, setActiveSurahNamesQuiz] = useState(false);
 
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
@@ -221,6 +224,10 @@ function App() {
     }
     if (activePageStartsTest) {
       setActivePageStartsTest(null);
+      return true; // تم التعامل مع الإجراء
+    }
+    if (activeSurahNamesQuiz) {
+      setActiveSurahNamesQuiz(false);
       return true; // تم التعامل مع الإجراء
     }
 
@@ -540,7 +547,8 @@ function App() {
     activeAyahTest === 'khmasiyat' ||
     activeAyahTest === 'random-ayat' ||
     activeAyahTest === 'surah-count' ||
-    activePageStartsTest === 'page-starts';
+    activePageStartsTest === 'page-starts' ||
+    activeSurahNamesQuiz;
 
   useEffect(() => {
     if (viewMode === 'page-starts' || viewMode === 'page-starred') {
@@ -877,6 +885,7 @@ function App() {
     setFontFamily("'Tajawal', sans-serif");
     setFontWeight('bold');
     setFontColor('darkgreen');
+    setActiveSurahNamesQuiz(false);
     setQuranicWondersNotes([]); // إعادة تعيين الملاحظات
     setIsNightMode(false);
     setShowSessionPrompt(false);
@@ -1104,7 +1113,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}> {/* تم تعديل العرض الأدنى */}
-                  {['العداد', 'الوضع الليلي', 'الخط', 'خماسيات - سور', 'عجائب قرآنية'].map(option => (
+                  {['العداد', 'الوضع الليلي', 'الخط', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -1135,6 +1144,12 @@ function App() {
                         }
                         if (option === 'عجائب قرآنية') {
                           setViewMode('quranic-wonders');
+                          setIsMoreMenuOpen(false);
+                          setIsFontMenuOpen(false);
+                          return;
+                        }
+                        if (option === 'اختبار سور') {
+                          setActiveSurahNamesQuiz(true);
                           setIsMoreMenuOpen(false);
                           setIsFontMenuOpen(false);
                           return;
@@ -1303,6 +1318,12 @@ function App() {
       {activePageStartsTest === 'page-starts' && (
         <div style={{ flexGrow: 1, overflowY: 'auto' }}>
           <PageStartsQuiz onClose={() => setActivePageStartsTest(null)} />
+        </div>
+      )}
+
+      {activeSurahNamesQuiz && (
+        <div style={{ flexGrow: 1, overflowY: 'auto' }}>
+          <SurahNamesQuiz onClose={() => setActiveSurahNamesQuiz(false)} />
         </div>
       )}
 

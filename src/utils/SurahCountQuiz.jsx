@@ -27,6 +27,12 @@ export default function SurahCountQuiz({ onClose }) {
   const [surahCountResult, setSurahCountResult] = useState(() => (
     typeof persistedQuizState.surahCountResult === 'string' ? persistedQuizState.surahCountResult : ''
   ));
+  const [correctCount, setCorrectCount] = useState(() => (
+    Number.isInteger(persistedQuizState.correctCount) ? persistedQuizState.correctCount : 0
+  ));
+  const [incorrectCount, setIncorrectCount] = useState(() => (
+    Number.isInteger(persistedQuizState.incorrectCount) ? persistedQuizState.incorrectCount : 0
+  ));
   const [isGuessShaking, setIsGuessShaking] = useState(false);
   const [isInputShaking, setIsInputShaking] = useState(false);
   const audioCtxRef = useRef(null);
@@ -39,6 +45,8 @@ export default function SurahCountQuiz({ onClose }) {
       setSurahCountOrder(newOrder);
       setSurahCountNextPointer(newOrder.length > 0 ? 1 : 0);
       setSurahCountQuestionIndex(firstIndex);
+      setCorrectCount(0);
+      setIncorrectCount(0);
     } else {
       setSurahCountQuestionIndex(surahCountOrder[surahCountNextPointer]);
       setSurahCountNextPointer(prev => prev + 1);
@@ -64,6 +72,8 @@ export default function SurahCountQuiz({ onClose }) {
       surahCountGuess,
       surahCountInput,
       surahCountResult,
+      correctCount,
+      incorrectCount,
     });
   }, [
     surahCountGuess,
@@ -73,6 +83,8 @@ export default function SurahCountQuiz({ onClose }) {
     surahCountOrder,
     surahCountQuestionIndex,
     surahCountResult,
+    correctCount,
+    incorrectCount,
   ]);
 
   const triggerShake = (setter) => {
@@ -123,12 +135,14 @@ export default function SurahCountQuiz({ onClose }) {
     const correctCount = SURAH_METADATA[surahCountQuestionIndex]?.verseCount ?? 0;
     if (guessed === correctCount) {
       setSurahCountResult('إجابة صحيحة');
+      setCorrectCount(c => c + 1);
       playCorrectSound();
       setTimeout(() => {
         createSurahCountQuestion();
       }, 200);
     } else {
       setSurahCountResult(`غير صحيح. العدد الصحيح: ${correctCount}`);
+      setIncorrectCount(c => c + 1);
       triggerShake(setIsGuessShaking);
     }
   };
@@ -181,7 +195,16 @@ export default function SurahCountQuiz({ onClose }) {
 
       {surahCountMode === 'name-to-count' ? (
         <>
-          <div className="khmasiyat-quiz-progress">المتبقي حتى إنهاء جميع السور: {surahCountRemaining}</div>
+          <div className="khmasiyat-quiz-progress" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+            <span>المتبقي: {surahCountRemaining}</span>
+            <span style={{ color: 'var(--app-accent)' }}>صحيح: {correctCount}</span>
+            <span style={{ color: 'var(--app-danger)' }}>خاطئ: {incorrectCount}</span>
+            <button type="button" className="quiz-stat-reset-btn" onClick={() => { setCorrectCount(0); setIncorrectCount(0); }} title="تصفير العداد">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M12 5V2L7 7l5 5V8c2.97 0 5.44 2.16 5.91 5h2.02A8.004 8.004 0 0 0 12 5zm-5.91 6H4.07A8.004 8.004 0 0 0 12 19v3l5-5-5-5v3c-2.97 0-5.44-2.16-5.91-5z"/>
+              </svg>
+            </button>
+          </div>
           <div className="khmasiyat-quiz-verse">سورة {SURAH_METADATA[surahCountQuestionIndex]?.name}</div>
           <div className="khmasiyat-quiz-inputs">
             <div className="khmasiyat-quiz-field">

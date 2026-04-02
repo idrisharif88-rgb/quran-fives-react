@@ -35,6 +35,12 @@ export default function PageStartsQuiz({ onClose }) {
   const [pageGuess, setPageGuess] = useState(() => (
     typeof persistedQuizState.pageGuess === 'string' ? persistedQuizState.pageGuess : ''
   ));
+  const [correctCount, setCorrectCount] = useState(() => (
+    Number.isInteger(persistedQuizState.correctCount) ? persistedQuizState.correctCount : 0
+  ));
+  const [incorrectCount, setIncorrectCount] = useState(() => (
+    Number.isInteger(persistedQuizState.incorrectCount) ? persistedQuizState.incorrectCount : 0
+  ));
   const [isGuessShaking, setIsGuessShaking] = useState(false);
   const audioCtxRef = useRef(null);
 
@@ -57,6 +63,8 @@ export default function PageStartsQuiz({ onClose }) {
       setNextPointer(firstIndex === null ? 0 : 1);
       setOrderRange({ start, end });
       setCurrentIndex(firstIndex);
+      setCorrectCount(0);
+      setIncorrectCount(0);
     } else {
       setCurrentIndex(order[nextPointer]);
       setNextPointer((prev) => prev + 1);
@@ -83,8 +91,10 @@ export default function PageStartsQuiz({ onClose }) {
       currentIndex,
       result,
       pageGuess,
+      correctCount,
+      incorrectCount,
     });
-  }, [currentIndex, nextPointer, order, orderRange, pageGuess, rangeEnd, rangeStart, result]);
+  }, [currentIndex, nextPointer, order, orderRange, pageGuess, rangeEnd, rangeStart, result, correctCount, incorrectCount]);
 
   const remaining = Math.max(0, order.length - nextPointer);
   const verse = currentIndex !== null ? PAGE_STARTS[currentIndex] : null;
@@ -142,10 +152,12 @@ export default function PageStartsQuiz({ onClose }) {
 
     if (guessed === verse.page) {
       setResult('إجابة صحيحة');
+      setCorrectCount(c => c + 1);
       playCorrectSound();
       setTimeout(() => applyRange(false), 200);
     } else {
       setResult(`غير صحيح. الصفحة: ${verse.page}`);
+      setIncorrectCount(c => c + 1);
       triggerGuessShake();
     }
   };
@@ -207,7 +219,16 @@ export default function PageStartsQuiz({ onClose }) {
         </button>
       </div>
 
-      <div className="khmasiyat-quiz-progress">متبقية: {remaining}</div>
+      <div className="khmasiyat-quiz-progress" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+        <span>المتبقي: {remaining}</span>
+        <span style={{ color: 'var(--app-accent)' }}>صحيح: {correctCount}</span>
+        <span style={{ color: 'var(--app-danger)' }}>خاطئ: {incorrectCount}</span>
+        <button type="button" className="quiz-stat-reset-btn" onClick={() => { setCorrectCount(0); setIncorrectCount(0); }} title="تصفير العداد">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M12 5V2L7 7l5 5V8c2.97 0 5.44 2.16 5.91 5h2.02A8.004 8.004 0 0 0 12 5zm-5.91 6H4.07A8.004 8.004 0 0 0 12 19v3l5-5-5-5v3c-2.97 0-5.44-2.16-5.91-5z"/>
+          </svg>
+        </button>
+      </div>
 
       {verse ? (
         <TextDisplay verses={[verse]} hideVerseNumber />
