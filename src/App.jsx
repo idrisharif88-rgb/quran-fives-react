@@ -352,6 +352,18 @@ function App() {
   }, [isNightMode]);
 
   // Logic: We pass the state to our pure function to get the exact Surah details
+  // Effect to prevent body scrolling and ensure app fills viewport
+  useEffect(() => {
+    document.documentElement.style.height = '100%';
+    document.body.style.height = '100%';
+    document.body.style.overflow = 'hidden'; // Prevent main document scroll
+
+    return () => {
+      document.documentElement.style.height = '';
+      document.body.style.height = '';
+      document.body.style.overflow = '';
+    };
+  }, []);
   const currentKhmasiyat = getSurahAndRange(currentIndex);
   const lastVerseIndex = currentKhmasiyat.absoluteEndIndex - 1;
   const khmasiyatVersesText = QURAN_VERSES[lastVerseIndex] ? [QURAN_VERSES[lastVerseIndex]] : [];
@@ -988,7 +1000,10 @@ function App() {
       '--app-font-size': `${fontSize}px`,
       '--app-font-family': fontFamily,
       '--app-font-weight': fontWeight,
-      '--app-font-color': resolvedFontColor
+      '--app-font-color': resolvedFontColor,
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
       {showSessionPrompt && (
         <div className="session-overlay" dir="rtl">
@@ -1203,19 +1218,27 @@ function App() {
       )}
 
       {activeAyahTest === 'khmasiyat' && (
-        <KhmasiyatQuiz onClose={() => setActiveAyahTest(null)} />
+        <div style={{ flexGrow: 1, overflowY: 'auto' }}>
+          <KhmasiyatQuiz onClose={() => setActiveAyahTest(null)} />
+        </div>
       )}
 
       {activeAyahTest === 'random-ayat' && (
-        <RandomAyahQuiz onClose={() => setActiveAyahTest(null)} />
+        <div style={{ flexGrow: 1, overflowY: 'auto' }}>
+          <RandomAyahQuiz onClose={() => setActiveAyahTest(null)} />
+        </div>
       )}
 
       {activeAyahTest === 'surah-count' && (
-        <SurahCountQuiz onClose={() => setActiveAyahTest(null)} />
+        <div style={{ flexGrow: 1, overflowY: 'auto' }}>
+          <SurahCountQuiz onClose={() => setActiveAyahTest(null)} />
+        </div>
       )}
 
       {activePageStartsTest === 'page-starts' && (
-        <PageStartsQuiz onClose={() => setActivePageStartsTest(null)} />
+        <div style={{ flexGrow: 1, overflowY: 'auto' }}>
+          <PageStartsQuiz onClose={() => setActivePageStartsTest(null)} />
+        </div>
       )}
 
       {!isQuizMode && (
@@ -1295,7 +1318,7 @@ function App() {
         </div>
         </>
       ) : (
-        <div className="content-layout" onTouchStart={onSwipeTouchStart} onTouchEnd={onSwipeTouchEnd}>
+        <div className="content-layout" onTouchStart={onSwipeTouchStart} onTouchEnd={onSwipeTouchEnd} style={{ flexGrow: 1, overflowY: 'auto' }}>
           {viewMode !== 'shared-verses' && viewMode !== 'night-counter' && viewMode !== 'surah-fives' && <div className="top-stars-container inside-text-field">
             <button 
               className="top-star-btn"
@@ -1650,6 +1673,10 @@ function App() {
           ) : (
             <TextDisplay verses={currentVersesText} />
           )}
+          {/* The main content area (TextDisplay, shared-verses, surah-fives)
+              needs to be scrollable if its content overflows.
+              This is handled by making content-layout a flex container and its children
+              (like TextDisplay's verse-container) scrollable. */}
           
           {viewMode !== 'night-counter' && (
             <button 
