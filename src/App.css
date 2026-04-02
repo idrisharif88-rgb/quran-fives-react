@@ -1976,6 +1976,205 @@ button:focus-visible,
     min-height: 44px;
     font-size: 19px;
   }
+}
+
+/* Quranic Wonders Styling */
+.quranic-wonders-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-width: 800px;
+  margin: 20px auto;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  box-shadow: 0 6px 14px var(--app-shadow);
+  padding: 16px;
+  flex-grow: 1; /* يسمح للمكون بأخذ المساحة المتاحة */
+  overflow-y: auto; /* يسمح بالتمرير الداخلي إذا تجاوز المحتوى الارتفاع */
+}
+
+.quranic-wonders-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.quranic-wonders-title {
+  margin: 0;
+  color: var(--app-accent);
+  font-size: 30px;
+  font-family: inherit;
+  font-weight: 700;
+}
+
+.quranic-wonders-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--app-muted);
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.quranic-wonders-close-btn:hover {
+  color: var(--app-text);
+}
+
+.quranic-wonders-notes-list {
+  flex-grow: 1; /* يسمح لقائمة الملاحظات بأخذ المساحة المتاحة */
+  overflow-y: auto; /* يجعل قائمة الملاحظات نفسها قابلة للتمرير */
+  padding-right: 5px; /* لمساحة شريط التمرير */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quranic-wonders-empty {
+  color: var(--app-muted);
+  font-size: 18px;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.quranic-wonders-note-item {
+  background: var(--app-surface-2);
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quranic-wonders-note-text {
+  margin: 0;
+  line-height: 1.6;
+  white-space: pre-wrap; /* يحافظ على المسافات البيضاء ويسمح بالالتفاف */
+  word-break: break-word; /* يكسر الكلمات الطويلة */
+}
+
+.quranic-wonders-note-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--app-muted);
+  border-top: 1px solid var(--app-border-strong);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.quranic-wonders-note-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.quranic-wonders-action-btn {
+  background: transparent;
+  border: none;
+  color: var(--app-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.quranic-wonders-action-btn.edit-btn:hover {
+  color: var(--app-accent);
+}
+
+.quranic-wonders-action-btn.delete-btn:hover {
+  color: var(--app-danger);
+}
+
+.quranic-wonders-input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.quranic-wonders-textarea {
+  width: 100%;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 10px;
+  padding: 10px;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  background: var(--app-input-bg);
+  color: var(--app-input-text);
+  font-family: inherit;
+  font-weight: inherit;
+  font-size: inherit;
+}
+
+.quranic-wonders-textarea:focus {
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 3px var(--app-accent-glow);
+}
+
+.quranic-wonders-main-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+  font-size: 18px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.quranic-wonders-main-btn:hover {
+  background: var(--app-accent-strong);
+}
+
+.quranic-wonders-main-btn.secondary {
+  background: var(--app-surface-3);
+  color: var(--app-text);
+  border: 1px solid var(--app-border-strong);
+}
+
+.quranic-wonders-main-btn.secondary:hover {
+  background: var(--app-popover-hover);
+}
+
+/* Mobile responsiveness for Quranic Wonders */
+@media (max-width: 600px) {
+  .quranic-wonders-container {
+    padding: 10px;
+    margin: 10px auto;
+  }
+  .quranic-wonders-title {
+    font-size: 24px;
+  }
+  .quranic-wonders-note-text {
+    font-size: calc(var(--app-font-size, 38px) * 0.7);
+  }
+  .quranic-wonders-note-meta {
+    font-size: 12px;
+  }
+  .quranic-wonders-main-btn {
+    font-size: 16px;
+    padding: 8px 12px;
+  }
+  .quranic-wonders-textarea {
+    min-height: 60px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 600px) {
   .custom-keyboard-preview {
     font-size: 18px;
     min-height: 42px;
@@ -1993,12 +2192,6 @@ button:focus-visible,
   .ayah-menu-popover {
     max-height: 60vh; /* تحديد أقصى ارتفاع للقائمة */
     overflow-y: auto; /* إضافة شريط تمرير عمودي عند الحاجة */
-    padding-right: 4px; /* تعديل بسيط لتجنب قص المحتوى مع شريط التمرير */
-  }
-  .ayah-menu-popover.popover-align-right {
-    right: -40px; /* Moved even more to the right on mobile */
-  }
-  .ayah-menu-popover.popover-align-right::after {
-    right: 15px; /* Center arrow over 45px icon */
+    padding-right: 4px; /* تعديل بسيط لتجنب التصاق شريط التمرير بالحافة */
   }
 }

@@ -9,6 +9,7 @@ import { PAGE_STARTS } from './data/pageStarts';
 import menuMainIcon from './assets/menu-main-icon.png';
 import KhmasiyatQuiz from './utils/KhmasiyatQuiz';
 import RandomAyahQuiz from './utils/RandomAyahQuiz';
+import QuranicWonders from './components/QuranicWonders'; // استيراد المكون الجديد
 import SurahCountQuiz from './utils/SurahCountQuiz';
 import PageStartsQuiz from './utils/PageStartsQuiz';
 import {
@@ -178,6 +179,9 @@ function App() {
   const [isNightMode, setIsNightMode] = useState(() => (
     Boolean(persistedAppState.isNightMode)
   ));
+  const [quranicWondersNotes, setQuranicWondersNotes] = useState(() => (
+    Array.isArray(persistedAppState.quranicWondersNotes) ? persistedAppState.quranicWondersNotes : []
+  ));
 
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
@@ -219,6 +223,10 @@ function App() {
     // الأولوية 3: الرجوع من الشاشات الفرعية
     if (viewMode === 'page-starred') {
       setViewMode('page-starts');
+      return true; // تم التعامل مع الإجراء
+    }
+    if (viewMode === 'quranic-wonders') {
+      setViewMode('khmasiyat');
       return true; // تم التعامل مع الإجراء
     }
     if (viewMode === 'starred' || viewMode === 'shared-verses' || viewMode === 'night-counter' || viewMode === 'page-starts' || viewMode === 'surah-fives') {
@@ -321,6 +329,7 @@ function App() {
       fontFamily,
       fontWeight,
       fontColor,
+      quranicWondersNotes, // إضافة الملاحظات للحفظ
       isNightMode,
     });
   }, [
@@ -340,6 +349,7 @@ function App() {
     nightTimerSeconds,
     isNightTimerRunning,
     sharedGroupIndex,
+    quranicWondersNotes, // إضافة الملاحظات إلى مصفوفة التبعيات
     starredIndices,
     starredPages,
     surahFivesIndex,
@@ -831,6 +841,7 @@ function App() {
     setFontFamily("'Tajawal', sans-serif");
     setFontWeight('bold');
     setFontColor('darkgreen');
+    setQuranicWondersNotes([]); // إعادة تعيين الملاحظات
     setIsNightMode(false);
     setShowSessionPrompt(false);
   };
@@ -1018,7 +1029,7 @@ function App() {
         </div>
       )}
       {/* الأزرار العلوية */}
-      {!isQuizMode && viewMode !== 'shared-verses' && viewMode !== 'starred' && viewMode !== 'page-starred' && viewMode !== 'night-counter' && (
+      {!isQuizMode && viewMode !== 'shared-verses' && viewMode !== 'starred' && viewMode !== 'page-starred' && viewMode !== 'night-counter' && viewMode !== 'quranic-wonders' && (
       <div className="action-buttons-container upper-actions">
         {(isPageStartsMode || isNightCounterMode || isSurahFivesMode) && (
           <>
@@ -1056,8 +1067,8 @@ function App() {
                 </svg>
               </button>
               {isMoreMenuOpen && (
-                <div className="ayah-menu-popover more-menu-popover" dir="rtl">
-                  {['العداد', 'الوضع الليلي', 'الخط', 'خماسيات - سور'].map(option => (
+                <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}> {/* تم تعديل العرض الأدنى */}
+                  {['العداد', 'الوضع الليلي', 'الخط', 'خماسيات - سور', 'عجائب قرآنية'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -1084,6 +1095,12 @@ function App() {
                         if (option === 'الخط') {
                           setIsMoreMenuOpen(false);
                           setIsFontMenuOpen(true);
+                          return;
+                        }
+                        if (option === 'عجائب قرآنية') {
+                          setViewMode('quranic-wonders');
+                          setIsMoreMenuOpen(false);
+                          setIsFontMenuOpen(false);
                           return;
                         }
                         setIsMoreMenuOpen(false);
@@ -1217,6 +1234,18 @@ function App() {
       </div>
       )}
 
+      {viewMode === 'quranic-wonders' && (
+        <QuranicWonders
+          onClose={() => setViewMode('khmasiyat')}
+          notes={quranicWondersNotes}
+          setNotes={setQuranicWondersNotes}
+          fontSize={fontSize}
+          fontFamily={fontFamily}
+          fontWeight={fontWeight}
+          fontColor={fontColor}
+          isNightMode={isNightMode}
+        />
+      )}
       {activeAyahTest === 'khmasiyat' && (
         <div style={{ flexGrow: 1, overflowY: 'auto' }}>
           <KhmasiyatQuiz onClose={() => setActiveAyahTest(null)} />
@@ -1241,7 +1270,7 @@ function App() {
         </div>
       )}
 
-      {!isQuizMode && (
+      {!isQuizMode && viewMode !== 'quranic-wonders' && ( // إخفاء هذا القسم عند تفعيل عجائب قرآنية
         <>
       {viewMode === 'starred' || viewMode === 'page-starred' ? (
         <>
@@ -1316,7 +1345,7 @@ function App() {
             )
           )}
         </div>
-        </>
+      </>
       ) : (
         <div className="content-layout" onTouchStart={onSwipeTouchStart} onTouchEnd={onSwipeTouchEnd} style={{ flexGrow: 1, overflowY: 'auto' }}>
           {viewMode !== 'shared-verses' && viewMode !== 'night-counter' && viewMode !== 'surah-fives' && <div className="top-stars-container inside-text-field">
@@ -1705,7 +1734,7 @@ function App() {
         </div>
       )}
 
-      {!isPageStartsMode && !isNightCounterMode && viewMode !== 'starred' && viewMode !== 'surah-fives' && (
+      {!isPageStartsMode && !isNightCounterMode && viewMode !== 'starred' && viewMode !== 'surah-fives' && viewMode !== 'quranic-wonders' && ( // إخفاء الأزرار السفلية
       <div className="action-buttons-container" ref={actionButtonsRef}>
         {viewMode !== 'shared-verses' && (
           <>
@@ -1775,7 +1804,7 @@ function App() {
       </div>
       )}
 
-      {viewMode === 'khmasiyat' && (
+      {viewMode === 'khmasiyat' && viewMode !== 'quranic-wonders' && ( // إخفاء هذا القسم عند تفعيل عجائب قرآنية
         <>
           <div className="jump-to-container">
             <div className="jump-input-wrapper">
@@ -1809,7 +1838,7 @@ function App() {
         </>
       )}
 
-      {viewMode === 'page-starts' && !isPageStartsLoading && pageStartsData.length > 0 && (
+      {viewMode === 'page-starts' && !isPageStartsLoading && pageStartsData.length > 0 && viewMode !== 'quranic-wonders' && ( // إخفاء هذا القسم عند تفعيل عجائب قرآنية
         <>
         <div className="jump-to-container">
           <div className="jump-input-wrapper">
