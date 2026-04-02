@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import CustomKeyboard, { useCustomKeyboard } from '../components/CustomKeyboard';
 import { SURAH_METADATA } from '../data/quranConstants';
 import { buildShuffledIndices } from './quizUtils';
@@ -27,6 +27,9 @@ export default function SurahCountQuiz({ onClose }) {
   const [surahCountResult, setSurahCountResult] = useState(() => (
     typeof persistedQuizState.surahCountResult === 'string' ? persistedQuizState.surahCountResult : ''
   ));
+  const [isGuessShaking, setIsGuessShaking] = useState(false);
+  const [isInputShaking, setIsInputShaking] = useState(false);
+  const audioCtxRef = useRef(null);
 
   const createSurahCountQuestion = (forceNewCycle = false) => {
     const needsNewCycle = forceNewCycle || surahCountOrder.length === 0 || surahCountNextPointer >= surahCountOrder.length;
@@ -42,6 +45,8 @@ export default function SurahCountQuiz({ onClose }) {
     }
     setSurahCountGuess('');
     setSurahCountResult('');
+    setIsGuessShaking(false);
+    setIsInputShaking(false);
   };
 
   useEffect(() => {
@@ -70,20 +75,61 @@ export default function SurahCountQuiz({ onClose }) {
     surahCountResult,
   ]);
 
+  const triggerShake = (setter) => {
+    setter(false);
+    setTimeout(() => setter(true), 0);
+    setTimeout(() => setter(false), 550);
+  };
+
+  const playCorrectSound = async () => {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+
+    try {
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioCtx();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') await ctx.resume();
+
+      const now = ctx.currentTime;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.5, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+      gain.connect(ctx.destination);
+
+      const playNote = (frequency, start) => {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(frequency, start);
+        osc.connect(gain);
+        osc.start(start);
+        osc.stop(start + 0.18);
+      };
+
+      playNote(880, now);
+      playNote(1175, now + 0.12);
+    } catch {
+      // ignore
+    }
+  };
+
   const checkSurahCountAnswer = () => {
     const guessed = Number(surahCountGuess);
     if (!Number.isInteger(guessed)) {
       setSurahCountResult('يرجى إدخال عدد آيات صحيح.');
+      triggerShake(setIsGuessShaking);
       return;
     }
     const correctCount = SURAH_METADATA[surahCountQuestionIndex]?.verseCount ?? 0;
     if (guessed === correctCount) {
       setSurahCountResult('إجابة صحيحة');
+      playCorrectSound();
       setTimeout(() => {
         createSurahCountQuestion();
       }, 200);
     } else {
       setSurahCountResult(`غير صحيح. العدد الصحيح: ${correctCount}`);
+      triggerShake(setIsGuessShaking);
     }
   };
 
@@ -91,15 +137,18 @@ export default function SurahCountQuiz({ onClose }) {
     const count = Number(surahCountInput);
     if (!Number.isInteger(count) || count <= 0) {
       setSurahCountResult('يرجى إدخال عدد آيات صحيح.');
+      triggerShake(setIsInputShaking);
       return;
     }
     const matches = SURAH_METADATA.filter(s => s.verseCount === count);
     if (matches.length === 0) {
       setSurahCountResult(`لا توجد سورة بهذا العدد: ${count}`);
+      triggerShake(setIsInputShaking);
       return;
     }
     const names = matches.map(s => `${s.name} (${s.id})`).join('، ');
     setSurahCountResult(`السور المطابقة: ${names}`);
+    playCorrectSound();
   };
 
   const surahCountRemaining = Math.max(0, surahCountOrder.length - surahCountNextPointer);
@@ -142,7 +191,7 @@ export default function SurahCountQuiz({ onClose }) {
                 value={surahCountGuess}
                 placeholder="أدخل عدد الآيات"
                 min="1"
-                {...keyboard.getInputProps('surahCountGuess', { className: 'khmasiyat-quiz-input' })}
+                {...keyboard.getInputProps('surahCountGuess', { className: `khmasiyat-quiz-input ${isGuessShaking ? 'shake border-error' : ''}` })}
               />
             </div>
           </div>
@@ -162,7 +211,7 @@ export default function SurahCountQuiz({ onClose }) {
                 value={surahCountInput}
                 placeholder="أدخل العدد"
                 min="1"
-                {...keyboard.getInputProps('surahCountInput', { className: 'khmasiyat-quiz-input' })}
+                {...keyboard.getInputProps('surahCountInput', { className: `khmasiyat-quiz-input ${isInputShaking ? 'shake border-error' : ''}` })}
               />
             </div>
           </div>

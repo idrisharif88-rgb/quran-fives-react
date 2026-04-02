@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import CustomKeyboard, { useCustomKeyboard } from '../components/CustomKeyboard';
 import { QURAN_VERSES } from '../data/quranVerses';
 import { buildShuffledIndices } from './quizUtils';
@@ -37,6 +37,9 @@ export default function RandomAyahQuiz({ onClose }) {
   const [randomAyahResult, setRandomAyahResult] = useState(() => (
     typeof persistedQuizState.randomAyahResult === 'string' ? persistedQuizState.randomAyahResult : ''
   ));
+  const [isSurahShaking, setIsSurahShaking] = useState(false);
+  const [isVerseShaking, setIsVerseShaking] = useState(false);
+  const audioCtxRef = useRef(null);
 
   const createRandomAyahQuestion = (forceNewCycle = false) => {
     const start = Number(randomAyahRangeStart);
@@ -66,6 +69,8 @@ export default function RandomAyahQuiz({ onClose }) {
     setRandomAyahSurahGuess('');
     setRandomAyahVerseGuess('');
     setRandomAyahResult('');
+    setIsSurahShaking(false);
+    setIsVerseShaking(false);
   };
 
   useEffect(() => {
@@ -98,6 +103,44 @@ export default function RandomAyahQuiz({ onClose }) {
     randomAyahVerseGuess,
   ]);
 
+  const triggerShake = (setter) => {
+    setter(false);
+    setTimeout(() => setter(true), 0);
+    setTimeout(() => setter(false), 550);
+  };
+
+  const playCorrectSound = async () => {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+
+    try {
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioCtx();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') await ctx.resume();
+
+      const now = ctx.currentTime;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.5, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+      gain.connect(ctx.destination);
+
+      const playNote = (frequency, start) => {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(frequency, start);
+        osc.connect(gain);
+        osc.start(start);
+        osc.stop(start + 0.18);
+      };
+
+      playNote(880, now);
+      playNote(1175, now + 0.12);
+    } catch {
+      // ignore
+    }
+  };
+
   const checkRandomAyahAnswer = () => {
     if (randomAyahIndex === null) {
       setRandomAyahResult('لا يوجد سؤال حالي. اختر المدى ثم اضغط "تطبيق".');
@@ -105,8 +148,13 @@ export default function RandomAyahQuiz({ onClose }) {
     }
     const guessedSurah = Number(randomAyahSurahGuess);
     const guessedVerse = Number(randomAyahVerseGuess);
-    if (!Number.isInteger(guessedSurah) || !Number.isInteger(guessedVerse)) {
+    const surahInvalid = !Number.isInteger(guessedSurah);
+    const verseInvalid = !Number.isInteger(guessedVerse);
+    
+    if (surahInvalid || verseInvalid) {
       setRandomAyahResult('يرجى إدخال رقم السورة ورقم الآية.');
+      if (surahInvalid) triggerShake(setIsSurahShaking);
+      if (verseInvalid) triggerShake(setIsVerseShaking);
       return;
     }
 
@@ -116,11 +164,14 @@ export default function RandomAyahQuiz({ onClose }) {
     
     if (guessedSurah === correctSurah && guessedVerse === correctVerse) {
       setRandomAyahResult('إجابة صحيحة');
+      playCorrectSound();
       setTimeout(() => {
         createRandomAyahQuestion();
       }, 200);
     } else {
       setRandomAyahResult(`غير صحيح. السورة: ${correctSurah} | الآية: ${correctVerse}`);
+      if (guessedSurah !== correctSurah) triggerShake(setIsSurahShaking);
+      if (guessedVerse !== correctVerse) triggerShake(setIsVerseShaking);
     }
   };
 
@@ -198,7 +249,7 @@ export default function RandomAyahQuiz({ onClose }) {
             placeholder="من 1 إلى 114"
             min="1"
             max="114"
-            {...keyboard.getInputProps('surahGuess', { className: 'khmasiyat-quiz-input' })}
+            {...keyboard.getInputProps('surahGuess', { className: `khmasiyat-quiz-input ${isSurahShaking ? 'shake border-error' : ''}` })}
           />
         </div>
         <div className="khmasiyat-quiz-field">
@@ -208,7 +259,7 @@ export default function RandomAyahQuiz({ onClose }) {
             value={randomAyahVerseGuess}
             placeholder="مثال: 1 أو 23"
             min="1"
-            {...keyboard.getInputProps('verseGuess', { className: 'khmasiyat-quiz-input' })}
+            {...keyboard.getInputProps('verseGuess', { className: `khmasiyat-quiz-input ${isVerseShaking ? 'shake border-error' : ''}` })}
           />
         </div>
       </div>

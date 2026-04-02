@@ -1,4 +1,4 @@
-﻿﻿import { useState, useEffect, useRef } from 'react';
+﻿﻿﻿﻿import { useState, useEffect, useRef } from 'react';
 import { getSurahAndRange } from './utils/quranLogic';
 import TextDisplay from './components/TextDisplay';
 import { QURAN_VERSES } from './data/quranVerses';
@@ -689,7 +689,7 @@ function App() {
       const now = ctx.currentTime;
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(type === 'up' ? 0.14 : 0.08, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(type === 'up' ? 0.5 : 0.3, now + 0.008);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + (type === 'up' ? 0.06 : 0.12));
       gain.connect(ctx.destination);
 
@@ -729,7 +729,7 @@ function App() {
       const now = ctx.currentTime;
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.4, now + 0.008);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
       gain.connect(ctx.destination);
 

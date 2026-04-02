@@ -123,7 +123,7 @@ export default function KhmasiyatQuiz({ onClose }) {
       const now = ctx.currentTime;
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.15, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.5, now + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
       gain.connect(ctx.destination);
 
