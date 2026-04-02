@@ -1,0 +1,10 @@
+# Project Structure & Organization Rules
+
+- **Modular Development:** Every new feature or update must be split into its respective files. Do not put everything in one file.
+- **File Placement:** - Components go to `src/components/`.
+    - Logic/Hooks go to `src/hooks/`.
+    - Styles go to `src/styles/` or as CSS modules next to the component.
+    - Constants/Data go to `src/constants/` or `src/utils/`.
+- **No Spaghetti Code:** Always prioritize readability and maintainability. If a file exceeds 200 lines, suggest breaking it down into smaller sub-components.
+- **Consistency:** Follow the existing project structure (Vite + React + Capacitor). 
+- **Refactoring:** Before implementing a new update, check if an existing file should be modified or if a new file is required to keep the structure clean.

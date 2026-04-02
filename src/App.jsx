@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react';
+﻿﻿import { useState, useEffect, useRef } from 'react';
 import { getSurahAndRange } from './utils/quranLogic';
 import TextDisplay from './components/TextDisplay';
 import { QURAN_VERSES } from './data/quranVerses';
@@ -190,6 +190,66 @@ function App() {
   const ayahMenuRef = useRef(null);
   const nightCounterSettingsRef = useRef(null);
   const swipeStartRef = useRef(null);
+  const backHandlerRef = useRef();
+
+  const handleHardwareBack = () => {
+    // الأولوية 1: إغلاق القوائم والنوافذ المنبثقة المفتوحة
+    if (isNightCounterSettingsOpen) {
+      setIsNightCounterSettingsOpen(false);
+      return true; // تم التعامل مع الإجراء
+    }
+    if (isMoreMenuOpen || isFontMenuOpen || isPageStartsMenuOpen || isAyahMenuOpen) {
+      setIsMoreMenuOpen(false);
+      setIsFontMenuOpen(false);
+      setIsPageStartsMenuOpen(false);
+      setIsAyahMenuOpen(false);
+      return true; // تم التعامل مع الإجراء
+    }
+
+    // الأولوية 2: الخروج من أوضاع الاختبار
+    if (activeAyahTest) {
+      setActiveAyahTest(null);
+      return true; // تم التعامل مع الإجراء
+    }
+    if (activePageStartsTest) {
+      setActivePageStartsTest(null);
+      return true; // تم التعامل مع الإجراء
+    }
+
+    // الأولوية 3: الرجوع من الشاشات الفرعية
+    if (viewMode === 'page-starred') {
+      setViewMode('page-starts');
+      return true; // تم التعامل مع الإجراء
+    }
+    if (viewMode === 'starred' || viewMode === 'shared-verses' || viewMode === 'night-counter' || viewMode === 'page-starts' || viewMode === 'surah-fives') {
+      setViewMode('khmasiyat');
+      return true; // تم التعامل مع الإجراء
+    }
+
+    // إذا لم يتم التعامل مع أي شيء، فنحن في الشاشة الرئيسية
+    return false;
+  };
+
+  backHandlerRef.current = handleHardwareBack;
+
+  // التعامل مع زر الرجوع في الهاتف
+  useEffect(() => {
+    const onPopState = () => {
+      const wasHandled = backHandlerRef.current();
+      if (wasHandled) {
+        // إذا تم التعامل مع الرجوع داخل التطبيق، نُعيد إضافة حالة لسجل المتصفح
+        window.history.pushState(null, '');
+      } else {
+        // إذا كنا في الشاشة الرئيسية، نسمح للسلوك الافتراضي (الخروج من التطبيق)
+        window.history.back();
+      }
+    };
+
+    window.history.pushState(null, '');
+    window.addEventListener('popstate', onPopState);
+
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   const starredArray = Array.from(starredIndices).sort((a, b) => a - b);
   const starredPagesArray = Array.from(starredPages).sort((a, b) => a - b);
