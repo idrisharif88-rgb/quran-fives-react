@@ -1414,7 +1414,7 @@ function App() {
         </div>
       </>
       ) : (
-        <div className="content-layout" onTouchStart={onSwipeTouchStart} onTouchEnd={onSwipeTouchEnd} style={{ flexGrow: 1, overflowY: 'auto' }}>
+        <div className={`content-layout ${viewMode === 'night-counter' ? 'night-counter-layout' : ''}`} onTouchStart={onSwipeTouchStart} onTouchEnd={onSwipeTouchEnd} style={{ flexGrow: 1, overflowY: 'auto' }}>
           {viewMode !== 'shared-verses' && viewMode !== 'night-counter' && viewMode !== 'surah-fives' && <div className="top-stars-container inside-text-field">
             <button 
               className="top-star-btn"
