@@ -189,6 +189,10 @@ function App() {
   const navAudioCtxRef = useRef(null);
   const lastKhmasiyatIndexRef = useRef(currentIndex);
   const skipKhmasiyatNavSoundRef = useRef(true);
+  const lastPageIndexRef = useRef(currentPageIndex);
+  const skipPageNavSoundRef = useRef(true);
+  const lastSurahFivesIndexRef = useRef(surahFivesIndex);
+  const skipSurahFivesNavSoundRef = useRef(true);
   const moreMenuRef = useRef(null);
   const pageStartsMenuRef = useRef(null);
   const ayahMenuRef = useRef(null);
@@ -603,6 +607,38 @@ function App() {
     playKhmasiyatNavSound();
     lastKhmasiyatIndexRef.current = currentIndex;
   }, [currentIndex, viewMode]);
+
+  // تشغيل المؤثر الصوتي عند التنقل بين الصفحات
+  useEffect(() => {
+    if (viewMode !== 'page-starts') {
+      lastPageIndexRef.current = currentPageIndex;
+      return;
+    }
+    if (skipPageNavSoundRef.current) {
+      skipPageNavSoundRef.current = false;
+      lastPageIndexRef.current = currentPageIndex;
+      return;
+    }
+    if (currentPageIndex === lastPageIndexRef.current) return;
+    playKhmasiyatNavSound();
+    lastPageIndexRef.current = currentPageIndex;
+  }, [currentPageIndex, viewMode]);
+
+  // تشغيل المؤثر الصوتي عند التنقل في وضع خماسيات - سور
+  useEffect(() => {
+    if (viewMode !== 'surah-fives') {
+      lastSurahFivesIndexRef.current = surahFivesIndex;
+      return;
+    }
+    if (skipSurahFivesNavSoundRef.current) {
+      skipSurahFivesNavSoundRef.current = false;
+      lastSurahFivesIndexRef.current = surahFivesIndex;
+      return;
+    }
+    if (surahFivesIndex === lastSurahFivesIndexRef.current) return;
+    playKhmasiyatNavSound();
+    lastSurahFivesIndexRef.current = surahFivesIndex;
+  }, [surahFivesIndex, viewMode]);
 
   const toggleAudio = async () => {
     if (isPlaying) {
