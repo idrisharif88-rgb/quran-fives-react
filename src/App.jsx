@@ -185,6 +185,7 @@ function App() {
     Array.isArray(persistedAppState.quranicWondersNotes) ? persistedAppState.quranicWondersNotes : []
   ));
   const [activeSurahNamesQuiz, setActiveSurahNamesQuiz] = useState(false);
+  const [showExitToast, setShowExitToast] = useState(false);
 
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
@@ -202,6 +203,7 @@ function App() {
   const nightCounterSettingsRef = useRef(null);
   const swipeStartRef = useRef(null);
   const backHandlerRef = useRef();
+  const lastBackPressTimeRef = useRef(0);
 
   const handleHardwareBack = () => {
     // الأولوية 1: إغلاق القوائم والنوافذ المنبثقة المفتوحة
@@ -258,9 +260,17 @@ function App() {
       if (wasHandled) {
         // إذا تم التعامل مع الرجوع داخل التطبيق، نُعيد إضافة حالة لسجل المتصفح
         window.history.pushState(null, '');
+        setShowExitToast(false);
       } else {
-        // إذا كنا في الشاشة الرئيسية، نسمح للسلوك الافتراضي (الخروج من التطبيق)
-        window.history.back();
+        const now = Date.now();
+        if (now - lastBackPressTimeRef.current < 2000) {
+          // السماح بالخروج إذا تم الضغط مرتين خلال ثانيتين
+        } else {
+          lastBackPressTimeRef.current = now;
+          setShowExitToast(true);
+          window.history.pushState(null, '');
+          setTimeout(() => setShowExitToast(false), 2000);
+        }
       }
     };
 
@@ -1939,6 +1949,11 @@ function App() {
         onClose={mainKeyboard.closeKeyboard}
       />
         </>
+      )}
+      {showExitToast && (
+        <div className="exit-toast">
+          هل تريد الخروج من التطبيق؟ اضغط مرة أخرى للتأكيد
+        </div>
       )}
     </div>
   );

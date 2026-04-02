@@ -2212,3 +2212,28 @@ button:focus-visible,
     padding-right: 4px; /* تعديل بسيط لتجنب التصاق شريط التمرير بالحافة */
   }
 }
+
+.exit-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-size: 16px;
+  font-weight: bold;
+  z-index: 9999;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px var(--app-shadow);
+  animation: exitToastFade 2s ease forwards;
+}
+
+@keyframes exitToastFade {
+  0% { opacity: 0; transform: translate(-50%, 20px); }
+  15% { opacity: 1; transform: translate(-50%, 0); }
+  85% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 20px); }
+}
