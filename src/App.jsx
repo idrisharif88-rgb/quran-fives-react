@@ -258,14 +258,17 @@ function App() {
     const onPopState = () => {
       const wasHandled = backHandlerRef.current();
       if (wasHandled) {
-        // إذا تم التعامل مع الرجوع داخل التطبيق، نُعيد إضافة حالة لسجل المتصفح
+        // تم التعامل مع الرجوع داخل التطبيق، لذا نعيد تسليح المصيدة
+        lastBackPressTimeRef.current = 0;
         window.history.pushState(null, '');
-        setShowExitToast(false);
       } else {
+        // لم يتم التعامل مع أي شيء، نحن في الشاشة الرئيسية، فلنتعامل مع منطق الخروج
         const now = Date.now();
         if (now - lastBackPressTimeRef.current < 2000) {
-          // السماح بالخروج إذا تم الضغط مرتين خلال ثانيتين
+          // الضغطة الثانية خلال ثانيتين، اسمح بالخروج
+          window.history.back();
         } else {
+          // الضغطة الأولى
           lastBackPressTimeRef.current = now;
           setShowExitToast(true);
           window.history.pushState(null, '');
@@ -380,6 +383,16 @@ function App() {
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.body.classList.toggle('night-mode', isNightMode);
+    document.documentElement.style.backgroundColor = isNightMode ? '#0c1116' : '#f4f6f8';
+    
+    // تحديث لون شريط النظام (Navigation & Status bar) في الأندرويد
+    let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (!metaThemeColor) {
+      metaThemeColor = document.createElement('meta');
+      metaThemeColor.name = 'theme-color';
+      document.head.appendChild(metaThemeColor);
+    }
+    metaThemeColor.content = isNightMode ? '#0c1116' : '#f4f6f8';
   }, [isNightMode]);
 
   // Logic: We pass the state to our pure function to get the exact Surah details
@@ -1067,7 +1080,6 @@ function App() {
       '--app-font-family': fontFamily,
       '--app-font-weight': fontWeight,
       '--app-font-color': resolvedFontColor,
-      height: '100vh',
       display: 'flex',
       flexDirection: 'column'
     }}>
