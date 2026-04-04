@@ -12,6 +12,7 @@ import RandomAyahQuiz from './utils/RandomAyahQuiz';
 import QuranicWonders from './components/QuranicWonders'; // استيراد المكون الجديد
 import SurahCountQuiz from './utils/SurahCountQuiz';
 import SurahNamesQuiz from './utils/SurahNamesQuiz';
+import UserManual from './components/UserManual';
 import PageStartsQuiz from './utils/PageStartsQuiz';
 import {
   APP_STORAGE_KEY,
@@ -185,6 +186,7 @@ function App() {
     Array.isArray(persistedAppState.quranicWondersNotes) ? persistedAppState.quranicWondersNotes : []
   ));
   const [activeSurahNamesQuiz, setActiveSurahNamesQuiz] = useState(false);
+  const [isUserManualOpen, setIsUserManualOpen] = useState(false);
   const [showExitToast, setShowExitToast] = useState(false);
 
   const actionButtonsRef = useRef(null);
@@ -230,6 +232,10 @@ function App() {
     }
     if (activeSurahNamesQuiz) {
       setActiveSurahNamesQuiz(false);
+      return true; // تم التعامل مع الإجراء
+    }
+    if (isUserManualOpen) {
+      setIsUserManualOpen(false);
       return true; // تم التعامل مع الإجراء
     }
 
@@ -1135,7 +1141,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}> {/* تم تعديل العرض الأدنى */}
-                  {['العداد', 'الوضع الليلي', 'الخط', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية'].map(option => (
+                  {['العداد', 'الوضع الليلي', 'الخط', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -1172,6 +1178,12 @@ function App() {
                         }
                         if (option === 'اختبار سور') {
                           setActiveSurahNamesQuiz(true);
+                          setIsMoreMenuOpen(false);
+                          setIsFontMenuOpen(false);
+                          return;
+                        }
+                        if (option === 'شرح البرنامج') {
+                          setIsUserManualOpen(true);
                           setIsMoreMenuOpen(false);
                           setIsFontMenuOpen(false);
                           return;
@@ -1346,6 +1358,13 @@ function App() {
       {activeSurahNamesQuiz && (
         <div style={{ flexGrow: 1, overflowY: 'auto' }}>
           <SurahNamesQuiz onClose={() => setActiveSurahNamesQuiz(false)} />
+        </div>
+      )}
+
+      {isUserManualOpen && (
+        <div className="shared-verses-container" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, backgroundColor: 'var(--app-bg)', overflowY: 'auto' }}>
+          <UserManual onClose={() => setIsUserManualOpen(false)} />
+          <button className="khmasiyat-quiz-btn secondary" onClick={() => setIsUserManualOpen(false)} style={{ margin: '20px auto', display: 'block' }}>إغلاق</button>
         </div>
       )}
 
