@@ -1852,11 +1852,17 @@ function App() {
             </div>
             
             <div className="icon-wrapper">
-              {activeTooltip === 'verses' && (
-                <div className="surah-tooltip">
-                  عدد الآيات: {verseCount}
-                </div>
-              )}
+              {activeTooltip === 'verses' && (() => {
+                const sameCountSurahs = SURAH_METADATA.filter(s => s.verseCount === verseCount).map(s => s.name);
+                return (
+                  <div className="surah-tooltip" style={{ whiteSpace: 'pre-wrap', textAlign: 'center', lineHeight: '1.4' }}>
+                    {sameCountSurahs.length > 1
+                      ? sameCountSurahs.join(' - ')
+                      : `سورة ${sameCountSurahs[0]}`
+                    }
+                  </div>
+                );
+              })()}
               <button 
                 className="action-icon" 
                 title="عدد الآيات"
