@@ -1,4 +1,4 @@
-﻿﻿﻿﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getSurahAndRange } from './utils/quranLogic';
 import TextDisplay from './components/TextDisplay';
 import { QURAN_VERSES } from './data/quranVerses';
@@ -14,6 +14,9 @@ import SurahCountQuiz from './utils/SurahCountQuiz';
 import SurahNamesQuiz from './utils/SurahNamesQuiz';
 import UserManual from './components/UserManual';
 import PageStartsQuiz from './utils/PageStartsQuiz';
+import AudioSettings from './components/AudioSettings';
+import { DEFAULT_RECITER } from './data/reciters';
+import { getAudioUrl } from './utils/audioDownloader';
 import {
   APP_STORAGE_KEY,
   KHMASIYAT_QUIZ_STORAGE_KEY,
@@ -81,6 +84,11 @@ function App() {
   const [showSessionPrompt, setShowSessionPrompt] = useState(() => (
     SESSION_STORAGE_KEYS.some(storageKey => hasStoredState(storageKey))
   ));
+
+  const [activeReciter, setActiveReciter] = useState(() => (
+    typeof persistedAppState.activeReciter === 'string' ? persistedAppState.activeReciter : DEFAULT_RECITER
+  ));
+  const [isAudioSettingsOpen, setIsAudioSettingsOpen] = useState(false);
 
   // State Management: This holds our current Khmasiyat index (starts at 0)
   const [currentIndex, setCurrentIndex] = useState(() => (
@@ -213,6 +221,10 @@ function App() {
       setIsNightCounterSettingsOpen(false);
       return true; // تم التعامل مع الإجراء
     }
+    if (isAudioSettingsOpen) {
+      setIsAudioSettingsOpen(false);
+      return true;
+    }
     if (isMoreMenuOpen || isFontMenuOpen || isPageStartsMenuOpen || isAyahMenuOpen) {
       setIsMoreMenuOpen(false);
       setIsFontMenuOpen(false);
@@ -340,6 +352,7 @@ function App() {
 
   useEffect(() => {
     saveStoredState(APP_STORAGE_KEY, {
+      activeReciter,
       currentIndex,
       viewMode,
       surahFivesIndex,
@@ -363,6 +376,7 @@ function App() {
       isNightMode,
     });
   }, [
+    activeReciter,
     activeAyahTest,
     activePageStartsTest,
     currentIndex,
@@ -416,7 +430,15 @@ function App() {
   }, []);
   const currentKhmasiyat = getSurahAndRange(currentIndex);
   const lastVerseIndex = currentKhmasiyat.absoluteEndIndex - 1;
-  const khmasiyatVersesText = QURAN_VERSES[lastVerseIndex] ? [QURAN_VERSES[lastVerseIndex]] : [];
+  
+  let khmasiyatVersesText = [];
+  if (QURAN_VERSES[lastVerseIndex]) {
+    khmasiyatVersesText.push(QURAN_VERSES[lastVerseIndex]);
+    const similarKhmasiyatIndices = [962, 963, 965, 966, 968, 970, 972];
+    if (similarKhmasiyatIndices.includes(currentIndex) && QURAN_VERSES[lastVerseIndex + 1]) {
+      khmasiyatVersesText.push(QURAN_VERSES[lastVerseIndex + 1]);
+    }
+  }
   const currentPageStartVerse = pageStartsData[currentPageIndex] || null;
   const currentVersesText = isPageStartsMode
     ? (currentPageStartVerse ? [currentPageStartVerse] : [])
@@ -687,7 +709,7 @@ function App() {
         // تنسيق رقم السورة والآية ليكون من 3 خانات (مثال: السورة 1 الآية 2 تصبح 001002)
         const surah = verse.s.toString().padStart(3, '0');
         const ayah = verse.a.toString().padStart(3, '0');
-        const url = `https://everyayah.com/data/Minshawy_Murattal_128kbps/${surah}${ayah}.mp3`; // يمكنك تغيير المعرف هنا
+        const url = getAudioUrl(verse.s, verse.a, activeReciter);
         
         if (!audioRef.current) {
           audioRef.current = new Audio();
@@ -712,6 +734,7 @@ function App() {
               }).catch(e => console.error("Error caching audio in background", e));
             }
           } catch (e) {
+            console.error("Cache error", e);
             if (!audioRef.current.src.includes(`${surah}${ayah}.mp3`)) audioRef.current.src = url;
           }
         } else {
@@ -1141,7 +1164,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}> {/* تم تعديل العرض الأدنى */}
-                  {['العداد', 'الوضع الليلي', 'الخط', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج'].map(option => (
+                  {['العداد', 'الوضع الليلي', 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -1161,6 +1184,12 @@ function App() {
                         }
                         if (option === 'الوضع الليلي') {
                           setIsNightMode(prev => !prev);
+                          setIsMoreMenuOpen(false);
+                          setIsFontMenuOpen(false);
+                          return;
+                        }
+                        if (option === 'إعدادات الصوت') {
+                          setIsAudioSettingsOpen(true);
                           setIsMoreMenuOpen(false);
                           setIsFontMenuOpen(false);
                           return;
@@ -1972,6 +2001,14 @@ function App() {
           </div>
         </div>
         </>
+      )}
+      {isAudioSettingsOpen && (
+        <AudioSettings
+          activeReciter={activeReciter}
+          setActiveReciter={setActiveReciter}
+          currentSurahNumber={currentSurahNumber}
+          onClose={() => setIsAudioSettingsOpen(false)}
+        />
       )}
       <CustomKeyboard
         visible={mainKeyboard.showKeyboard}

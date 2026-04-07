@@ -191,7 +191,19 @@ export default function KhmasiyatQuiz({ onClose }) {
   };
 
   const quizKhmasiyaData = quizKhmasiyaIndex !== null ? getSurahAndRange(quizKhmasiyaIndex) : null;
-  const quizLastVerse = quizKhmasiyaData ? QURAN_VERSES[quizKhmasiyaData.absoluteEndIndex - 1] : null;
+  let quizVersesToDisplay = [];
+  let quizLastVerse = null; // Keeping this for the truthiness check below
+  if (quizKhmasiyaData) {
+    const lastVerseIndex = quizKhmasiyaData.absoluteEndIndex - 1;
+    quizLastVerse = QURAN_VERSES[lastVerseIndex] || null;
+    if (quizLastVerse) {
+      quizVersesToDisplay.push(quizLastVerse);
+      const similarKhmasiyatIndices = [962, 963, 965, 966, 968, 970, 972];
+      if (similarKhmasiyatIndices.includes(quizKhmasiyaIndex) && QURAN_VERSES[lastVerseIndex + 1]) {
+        quizVersesToDisplay.push(QURAN_VERSES[lastVerseIndex + 1]);
+      }
+    }
+  }
   const quizRemainingCount = Math.max(0, quizOrder.length - quizNextPointer);
   const keyboard = useCustomKeyboard({
     rangeStart: {
@@ -266,8 +278,8 @@ export default function KhmasiyatQuiz({ onClose }) {
           </svg>
         </button>
       </div>
-      {quizLastVerse ? (
-        <TextDisplay verses={[quizLastVerse]} hideVerseNumber />
+      {quizVersesToDisplay.length > 0 ? (
+        <TextDisplay verses={quizVersesToDisplay} hideVerseNumber />
       ) : (
         <div className="verse-container">اختر مدى صحيحًا ثم اضغط "تطبيق المدى" لعرض سؤال عشوائي.</div>
       )}

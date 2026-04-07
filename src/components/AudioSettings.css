@@ -1,0 +1,92 @@
+.audio-settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.audio-settings-card {
+  background-color: var(--app-bg);
+  color: var(--app-text);
+  border-radius: 16px;
+  padding: 24px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.audio-settings-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-align: center;
+  color: var(--app-accent);
+}
+
+.audio-setting-section {
+  margin-bottom: 20px;
+}
+
+.audio-setting-label {
+  display: block;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: var(--app-text);
+}
+
+.audio-setting-select {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: var(--app-bg);
+  color: var(--app-text);
+  font-family: inherit;
+}
+
+.download-progress-container {
+  margin-top: 10px;
+}
+
+.download-progress-bar {
+  width: 100%;
+  height: 10px;
+  background-color: #ddd;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.download-progress-fill {
+  height: 100%;
+  background-color: var(--app-warn);
+  transition: width 0.3s ease;
+}
+
+.download-progress-text {
+  text-align: center;
+  font-size: 12px;
+  margin-top: 5px;
+  color: var(--app-muted);
+}
+
+.audio-status-message {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--app-warn);
+  text-align: center;
+  font-weight: bold;
+}
+
+.audio-settings-actions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+}
