@@ -434,7 +434,7 @@ function App() {
   let khmasiyatVersesText = [];
   if (QURAN_VERSES[lastVerseIndex]) {
     khmasiyatVersesText.push(QURAN_VERSES[lastVerseIndex]);
-    const similarKhmasiyatIndices = [962, 963, 965, 966, 968, 970, 972];
+    const similarKhmasiyatIndices = [962, 963, 965, 966, 968, 970, 972, 1095, 1100, 1101];
     if (similarKhmasiyatIndices.includes(currentIndex) && QURAN_VERSES[lastVerseIndex + 1]) {
       khmasiyatVersesText.push(QURAN_VERSES[lastVerseIndex + 1]);
     }

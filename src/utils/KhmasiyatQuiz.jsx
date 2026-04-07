@@ -198,7 +198,7 @@ export default function KhmasiyatQuiz({ onClose }) {
     quizLastVerse = QURAN_VERSES[lastVerseIndex] || null;
     if (quizLastVerse) {
       quizVersesToDisplay.push(quizLastVerse);
-      const similarKhmasiyatIndices = [962, 963, 965, 966, 968, 970, 972];
+      const similarKhmasiyatIndices = [962, 963, 965, 966, 968, 970, 972, 1095, 1100, 1101];
       if (similarKhmasiyatIndices.includes(quizKhmasiyaIndex) && QURAN_VERSES[lastVerseIndex + 1]) {
         quizVersesToDisplay.push(QURAN_VERSES[lastVerseIndex + 1]);
       }

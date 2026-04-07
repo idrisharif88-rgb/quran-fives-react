@@ -23,7 +23,11 @@ const AudioSettings = ({ activeReciter, setActiveReciter, currentSurahNumber, on
       });
       setStatusMessage('تم تحميل السورة بنجاح.');
     } catch (err) {
-      setStatusMessage('حدث خطأ أثناء التحميل. تأكد من اتصالك بالإنترنت.');
+      if (err.message === 'التقنية غير مدعومة في متصفحك') {
+        setStatusMessage('عذراً، ميزة التحميل غير مدعومة في هذا المتصفح أو تتطلب اتصالاً آمناً (HTTPS).');
+      } else {
+        setStatusMessage('حدث خطأ أثناء التحميل. تأكد من اتصالك بالإنترنت.');
+      }
       console.error('Audio download error:', err);
     } finally {
       setIsDownloading(false);
