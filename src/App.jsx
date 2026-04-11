@@ -215,92 +215,6 @@ function App() {
   const backHandlerRef = useRef();
   const lastBackPressTimeRef = useRef(0);
 
-  const handleHardwareBack = () => {
-    // الأولوية 1: إغلاق القوائم والنوافذ المنبثقة المفتوحة
-    if (isNightCounterSettingsOpen) {
-      setIsNightCounterSettingsOpen(false);
-      return true; // تم التعامل مع الإجراء
-    }
-    if (isAudioSettingsOpen) {
-      setIsAudioSettingsOpen(false);
-      return true;
-    }
-    if (isMoreMenuOpen || isFontMenuOpen || isPageStartsMenuOpen || isAyahMenuOpen) {
-      setIsMoreMenuOpen(false);
-      setIsFontMenuOpen(false);
-      setIsPageStartsMenuOpen(false);
-      setIsAyahMenuOpen(false);
-      return true; // تم التعامل مع الإجراء
-    }
-
-    // الأولوية 2: الخروج من أوضاع الاختبار
-    if (activeAyahTest) {
-      setActiveAyahTest(null);
-      return true; // تم التعامل مع الإجراء
-    }
-    if (activePageStartsTest) {
-      setActivePageStartsTest(null);
-      return true; // تم التعامل مع الإجراء
-    }
-    if (activeSurahNamesQuiz) {
-      setActiveSurahNamesQuiz(false);
-      return true; // تم التعامل مع الإجراء
-    }
-    if (isUserManualOpen) {
-      setIsUserManualOpen(false);
-      return true; // تم التعامل مع الإجراء
-    }
-
-    // الأولوية 3: الرجوع من الشاشات الفرعية
-    if (viewMode === 'page-starred') {
-      setViewMode('page-starts');
-      return true; // تم التعامل مع الإجراء
-    }
-    if (viewMode === 'quranic-wonders') {
-      setViewMode('khmasiyat');
-      return true; // تم التعامل مع الإجراء
-    }
-    if (viewMode === 'starred' || viewMode === 'shared-verses' || viewMode === 'night-counter' || viewMode === 'page-starts' || viewMode === 'surah-fives') {
-      setViewMode('khmasiyat');
-      return true; // تم التعامل مع الإجراء
-    }
-
-    // إذا لم يتم التعامل مع أي شيء، فنحن في الشاشة الرئيسية
-    return false;
-  };
-
-  backHandlerRef.current = handleHardwareBack;
-
-  // التعامل مع زر الرجوع في الهاتف
-  useEffect(() => {
-    const onPopState = () => {
-      const wasHandled = backHandlerRef.current();
-      if (wasHandled) {
-        // تم التعامل مع الرجوع داخل التطبيق، لذا نعيد تسليح المصيدة
-        lastBackPressTimeRef.current = 0;
-        window.history.pushState(null, '');
-      } else {
-        // لم يتم التعامل مع أي شيء، نحن في الشاشة الرئيسية، فلنتعامل مع منطق الخروج
-        const now = Date.now();
-        if (now - lastBackPressTimeRef.current < 2000) {
-          // الضغطة الثانية خلال ثانيتين، اسمح بالخروج
-          window.history.back();
-        } else {
-          // الضغطة الأولى
-          lastBackPressTimeRef.current = now;
-          setShowExitToast(true);
-          window.history.pushState(null, '');
-          setTimeout(() => setShowExitToast(false), 2000);
-        }
-      }
-    };
-
-    window.history.pushState(null, '');
-    window.addEventListener('popstate', onPopState);
-
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
-
   const starredArray = Array.from(starredIndices).sort((a, b) => a - b);
   const starredPagesArray = Array.from(starredPages).sort((a, b) => a - b);
 
@@ -1102,6 +1016,82 @@ function App() {
       onSubmit: handlePageJump,
     },
   });
+
+  const handleHardwareBack = () => {
+    // الأولوية 0: إغلاق لوحة المفاتيح المنبثقة ورسالة الجلسة السابقة
+    if (showSessionPrompt) {
+      setShowSessionPrompt(false);
+      return true;
+    }
+    if (mainKeyboard && mainKeyboard.showKeyboard) {
+      mainKeyboard.closeKeyboard();
+      return true;
+    }
+
+    // الأولوية 1: إغلاق القوائم والنوافذ المنبثقة المفتوحة
+    if (isNightCounterSettingsOpen) {
+      setIsNightCounterSettingsOpen(false);
+      return true;
+    }
+    if (isAudioSettingsOpen) {
+      setIsAudioSettingsOpen(false);
+      return true;
+    }
+    if (isMoreMenuOpen || isFontMenuOpen || isPageStartsMenuOpen || isAyahMenuOpen) {
+      setIsMoreMenuOpen(false);
+      setIsFontMenuOpen(false);
+      setIsPageStartsMenuOpen(false);
+      setIsAyahMenuOpen(false);
+      return true;
+    }
+
+    // الأولوية 2: الخروج من أوضاع الاختبار والأدلة
+    if (activeAyahTest) {
+      setActiveAyahTest(null);
+      return true;
+    }
+    if (activePageStartsTest) {
+      setActivePageStartsTest(null);
+      return true;
+    }
+    if (activeSurahNamesQuiz) {
+      setActiveSurahNamesQuiz(false);
+      return true;
+    }
+    if (isUserManualOpen) {
+      setIsUserManualOpen(false);
+      return true;
+    }
+
+    // الأولوية 3: الرجوع من الشاشات الفرعية إلى الرئيسية
+    if (viewMode === 'page-starred') {
+      setViewMode('page-starts');
+      return true;
+    }
+    if (viewMode === 'quranic-wonders') {
+      setViewMode('khmasiyat');
+      return true;
+    }
+    if (viewMode === 'starred' || viewMode === 'shared-verses' || viewMode === 'night-counter' || viewMode === 'page-starts' || viewMode === 'surah-fives') {
+      setViewMode('khmasiyat');
+      return true;
+    }
+
+    return false;
+  };
+
+  backHandlerRef.current = handleHardwareBack;
+
+  // تجهيز الدالة ليتم استدعاؤها من كود الجافا في أندرويد ستوديو
+  useEffect(() => {
+    window.handleAndroidBack = () => {
+      return backHandlerRef.current();
+    };
+
+    return () => {
+      delete window.handleAndroidBack;
+    };
+  }, []);
 
   return (
     <div className={`app-container ${isNightMode ? 'night-mode' : ''}`} style={{
