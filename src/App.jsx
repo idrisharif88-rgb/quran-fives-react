@@ -1875,20 +1875,22 @@ function App() {
                 const sameCountSurahs = SURAH_METADATA.filter(s => s.verseCount === verseCount).map(s => s.name);
                 return (
                   <div className="surah-tooltip" style={{ whiteSpace: 'pre-wrap', textAlign: 'center', lineHeight: '1.4' }}>
-                    {sameCountSurahs.length > 1
-                      ? sameCountSurahs.join(' - ')
-                      : `سورة ${sameCountSurahs[0]}`
-                    }
+                    {sameCountSurahs.join(' - ')}
                   </div>
                 );
               })()}
               <button 
                 className="action-icon" 
                 title="عدد الآيات"
-                onClick={() => setActiveTooltip(activeTooltip === 'verses' ? null : 'verses')}
+                onClick={() => {
+                  const sharedCount = SURAH_METADATA.filter(s => s.verseCount === verseCount).length;
+                  if (sharedCount > 1) {
+                    setActiveTooltip(activeTooltip === 'verses' ? null : 'verses');
+                  }
+                }}
               >
                 <span style={{ fontSize: '20px', fontWeight: 'bold' }}>
-                  {blinkValues[blinkIndex]}
+                  {verseCount || '-'}
                 </span>
               </button>
             </div>
