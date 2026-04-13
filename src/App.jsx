@@ -198,6 +198,7 @@ function App() {
   const [isUserManualOpen, setIsUserManualOpen] = useState(false);
   const [showExitToast, setShowExitToast] = useState(false);
   const [isQRSyncOpen, setIsQRSyncOpen] = useState(false);
+  const [counterConfirm, setCounterConfirm] = useState({ type: null, id: null });
 
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
@@ -903,18 +904,11 @@ function App() {
   };
 
   const handleResetNightCounter = (counterId) => {
-    setNightCounters(prev => prev.map(counter => (
-      counter.id === counterId
-        ? { ...counter, value: 0 }
-        : counter
-    )));
+    setCounterConfirm({ type: 'reset', id: counterId });
   };
 
   const handleDeleteNightCounter = (counterId) => {
-    setNightCounters(prev => {
-      if (prev.length <= 1) return prev;
-      return prev.filter(counter => counter.id !== counterId);
-    });
+    setCounterConfirm({ type: 'delete', id: counterId });
   };
 
   const handlePageJump = () => {
@@ -1020,7 +1014,11 @@ function App() {
   });
 
   const handleHardwareBack = () => {
-    // الأولوية 0: إغلاق لوحة المفاتيح المنبثقة ورسالة الجلسة السابقة
+    // الأولوية 0: إغلاق لوحة المفاتيح المنبثقة ورسالة الجلسة السابقة ومربعات التأكيد
+    if (counterConfirm.type) {
+      setCounterConfirm({ type: null, id: null });
+      return true;
+    }
     if (showSessionPrompt) {
       setShowSessionPrompt(false);
       return true;
@@ -1108,6 +1106,49 @@ function App() {
       display: 'flex',
       flexDirection: 'column'
     }}>
+      {counterConfirm.type && (
+        <div className="session-overlay" dir="rtl" style={{ zIndex: 10000, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
+          <div style={{
+            background: 'var(--app-surface)',
+            border: '1px solid var(--app-border)',
+            padding: '24px',
+            borderRadius: '16px',
+            maxWidth: '320px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.4)'
+          }}>
+            <h3 style={{ marginTop: 0, color: 'var(--app-text)', fontSize: '18px', marginBottom: '12px' }}>
+              {counterConfirm.type === 'reset' ? 'تصفير العداد' : 'مسح العداد'}
+            </h3>
+            <p style={{ color: 'var(--app-muted)', fontSize: '14px', marginBottom: '24px', lineHeight: '1.6' }}>
+              {counterConfirm.type === 'reset' 
+                ? 'هل أنت متأكد أنك تريد تصفير هذا العداد والبدء من جديد؟' 
+                : 'هل أنت متأكد أنك تريد مسح هذا العداد نهائياً؟'}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                className="night-counter-chip active"
+                style={{ flex: 1, margin: 0, background: 'var(--app-danger)', color: '#fff', border: 'none' }}
+                onClick={() => {
+                  if (counterConfirm.type === 'reset') {
+                    setNightCounters(prev => prev.map(counter => (counter.id === counterConfirm.id ? { ...counter, value: 0 } : counter)));
+                  } else if (counterConfirm.type === 'delete') {
+                    setNightCounters(prev => (prev.length <= 1 ? prev : prev.filter(counter => counter.id !== counterConfirm.id)));
+                  }
+                  setCounterConfirm({ type: null, id: null });
+                }}
+              >
+                {counterConfirm.type === 'reset' ? 'تصفير' : 'مسح'}
+              </button>
+              <button type="button" className="night-counter-chip" style={{ flex: 1, margin: 0 }} onClick={() => setCounterConfirm({ type: null, id: null })}>
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showSessionPrompt && (
         <div className="session-overlay" dir="rtl">
           <div className="session-card">
@@ -1770,11 +1811,7 @@ function App() {
                   className="night-counter-btn night-counter-reset-btn"
                   onClick={() => {
                     if (!activeNightCounter) return;
-                    setNightCounters(prev => prev.map(counter => (
-                      counter.id === activeNightCounterId
-                        ? { ...counter, value: 0 }
-                        : counter
-                    )));
+                    setCounterConfirm({ type: 'reset', id: activeNightCounterId });
                   }}
                   aria-label="تصفير"
                 >
