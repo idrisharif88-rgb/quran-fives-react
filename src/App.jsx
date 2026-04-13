@@ -1103,7 +1103,7 @@ function App() {
       flexDirection: 'column'
     }}>
       {counterConfirm.type && (
-        <div className="session-overlay" dir="rtl" style={{ zIndex: 10000, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
+        <div className="session-overlay" dir="rtl" style={{ zIndex: 10001, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
           <div style={{
             background: 'var(--app-surface)',
             border: '1px solid var(--app-border)',
