@@ -584,22 +584,6 @@ button:focus-visible,
   gap: 12px;
 }
 
-.settings-popover.night-counter-settings.night-counter-settings-popover {
-  left: -5px;
-  right: auto;
-  transform: none;
-}
-
-.settings-popover.night-counter-settings.night-counter-settings-popover::after {
-  left: 23px;
-  right: auto;
-  transform: none;
-}
-
-.night-counter-list {
-  display: none !important;
-}
-
 .night-counter-manager-header {
   display: flex;
   align-items: center;
