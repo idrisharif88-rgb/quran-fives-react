@@ -15,6 +15,7 @@ import SurahNamesQuiz from './utils/SurahNamesQuiz';
 import UserManual from './components/UserManual';
 import PageStartsQuiz from './utils/PageStartsQuiz';
 import AudioSettings from './components/AudioSettings';
+import QRSync from './components/QRSync';
 import { DEFAULT_RECITER } from './data/reciters';
 import { getAudioUrl } from './utils/audioDownloader';
 import {
@@ -196,6 +197,7 @@ function App() {
   const [activeSurahNamesQuiz, setActiveSurahNamesQuiz] = useState(false);
   const [isUserManualOpen, setIsUserManualOpen] = useState(false);
   const [showExitToast, setShowExitToast] = useState(false);
+  const [isQRSyncOpen, setIsQRSyncOpen] = useState(false);
 
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
@@ -1037,6 +1039,10 @@ function App() {
       setIsAudioSettingsOpen(false);
       return true;
     }
+    if (isQRSyncOpen) {
+      setIsQRSyncOpen(false);
+      return true;
+    }
     if (isMoreMenuOpen || isFontMenuOpen || isPageStartsMenuOpen || isAyahMenuOpen) {
       setIsMoreMenuOpen(false);
       setIsFontMenuOpen(false);
@@ -1154,7 +1160,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}> {/* تم تعديل العرض الأدنى */}
-                  {['العداد', 'الوضع الليلي', 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج'].map(option => (
+                {['العداد', 'الوضع الليلي', 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -1207,6 +1213,12 @@ function App() {
                           setIsFontMenuOpen(false);
                           return;
                         }
+                      if (option === 'مزامنة QR') {
+                        setIsQRSyncOpen(true);
+                        setIsMoreMenuOpen(false);
+                        setIsFontMenuOpen(false);
+                        return;
+                      }
                         setIsMoreMenuOpen(false);
                       }}
                     >
@@ -2000,6 +2012,30 @@ function App() {
           setActiveReciter={setActiveReciter}
           currentSurahNumber={currentSurahNumber}
           onClose={() => setIsAudioSettingsOpen(false)}
+        />
+      )}
+      {isQRSyncOpen && (
+        <QRSync
+          appState={{
+            currentIndex,
+            currentPageIndex,
+            starredIndices,
+            starredPages,
+            nightCounters,
+            quranicWondersNotes
+          }}
+          onRestore={(data) => {
+            if (data.c !== undefined) setCurrentIndex(data.c);
+            if (data.p !== undefined) setCurrentPageIndex(data.p);
+            if (data.s !== undefined) setStarredIndices(new Set(data.s));
+            if (data.sp !== undefined) setStarredPages(new Set(data.sp));
+            if (data.n !== undefined) setNightCounters(data.n);
+            if (data.qw !== undefined) setQuranicWondersNotes(data.qw);
+            
+            // إغلاق النافذة بصمت بعد نجاح الاستعادة وبدون رسالة منبثقة مزعجة
+            setIsQRSyncOpen(false);
+          }}
+          onClose={() => setIsQRSyncOpen(false)}
         />
       )}
       <CustomKeyboard

@@ -4,9 +4,31 @@ import android.os.Bundle;
 import android.webkit.ValueCallback;
 import android.widget.Toast;
 import com.getcapacitor.BridgeActivity;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import android.webkit.JavascriptInterface;
 
 public class MainActivity extends BridgeActivity {
     private long lastBackPressTime = 0;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        
+        // إنشاء جسر للتواصل مع React لطلب الإذن فقط عند الحاجة
+        this.bridge.getWebView().addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public void requestCameraPermission() {
+                runOnUiThread(() -> {
+                    if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                        ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA}, 1001);
+                    }
+                });
+            }
+        }, "AndroidApp");
+    }
 
     @Override
     public void onBackPressed() {
