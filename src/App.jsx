@@ -3,6 +3,7 @@ import { getSurahAndRange } from './utils/quranLogic';
 import TextDisplay from './components/TextDisplay';
 import { QURAN_VERSES } from './data/quranVerses';
 import { SURAH_METADATA } from './data/quranConstants';
+import { SURAH_PAGE_COUNTS } from './data/surahPageCounts';
 import CounterRing from './components/CounterRing';
 import CustomKeyboard, { useCustomKeyboard } from './components/CustomKeyboard';
 import { PAGE_STARTS } from './data/pageStarts';
@@ -97,7 +98,7 @@ function App() {
   ));
   const [viewMode, setViewMode] = useState(() => (
     typeof persistedAppState.viewMode === 'string' ? persistedAppState.viewMode : 'khmasiyat'
-  )); // 'khmasiyat', 'shared-verses', 'starred'
+  )); // 'khmasiyat', 'shared-verses', 'starred', 'surah-pages'
   const [surahFivesIndex, setSurahFivesIndex] = useState(() => (
     Number.isInteger(persistedAppState.surahFivesIndex) ? persistedAppState.surahFivesIndex : 0
   ));
@@ -368,6 +369,8 @@ function App() {
   // Data: Calculate total verses in the currently displayed Surah
   const currentSurahNumber = currentVersesText[0]?.s;
   const verseCount = QURAN_VERSES.filter(v => v.s === currentSurahNumber).length;
+
+  const currentSurahPageCount = currentSurahNumber ? (SURAH_PAGE_COUNTS[currentSurahNumber - 1] || 0) : 0;
 
   // Auto-hide tooltip after 3 seconds
   useEffect(() => {
@@ -1072,7 +1075,7 @@ function App() {
       setViewMode('khmasiyat');
       return true;
     }
-    if (viewMode === 'starred' || viewMode === 'shared-verses' || viewMode === 'night-counter' || viewMode === 'page-starts' || viewMode === 'surah-fives') {
+    if (viewMode === 'starred' || viewMode === 'shared-verses' || viewMode === 'night-counter' || viewMode === 'page-starts' || viewMode === 'surah-fives' || viewMode === 'surah-pages') {
       setViewMode('khmasiyat');
       return true;
     }
@@ -1158,7 +1161,7 @@ function App() {
         </div>
       )}
       {/* الأزرار العلوية */}
-      {!isQuizMode && viewMode !== 'shared-verses' && viewMode !== 'starred' && viewMode !== 'page-starred' && viewMode !== 'night-counter' && viewMode !== 'quranic-wonders' && (
+      {!isQuizMode && viewMode !== 'starred' && viewMode !== 'page-starred' && viewMode !== 'night-counter' && viewMode !== 'quranic-wonders' && viewMode !== 'surah-pages' && (
       <div className="action-buttons-container upper-actions">
         {(isPageStartsMode || isNightCounterMode || isSurahFivesMode) && (
           <>
@@ -1175,7 +1178,18 @@ function App() {
             )}
           </>
         )}
-        {!isPageStartsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' && (
+        {viewMode === 'shared-verses' && (
+          <button
+            className="action-icon"
+            title="العودة للقراءة"
+            onClick={() => backHandlerRef.current()}
+          >
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+            </svg>
+          </button>
+        )}
+        {!isPageStartsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' && viewMode !== 'surah-pages' && (
           <>
             <div className="icon-wrapper" ref={moreMenuRef}>
               <button
@@ -1196,66 +1210,23 @@ function App() {
                 </svg>
               </button>
               {isMoreMenuOpen && (
-                <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}> {/* تم تعديل العرض الأدنى */}
-                {['العداد', 'الوضع الليلي', 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR'].map(option => (
+                <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
+                  {['العداد', 'الوضع الليلي', 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'السور المتشابهة في العدد'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
-                      className={`ayah-menu-item ${option === 'الوضع الليلي' && isNightMode ? 'active' : ''}`}
+                      className={`ayah-menu-item ${(option === 'الوضع الليلي' && isNightMode) || (option === 'السور المتشابهة في العدد' && viewMode === 'shared-verses') ? 'active' : ''}`}
                       onClick={() => {
-                        if (option === 'العداد') {
-                          setViewMode('night-counter');
-                          setIsMoreMenuOpen(false);
-                          return;
-                        }
-                        if (option === 'خماسيات - سور') {
-                          setSurahFivesIndex(0);
-                          setViewMode('surah-fives');
-                          setIsMoreMenuOpen(false);
-                          setIsFontMenuOpen(false);
-                          return;
-                        }
-                        if (option === 'الوضع الليلي') {
-                          setIsNightMode(prev => !prev);
-                          setIsMoreMenuOpen(false);
-                          setIsFontMenuOpen(false);
-                          return;
-                        }
-                        if (option === 'إعدادات الصوت') {
-                          setIsAudioSettingsOpen(true);
-                          setIsMoreMenuOpen(false);
-                          setIsFontMenuOpen(false);
-                          return;
-                        }
-                        if (option === 'الخط') {
-                          setIsMoreMenuOpen(false);
-                          setIsFontMenuOpen(true);
-                          return;
-                        }
-                        if (option === 'عجائب قرآنية') {
-                          setViewMode('quranic-wonders');
-                          setIsMoreMenuOpen(false);
-                          setIsFontMenuOpen(false);
-                          return;
-                        }
-                        if (option === 'اختبار سور') {
-                          setActiveSurahNamesQuiz(true);
-                          setIsMoreMenuOpen(false);
-                          setIsFontMenuOpen(false);
-                          return;
-                        }
-                        if (option === 'شرح البرنامج') {
-                          setIsUserManualOpen(true);
-                          setIsMoreMenuOpen(false);
-                          setIsFontMenuOpen(false);
-                          return;
-                        }
-                      if (option === 'مزامنة QR') {
-                        setIsQRSyncOpen(true);
-                        setIsMoreMenuOpen(false);
-                        setIsFontMenuOpen(false);
-                        return;
-                      }
+                        if (option === 'العداد') { setViewMode('night-counter'); setIsMoreMenuOpen(false); return; }
+                        if (option === 'خماسيات - سور') { setSurahFivesIndex(0); setViewMode('surah-fives'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'الوضع الليلي') { setIsNightMode(prev => !prev); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'إعدادات الصوت') { setIsAudioSettingsOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'الخط') { setIsMoreMenuOpen(false); setIsFontMenuOpen(true); return; }
+                        if (option === 'عجائب قرآنية') { setViewMode('quranic-wonders'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'اختبار سور') { setActiveSurahNamesQuiz(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'شرح البرنامج') { setIsUserManualOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'مزامنة QR') { setIsQRSyncOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'السور المتشابهة في العدد') { setViewMode(prev => prev === 'shared-verses' ? 'khmasiyat' : 'shared-verses'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         setIsMoreMenuOpen(false);
                       }}
                     >
@@ -1285,12 +1256,12 @@ function App() {
                     <button type="button" className={fontWeight === 'bold' ? 'active' : ''} onClick={() => setFontWeight('bold')}>عريض</button>
                   </div>
                   <div className="settings-row colors-row">
-                  {['#000000', 'darkgreen', '#d9534f', '#007bff', '#ffffff', '#be185d', '#b45309'].map(c => (
-                      <button 
-                        key={c} 
-                        style={{backgroundColor: c, border: c === '#ffffff' && fontColor !== '#ffffff' ? '1px solid #ccc' : ''}} 
-                        className={`color-btn ${fontColor === c ? 'active' : ''}`} 
-                        onClick={() => setFontColor(c)} 
+                    {['#000000', 'darkgreen', '#d9534f', '#007bff', '#ffffff', '#be185d', '#b45309'].map(c => (
+                      <button
+                        key={c}
+                        style={{ backgroundColor: c, border: c === '#ffffff' && fontColor !== '#ffffff' ? '1px solid #ccc' : '' }}
+                        className={`color-btn ${fontColor === c ? 'active' : ''}`}
+                        onClick={() => setFontColor(c)}
                       />
                     ))}
                   </div>
@@ -1370,7 +1341,7 @@ function App() {
         )}
         
 
-        {!isPageStartsMode && !isNightCounterMode && !isSurahFivesMode && <button
+        {!isPageStartsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' && <button
           className="action-icon calendar-icon"
           title="التاريخ الهجري"
           style={{ width: '65px', height: '65px' }}
@@ -1514,7 +1485,7 @@ function App() {
       </>
       ) : (
         <div className={`content-layout ${viewMode === 'night-counter' ? 'night-counter-layout' : ''}`} onTouchStart={onSwipeTouchStart} onTouchEnd={onSwipeTouchEnd} style={{ flexGrow: 1, overflowY: 'auto' }}>
-          {viewMode !== 'shared-verses' && viewMode !== 'night-counter' && viewMode !== 'surah-fives' && <div className="top-stars-container inside-text-field">
+          {viewMode !== 'shared-verses' && viewMode !== 'night-counter' && viewMode !== 'surah-fives' && viewMode !== 'surah-pages' && <div className="top-stars-container inside-text-field">
             <button 
               className="top-star-btn"
               title={isPageStartsMode ? "قائمة الصفحات للتثبيت" : "قائمة الخماسيات للتثبيت"}
@@ -1550,8 +1521,8 @@ function App() {
             </button>
           </div>}
 
-          {viewMode !== 'night-counter' && (
-            <button 
+          {viewMode !== 'night-counter' && viewMode !== 'surah-pages' && (
+            <button
               onClick={() => {
                 if (viewMode === 'khmasiyat') {
                   setCurrentIndex(prev => Math.max(0, prev - 1));
@@ -1711,6 +1682,31 @@ function App() {
                 {SHARED_VERSE_GROUPS[sharedGroupIndex].surahs.map(s => `[${SURAH_NAMES[s - 1]}]`).join(' ، ')}
               </div>
             </div>
+          ) : viewMode === 'surah-pages' ? (
+            <div style={{ overflowY: 'auto', padding: '8px 4px', width: '100%' }} dir="rtl">
+              {SURAH_METADATA
+                .map((surah, i) => ({ surah, i }))
+                .filter(({ i }) => SURAH_PAGE_COUNTS[i] >= 3)
+                .map(({ surah, i }) => (
+                  <div
+                    key={surah.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '5px 14px',
+                      color: fontColor,
+                      fontWeight: fontWeight,
+                      fontSize: `calc(${fontSize}px * 0.78)`,
+                      borderBottom: '1px solid var(--app-muted)',
+                      lineHeight: '1.5',
+                    }}
+                  >
+                    <span>{surah.id}. {surah.name}</span>
+                    <span style={{ fontWeight: 'bold', minWidth: '40px', textAlign: 'left' }}>{SURAH_PAGE_COUNTS[i]}</span>
+                  </div>
+                ))}
+            </div>
           ) : viewMode === 'surah-fives' ? (
             <div className="verse-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div style={{ color: fontColor, fontWeight: fontWeight, fontSize: '54px', marginBottom: '12px' }}>
@@ -1739,8 +1735,8 @@ function App() {
               This is handled by making content-layout a flex container and its children
               (like TextDisplay's verse-container) scrollable. */}
           
-          {viewMode !== 'night-counter' && (
-            <button 
+          {viewMode !== 'night-counter' && viewMode !== 'surah-pages' && (
+            <button
               onClick={() => {
                 if (viewMode === 'khmasiyat') {
                   setCurrentIndex(prev => Math.min(1201, prev + 1));
@@ -1768,7 +1764,7 @@ function App() {
 
       {!isPageStartsMode && !isNightCounterMode && viewMode !== 'starred' && viewMode !== 'surah-fives' && viewMode !== 'quranic-wonders' && ( // إخفاء الأزرار السفلية
       <div className="action-buttons-container" ref={actionButtonsRef}>
-        {viewMode !== 'shared-verses' && (
+        {viewMode !== 'shared-verses' && viewMode !== 'surah-pages' && (
           <>
             <div className="icon-wrapper">
               {activeTooltip === 'surah' && (
@@ -1790,19 +1786,14 @@ function App() {
                 const sameCountSurahs = SURAH_METADATA.filter(s => s.verseCount === verseCount).map(s => s.name);
                 return (
                   <div className="surah-tooltip" style={{ whiteSpace: 'pre-wrap', textAlign: 'center', lineHeight: '1.4' }}>
-                    {sameCountSurahs.join(' - ')}
+                    {sameCountSurahs.length > 1 ? sameCountSurahs.join(' - ') : `عدد الآيات: ${verseCount}`}
                   </div>
                 );
               })()}
-              <button 
-                className="action-icon" 
+              <button
+                className="action-icon"
                 title="عدد الآيات"
-                onClick={() => {
-                  const sharedCount = SURAH_METADATA.filter(s => s.verseCount === verseCount).length;
-                  if (sharedCount > 1) {
-                    setActiveTooltip(activeTooltip === 'verses' ? null : 'verses');
-                  }
-                }}
+                onClick={() => setActiveTooltip(activeTooltip === 'verses' ? null : 'verses')}
               >
                 <span style={{ fontSize: '20px', fontWeight: 'bold' }}>
                   {verseCount || '-'}
@@ -1812,20 +1803,28 @@ function App() {
           </>
         )}
 
-        <button 
-          className="action-icon" 
-          title="السور المتشابهة في العدد"
-          onClick={() => setViewMode(prev => prev === 'khmasiyat' ? 'shared-verses' : 'khmasiyat')}
-          style={{ backgroundColor: viewMode === 'shared-verses' ? 'var(--app-warn)' : '' }}
-        >
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-            <path d="M5 8h14v2H5zm0 6h14v2H5z"/>
-          </svg>
-        </button>
+        {viewMode !== 'shared-verses' && currentSurahPageCount >= 3 && (
+          <div className="icon-wrapper">
+            {activeTooltip === 'pages' && (
+              <div className="surah-tooltip" style={{ textAlign: 'center' }}>
+                عدد الصفحات: {currentSurahPageCount}
+              </div>
+            )}
+            <button
+              className="action-icon"
+              title="عدد صفحات السورة"
+              onClick={() => setActiveTooltip(activeTooltip === 'pages' ? null : 'pages')}
+            >
+              <span style={{ fontSize: '20px', fontWeight: 'bold' }}>
+                {currentSurahPageCount}
+              </span>
+            </button>
+          </div>
+        )}
         
-        {viewMode !== 'shared-verses' && (
-          <button 
-            className="action-icon" 
+        {viewMode !== 'shared-verses' && viewMode !== 'surah-pages' && (
+          <button
+            className="action-icon"
             title={isPlaying ? "إيقاف الصوت" : "تشغيل الصوت"}
             onClick={toggleAudio}
             style={{ backgroundColor: isPlaying ? 'var(--app-warn)' : '' }}
