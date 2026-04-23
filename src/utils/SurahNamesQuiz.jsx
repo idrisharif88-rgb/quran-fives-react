@@ -120,6 +120,18 @@ export default function SurahNamesQuiz({ onClose }) {
   };
 
   const checkAnswer = () => {
+    if (mode === 'number-to-name') {
+      const num = Number(guess);
+      if (!guess.trim() || !Number.isInteger(num) || num < 1 || num > 114) {
+        setResult('الرقم يجب أن يكون بين 1 و 114');
+        triggerShake();
+        return;
+      }
+      const found = SURAH_METADATA.find(s => s.id === num);
+      setResult(found ? found.name : '');
+      return;
+    }
+
     const surah = SURAH_METADATA.find(s => s.id === questionIndex);
     if (!surah) return;
 
@@ -140,25 +152,6 @@ export default function SurahNamesQuiz({ onClose }) {
         setIncorrectCount(c => c + 1);
         triggerShake();
       }
-    } else {
-      if (!guess.trim()) {
-        setResult('يرجى كتابة اسم السورة.');
-        triggerShake();
-        return;
-      }
-      const normGuess = normalizeArabic(guess);
-      const normCorrect = normalizeArabic(surah.name);
-
-      if (normGuess === normCorrect) {
-        setResult('إجابة صحيحة!');
-        setCorrectCount(c => c + 1);
-        playCorrectSound();
-        setTimeout(() => createQuestion(), 600);
-      } else {
-        setResult(`غير صحيح. اسم السورة هو: ${surah.name}`);
-        setIncorrectCount(c => c + 1);
-        triggerShake();
-      }
     }
   };
 
@@ -170,7 +163,7 @@ export default function SurahNamesQuiz({ onClose }) {
       setValue: setGuess,
       maxLength: 3,
       label: 'رقم السورة',
-      submitLabel: 'تحقق',
+      submitLabel: mode === 'number-to-name' ? 'اعرض' : 'تحقق',
       onSubmit: checkAnswer,
     }
   });
@@ -184,52 +177,61 @@ export default function SurahNamesQuiz({ onClose }) {
         <button type="button" className={`khmasiyat-quiz-btn secondary ${mode === 'number-to-name' ? 'active' : ''}`} onClick={() => { setMode('number-to-name'); setGuess(''); setResult(''); if (keyboard.showKeyboard) keyboard.closeKeyboard(); }}>رقم السورة ← اسم السورة</button>
       </div>
 
-      <div className="khmasiyat-quiz-progress" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-        <span>المتبقي: {remainingCount} سورة</span>
-        <span style={{ color: 'var(--app-accent)' }}>صحيح: {correctCount}</span>
-        <span style={{ color: 'var(--app-danger)' }}>خاطئ: {incorrectCount}</span>
-        <button type="button" className="quiz-stat-reset-btn" onClick={() => { setCorrectCount(0); setIncorrectCount(0); }} title="تصفير العداد">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-            <path d="M12 5V2L7 7l5 5V8c2.97 0 5.44 2.16 5.91 5h2.02A8.004 8.004 0 0 0 12 5zm-5.91 6H4.07A8.004 8.004 0 0 0 12 19v3l5-5-5-5v3c-2.97 0-5.44-2.16-5.91-5z"/>
-          </svg>
-        </button>
-      </div>
+      {mode === 'name-to-number' && (
+        <div className="khmasiyat-quiz-progress" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+          <span>المتبقي: {remainingCount} سورة</span>
+          <span style={{ color: 'var(--app-accent)' }}>صحيح: {correctCount}</span>
+          <span style={{ color: 'var(--app-danger)' }}>خاطئ: {incorrectCount}</span>
+          <button type="button" className="quiz-stat-reset-btn" onClick={() => { setCorrectCount(0); setIncorrectCount(0); }} title="تصفير العداد">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M12 5V2L7 7l5 5V8c2.97 0 5.44 2.16 5.91 5h2.02A8.004 8.004 0 0 0 12 5zm-5.91 6H4.07A8.004 8.004 0 0 0 12 19v3l5-5-5-5v3c-2.97 0-5.44-2.16-5.91-5z"/>
+            </svg>
+          </button>
+        </div>
+      )}
       
-      <div className="khmasiyat-quiz-verse" style={{ fontSize: '1.5rem', textAlign: 'center' }}>
-        {mode === 'name-to-number' ? `سورة ${SURAH_METADATA.find(s => s.id === questionIndex)?.name}` : `السورة رقم ${questionIndex}`}
-      </div>
+      {mode === 'name-to-number' && (
+        <div className="khmasiyat-quiz-verse" style={{ fontSize: '1.5rem', textAlign: 'center' }}>
+          {`سورة ${SURAH_METADATA.find(s => s.id === questionIndex)?.name}`}
+        </div>
+      )}
 
       <div className="khmasiyat-quiz-inputs">
         <div className="khmasiyat-quiz-field">
-          <label className="khmasiyat-quiz-label">{mode === 'name-to-number' ? 'أدخل رقم السورة' : 'أدخل اسم السورة'}</label>
-          {mode === 'name-to-number' ? (
-            <input
-              type="text"
-              value={guess}
-              placeholder="مثال: 1"
-              {...keyboard.getInputProps('numGuess', { className: `khmasiyat-quiz-input ${isGuessShaking ? 'shake border-error' : ''}` })}
-            />
-          ) : (
-            <input
-              type="text"
-              value={guess}
-              onChange={(e) => setGuess(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && checkAnswer()}
-              placeholder="اسم السورة"
-              className={`khmasiyat-quiz-input ${isGuessShaking ? 'shake border-error' : ''}`}
-              autoFocus
-            />
-          )}
+          <label className="khmasiyat-quiz-label">
+            {mode === 'name-to-number' ? 'أدخل رقم السورة' : 'أدخل رقم السورة (1 – 114)'}
+          </label>
+          <input
+            type="text"
+            value={guess}
+            placeholder="مثال: 1"
+            {...keyboard.getInputProps('numGuess', { className: `khmasiyat-quiz-input ${isGuessShaking ? 'shake border-error' : ''}` })}
+          />
         </div>
       </div>
 
       <div className="khmasiyat-quiz-actions">
-        <button type="button" className="khmasiyat-quiz-btn" onClick={() => { keyboard.closeKeyboard(); checkAnswer(); }}>تحقق</button>
-        <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => { keyboard.closeKeyboard(); createQuestion(); }}>تخطي</button>
+        <button type="button" className="khmasiyat-quiz-btn" onClick={() => { keyboard.closeKeyboard(); checkAnswer(); }}>
+          {mode === 'number-to-name' ? 'اعرض' : 'تحقق'}
+        </button>
+        {mode === 'name-to-number' && (
+          <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => { keyboard.closeKeyboard(); createQuestion(); }}>تخطي</button>
+        )}
         <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => { keyboard.closeKeyboard(); onClose(); }}>العودة للتصفح</button>
       </div>
 
-      {result && <div className="khmasiyat-quiz-result">{result}</div>}
+      {result && (
+        <div
+          className="khmasiyat-quiz-result"
+          style={
+            mode === 'number-to-name' && !result.includes('يجب')
+              ? { fontSize: '2rem', fontWeight: 'bold', color: 'var(--app-accent)', letterSpacing: '2px' }
+              : {}
+          }
+        >
+          {result}
+        </div>
+      )}
       
       <CustomKeyboard
         visible={keyboard.showKeyboard}
