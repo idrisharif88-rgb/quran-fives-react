@@ -405,7 +405,7 @@ body.night-mode #root {
   position: absolute;
   top: 50%;
   margin-top: -25px;
-  z-index: 10;
+  z-index: 20;
   background-color: transparent;
   color: var(--app-accent);
   width: 50px;
@@ -824,7 +824,7 @@ button:focus-visible,
   top: 15px;
   left: 15px;
   right: 15px;
-  z-index: 10;
+  z-index: 20;
   pointer-events: none;
 }
 
@@ -923,6 +923,63 @@ button:focus-visible,
   font-size: 20px;
   font-family: inherit;
 }
+
+/* ── Star blur / reveal ──────────────────────────────── */
+.starred-preview--blurred {
+  filter: blur(7px);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Blur wrapper in main خماسيات section */
+.kh-blur-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.kh-blur-wrapper > * {
+  filter: blur(8px);
+  user-select: none;
+  pointer-events: none;
+}
+
+.kh-blur-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  filter: none !important;
+  /* pass-through: overlay div itself must not capture any pointer events
+     so nav arrows, star button, and all other siblings remain fully clickable */
+  pointer-events: none;
+  z-index: 5;
+}
+
+.kh-reveal-btn {
+  background: #1B4332;
+  color: #fff;
+  border: none;
+  border-radius: 24px;
+  padding: 10px 32px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.15s;
+  pointer-events: auto; /* re-enable only on the button itself */
+}
+
+.kh-reveal-btn:active {
+  opacity: 0.75;
+}
+/* ─────────────────────────────────────────────────────── */
 
 .empty-starred {
   text-align: center;

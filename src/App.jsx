@@ -202,6 +202,7 @@ function App() {
   const [isQRSyncOpen, setIsQRSyncOpen] = useState(false);
   const [counterConfirm, setCounterConfirm] = useState({ type: null, id: null });
   const [surahToast, setSurahToast] = useState(null);
+  const [isKhRevealed, setIsKhRevealed] = useState(false);
 
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
@@ -585,6 +586,8 @@ function App() {
     playKhmasiyatNavSound();
     lastKhmasiyatIndexRef.current = currentIndex;
   }, [currentIndex, viewMode]);
+
+  useEffect(() => { setIsKhRevealed(false); }, [currentIndex]);
 
   useEffect(() => {
     const toArabicNum = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
@@ -1488,16 +1491,18 @@ function App() {
                 const lastVerseIdx = kh.absoluteEndIndex - 1;
                 const verse = QURAN_VERSES[lastVerseIdx];
                 return (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className="starred-rectangle"
-                    onClick={() => {
-                      setCurrentIndex(index);
-                      setViewMode('khmasiyat');
-                    }}
+                    onClick={() => { setCurrentIndex(index); setViewMode('khmasiyat'); }}
                   >
-                    <div className="starred-title">سورة {kh.name}</div>
-                    <div className="starred-preview">
+                    <div className="starred-title">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style={{ verticalAlign: 'middle', marginLeft: '6px', color: 'var(--app-warn)' }}>
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                      </svg>
+                      سورة {kh.name}
+                    </div>
+                    <div className="starred-preview starred-preview--blurred">
                       {verse?.t} <span className="starred-verse-num">﴿{verse?.a}﴾</span>
                     </div>
                   </div>
@@ -1751,9 +1756,29 @@ function App() {
             <div className="verse-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <div style={{ color: 'var(--app-danger)', fontWeight: fontWeight, fontSize: `calc(${fontSize}px * 0.85)` }}>{pageStartsError}</div>
             </div>
-          ) : (
-            <TextDisplay verses={currentVersesText} />
-          )}
+          ) : (() => {
+            const showBlur = viewMode === 'khmasiyat'
+              && starredIndices.has(currentIndex)
+              && !isKhRevealed;
+            return showBlur ? (
+              <div className="kh-blur-wrapper">
+                <TextDisplay verses={currentVersesText} />
+                <div className="kh-blur-overlay">
+                  <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor" style={{ color: 'var(--app-warn)' }}>
+                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                  </svg>
+                  <button
+                    className="kh-reveal-btn"
+                    onClick={() => setIsKhRevealed(true)}
+                  >
+                    كشف
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <TextDisplay verses={currentVersesText} />
+            );
+          })()}
           {/* The main content area (TextDisplay, shared-verses, surah-fives)
               needs to be scrollable if its content overflows.
               This is handled by making content-layout a flex container and its children
