@@ -17,6 +17,7 @@ import UserManual from './components/UserManual';
 import PageStartsQuiz from './utils/PageStartsQuiz';
 import AudioSettings from './components/AudioSettings';
 import QRSync from './components/QRSync';
+import SurahTransitionToast from './components/SurahTransitionToast';
 import { DEFAULT_RECITER } from './data/reciters';
 import { getAudioUrl } from './utils/audioDownloader';
 import {
@@ -200,6 +201,7 @@ function App() {
   const [showExitToast, setShowExitToast] = useState(false);
   const [isQRSyncOpen, setIsQRSyncOpen] = useState(false);
   const [counterConfirm, setCounterConfirm] = useState({ type: null, id: null });
+  const [surahToast, setSurahToast] = useState(null);
 
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
@@ -216,6 +218,7 @@ function App() {
   const ayahMenuRef = useRef(null);
   const swipeStartRef = useRef(null);
   const backHandlerRef = useRef();
+  const prevSurahRef = useRef(null);
   const lastBackPressTimeRef = useRef(0);
 
   const starredArray = Array.from(starredIndices).sort((a, b) => a - b);
@@ -582,6 +585,25 @@ function App() {
     playKhmasiyatNavSound();
     lastKhmasiyatIndexRef.current = currentIndex;
   }, [currentIndex, viewMode]);
+
+  useEffect(() => {
+    const toArabicNum = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+    if (viewMode !== 'khmasiyat') {
+      prevSurahRef.current = currentKhmasiyat.surah;
+      return;
+    }
+    if (prevSurahRef.current === null) {
+      prevSurahRef.current = currentKhmasiyat.surah;
+      return;
+    }
+    if (prevSurahRef.current !== currentKhmasiyat.surah) {
+      setSurahToast({
+        message: `انتقلت إلى سورة ${currentKhmasiyat.name} • ${toArabicNum(currentKhmasiyat.surah)}`,
+        id: Date.now(),
+      });
+    }
+    prevSurahRef.current = currentKhmasiyat.surah;
+  }, [currentIndex, viewMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // تشغيل المؤثر الصوتي عند التنقل بين الصفحات
   useEffect(() => {
@@ -1105,6 +1127,8 @@ function App() {
       display: 'flex',
       flexDirection: 'column'
     }}>
+      <SurahTransitionToast toast={surahToast} />
+
       {counterConfirm.type && (
         <div className="session-overlay" dir="rtl" style={{ zIndex: 10001, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
           <div style={{
