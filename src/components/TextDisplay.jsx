@@ -27,25 +27,29 @@ function Verse({ verse }) {
 }
 
 /**
- * Displays one or more Quran verses inside the styled verse-container.
+ * Displays one or more Quran verses inside a fixed two-layer card:
+ *   verse-card  — outer shell (border, shadow, flex column). Never scrolls.
+ *   verse-scroll — inner text area.  Scrolls only when text overflows.
  *
- * @param {object[]} verses        - Array of verse objects { s, a, t }
- * @param {number}  [cornerNumber] - When provided (khmasiyat mode only), renders
- *                                   a large, watermark-style number in the bottom-
- *                                   left corner of the card showing the five's last
- *                                   verse number.
+ * @param {object[]} verses        – Array of verse objects { s, a, t }
+ * @param {number}  [cornerNumber] – Last verse number of the current khmasiyat
+ *                                   (shown as a large number at the bottom-left).
+ *                                   Only passed in khmasiyat mode.
  */
 export default function TextDisplay({ verses, cornerNumber }) {
   return (
-    <div className="verse-container">
+    <div className="verse-card">
+      <div className="verse-scroll">
+        {verses.map((verse) => (
+          <Verse key={`${verse.s}-${verse.a}`} verse={verse} />
+        ))}
+      </div>
+
       {cornerNumber != null && (
-        <span className="verse-corner-number" aria-hidden="true">
+        <div className="verse-corner-number" dir="ltr" aria-hidden="true">
           {cornerNumber}
-        </span>
+        </div>
       )}
-      {verses.map((verse) => (
-        <Verse key={`${verse.s}-${verse.a}`} verse={verse} />
-      ))}
     </div>
   );
 }

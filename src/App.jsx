@@ -608,7 +608,7 @@ function App() {
       });
     }
     prevSurahRef.current = currentKhmasiyat.surah;
-  }, [currentIndex, viewMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // تشغيل المؤثر الصوتي عند التنقل بين الصفحات
   useEffect(() => {
@@ -1513,7 +1513,7 @@ function App() {
         </div>
       </>
       ) : (
-        <div className={`content-layout ${viewMode === 'night-counter' ? 'night-counter-layout' : ''}`} onTouchStart={onSwipeTouchStart} onTouchEnd={onSwipeTouchEnd} style={{ flexGrow: 1, overflowY: 'auto' }}>
+        <div className={`content-layout ${viewMode === 'night-counter' ? 'night-counter-layout' : ''}`} onTouchStart={onSwipeTouchStart} onTouchEnd={onSwipeTouchEnd} style={{ flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
           {viewMode !== 'shared-verses' && viewMode !== 'night-counter' && viewMode !== 'surah-fives' && viewMode !== 'surah-pages' && <div className="top-stars-container inside-text-field">
             <button 
               className="top-star-btn"

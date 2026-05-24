@@ -171,19 +171,22 @@ body.night-mode #root {
 }
 
 .verse-container {
+  /* Used by shared-verses, surah-fives, loading and error states.
+     TextDisplay uses .verse-card / .verse-scroll instead. */
   position: relative;
   margin: 0 auto;
-  padding: 50px 70px;
+  padding: 30px 70px;
   border: 1px solid var(--app-border);
   border-radius: 12px;
   max-width: 800px;
+  width: 100%;
   background-color: var(--app-surface);
   line-height: 2.4;
   font-size: var(--app-font-size, 38px);
   font-family: var(--app-font-family, 'Tajawal', sans-serif);
   box-shadow: 0 4px 10px var(--app-shadow);
   flex: 1;
-  height: 260px;
+  min-height: 0;
   box-sizing: border-box;
   overflow-y: auto;
   display: flex;
@@ -383,9 +386,12 @@ body.night-mode #root {
 
 .content-layout {
   position: relative;
-  display: block;
+  display: flex;
+  flex-direction: column;
   max-width: 800px;
-  margin: 20px auto;
+  width: 100%;
+  margin: 8px auto;
+  min-height: 0;
 }
 
 .content-layout.night-counter-layout {
@@ -815,15 +821,10 @@ button:focus-visible,
 
 .top-stars-container.inside-text-field {
   position: absolute;
-  top: 15px;
+  top: 10px;
   left: 15px;
   right: 15px;
   z-index: 20;
-  pointer-events: none;
-}
-
-.top-stars-container.inside-text-field .top-star-btn {
-  pointer-events: auto;
 }
 
 .khmasiyat-page-display {
@@ -1862,9 +1863,7 @@ button:focus-visible,
 @media (max-width: 600px) {
   .verse-container {
     font-size: calc(var(--app-font-size, 38px) * 0.75);
-    padding: 40px 45px;
-    margin: 0 auto;
-    height: 55vh;
+    padding: 20px 45px;
   }
   .app-container {
     padding: 10px;
@@ -1973,7 +1972,7 @@ button:focus-visible,
     font-size: 18px;
   }
   .top-stars-container.inside-text-field {
-    top: 10px;
+    top: 8px;
     left: 10px;
     right: 10px;
   }
