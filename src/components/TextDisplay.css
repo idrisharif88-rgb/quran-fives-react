@@ -1,0 +1,27 @@
+/* ── Corner five-number watermark ───────────────────────────────────────────
+   Shown only in khmasiyat mode. Sits in the bottom-left of .verse-container
+   (which carries position:relative in App.css) as a large, semi-transparent
+   badge so it is always visible regardless of verse length.
+   ────────────────────────────────────────────────────────────────────────── */
+.verse-corner-number {
+  position: absolute;
+  bottom: 10px;
+  left: 14px;
+  font-size: 72px;
+  font-weight: bold;
+  font-family: var(--app-font-family, 'Tajawal', sans-serif);
+  color: var(--app-font-color, darkgreen);
+  opacity: 1;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: -2px;
+}
+
+@media (max-width: 600px) {
+  .verse-corner-number {
+    font-size: 54px;
+    bottom: 8px;
+    left: 10px;
+  }
+}

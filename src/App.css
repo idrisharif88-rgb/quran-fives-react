@@ -171,6 +171,7 @@ body.night-mode #root {
 }
 
 .verse-container {
+  position: relative;
   margin: 0 auto;
   padding: 50px 70px;
   border: 1px solid var(--app-border);
@@ -350,13 +351,6 @@ body.night-mode #root {
   margin: auto 0;
 }
 
-.verse-number {
-  color: var(--app-accent);
-  font-weight: bold;
-  margin: 0 8px;
-  font-size: 48px;
-  font-family: inherit;
-}
 
 .expand-btn {
   background-color: var(--app-surface-3);
@@ -1871,9 +1865,6 @@ button:focus-visible,
     padding: 40px 45px;
     margin: 0 auto;
     height: 55vh;
-  }
-  .verse-number {
-    font-size: calc(var(--app-font-size, 38px) * 0.85);
   }
   .app-container {
     padding: 10px;

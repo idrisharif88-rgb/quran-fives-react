@@ -1763,10 +1763,13 @@ function App() {
             const showPageBlur = viewMode === 'page-starts'
               && starredPages.has(currentPageIndex)
               && !isPageRevealed;
+            const cornerNumber = viewMode === 'khmasiyat'
+              ? currentVersesText[0]?.a
+              : undefined;
             if (showKhBlur || showPageBlur) {
               return (
                 <div className="kh-blur-wrapper">
-                  <TextDisplay verses={currentVersesText} />
+                  <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} />
                   <div className="kh-blur-overlay">
                     <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor" style={{ color: 'var(--app-warn)' }}>
                       <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
@@ -1781,7 +1784,7 @@ function App() {
                 </div>
               );
             }
-            return <TextDisplay verses={currentVersesText} />;
+            return <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} />;
           })()}
           {/* The main content area (TextDisplay, shared-verses, surah-fives)
               needs to be scrollable if its content overflows.
