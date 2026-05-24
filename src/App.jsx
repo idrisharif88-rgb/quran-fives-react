@@ -203,6 +203,7 @@ function App() {
   const [counterConfirm, setCounterConfirm] = useState({ type: null, id: null });
   const [surahToast, setSurahToast] = useState(null);
   const [isKhRevealed, setIsKhRevealed] = useState(false);
+  const [isPageRevealed, setIsPageRevealed] = useState(false);
 
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
@@ -588,6 +589,7 @@ function App() {
   }, [currentIndex, viewMode]);
 
   useEffect(() => { setIsKhRevealed(false); }, [currentIndex]);
+  useEffect(() => { setIsPageRevealed(false); }, [currentPageIndex]);
 
   useEffect(() => {
     const toArabicNum = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
@@ -1475,7 +1477,7 @@ function App() {
                     }}
                   >
                     <div className="starred-title">سورة {SURAH_NAMES[verse.s - 1]} - صفحة {verse.page}</div>
-                    <div className="starred-preview">
+                    <div className="starred-preview starred-preview--blurred">
                       {verse?.t} <span className="starred-verse-num">﴿{verse?.a}﴾</span>
                     </div>
                   </div>
@@ -1757,27 +1759,31 @@ function App() {
               <div style={{ color: 'var(--app-danger)', fontWeight: fontWeight, fontSize: `calc(${fontSize}px * 0.85)` }}>{pageStartsError}</div>
             </div>
           ) : (() => {
-            const showBlur = viewMode === 'khmasiyat'
+            const showKhBlur = viewMode === 'khmasiyat'
               && starredIndices.has(currentIndex)
               && !isKhRevealed;
-            return showBlur ? (
-              <div className="kh-blur-wrapper">
-                <TextDisplay verses={currentVersesText} />
-                <div className="kh-blur-overlay">
-                  <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor" style={{ color: 'var(--app-warn)' }}>
-                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-                  </svg>
-                  <button
-                    className="kh-reveal-btn"
-                    onClick={() => setIsKhRevealed(true)}
-                  >
-                    كشف
-                  </button>
+            const showPageBlur = viewMode === 'page-starts'
+              && starredPages.has(currentPageIndex)
+              && !isPageRevealed;
+            if (showKhBlur || showPageBlur) {
+              return (
+                <div className="kh-blur-wrapper">
+                  <TextDisplay verses={currentVersesText} />
+                  <div className="kh-blur-overlay">
+                    <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor" style={{ color: 'var(--app-warn)' }}>
+                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                    </svg>
+                    <button
+                      className="kh-reveal-btn"
+                      onClick={() => showKhBlur ? setIsKhRevealed(true) : setIsPageRevealed(true)}
+                    >
+                      كشف
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <TextDisplay verses={currentVersesText} />
-            );
+              );
+            }
+            return <TextDisplay verses={currentVersesText} />;
           })()}
           {/* The main content area (TextDisplay, shared-verses, surah-fives)
               needs to be scrollable if its content overflows.
