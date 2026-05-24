@@ -1132,8 +1132,6 @@ function App() {
       display: 'flex',
       flexDirection: 'column'
     }}>
-      <SurahTransitionToast toast={surahToast} />
-
       {counterConfirm.type && (
         <div className="session-overlay" dir="rtl" style={{ zIndex: 10001, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
           <div style={{
@@ -1815,6 +1813,11 @@ function App() {
             </button>
           )}
         </div>
+      )}
+
+      {/* إشعار الانتقال إلى سورة جديدة — يظهر بين عرض الآية وأزرار الإجراءات */}
+      {viewMode === 'khmasiyat' && !isQuizMode && (
+        <SurahTransitionToast toast={surahToast} />
       )}
 
       {!isPageStartsMode && !isNightCounterMode && viewMode !== 'starred' && viewMode !== 'surah-fives' && viewMode !== 'quranic-wonders' && ( // إخفاء الأزرار السفلية
