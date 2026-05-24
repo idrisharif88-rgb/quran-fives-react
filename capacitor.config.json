@@ -1,6 +1,6 @@
 {
   "appId": "com.shoaib.quranfives",
-  "appName": "Quran Fives",
+  "appName": "خماسيات",
   "webDir": "dist",
   "plugins": {
     "Keyboard": {
