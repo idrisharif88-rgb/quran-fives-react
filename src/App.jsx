@@ -82,6 +82,23 @@ const SESSION_STORAGE_KEYS = [
   'quran_fives_surah_names_quiz_state'
 ];
 
+const HIJRI_CACHE_KEY = 'quran-fives-hijri-cache';
+const HIJRI_MONTHS_AR = ['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الثانية','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+// Anchor: 1 Muharram 1446 = July 7, 2024 (Umm al-Qura)
+const HIJRI_ANCHOR_MS = new Date(2024, 6, 7).getTime();
+const AVG_LUNAR_MONTH = 29.530588853;
+
+function calcHijriOffline(date) {
+  const diffDays = Math.round((date.getTime() - HIJRI_ANCHOR_MS) / 86400000);
+  const monthsSince = diffDays / AVG_LUNAR_MONTH;
+  const monthsComplete = Math.floor(monthsSince);
+  const dayInMonth = Math.max(1, Math.floor((monthsSince - monthsComplete) * AVG_LUNAR_MONTH) + 1);
+  const year = 1446 + Math.floor(monthsComplete / 12);
+  const month = ((monthsComplete % 12) + 12) % 12 + 1;
+  const dayName = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'][date.getDay()].replace('ال', '').trim();
+  return [dayName, String(dayInMonth), HIJRI_MONTHS_AR[month - 1], String(year)];
+}
+
 function App() {
   const [persistedAppState] = useState(() => loadStoredState(APP_STORAGE_KEY) || {});
   const [showSessionPrompt, setShowSessionPrompt] = useState(() => (
@@ -157,6 +174,7 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hijriData, setHijriData] = useState([]);
   const [hijriIndex, setHijriIndex] = useState(0);
+  const [hijriRefreshKey, setHijriRefreshKey] = useState(0);
   
   // إعدادات الخط
   const [isAyahMenuOpen, setIsAyahMenuOpen] = useState(false);
@@ -535,25 +553,47 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // جلب التاريخ الهجري للمشهد الرئيسي فقط
+  // جلب التاريخ الهجري للمشهد الرئيسي فقط - مع كاش محلي واحتياط بدون إنترنت
   useEffect(() => {
     if (isPageStartsMode || isSurahFivesMode) return;
-    if (hijriData.length !== 0) return;
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
 
     const today = new Date();
     const dateStr = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
 
+    // استخدام الكاش أولاً
+    try {
+      const cached = JSON.parse(localStorage.getItem(HIJRI_CACHE_KEY) || 'null');
+      if (cached && cached.date === dateStr && Array.isArray(cached.data) && cached.data.length === 4) {
+        setHijriData(cached.data);
+        return;
+      }
+    } catch {}
+
+    // إذا بدون إنترنت، احسب الهجري محلياً
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      setHijriData(calcHijriOffline(today));
+      return;
+    }
+
     fetch(`https://api.aladhan.com/v1/gToH?date=${dateStr}`)
       .then(res => res.json())
       .then(json => {
-        if (json.code !== 200) return;
+        if (json.code !== 200) {
+          setHijriData(calcHijriOffline(today));
+          return;
+        }
         const hijri = json.data.hijri;
         const dayNameWithoutAl = hijri.weekday.ar.replace('ال', '').trim();
-        setHijriData([dayNameWithoutAl, hijri.day, hijri.month.ar, hijri.year]);
+        const data = [dayNameWithoutAl, hijri.day, hijri.month.ar, hijri.year];
+        setHijriData(data);
+        try {
+          localStorage.setItem(HIJRI_CACHE_KEY, JSON.stringify({ date: dateStr, data }));
+        } catch {}
       })
-      .catch((err) => console.error('Error fetching Hijri date:', err));
-  }, [hijriData.length, isPageStartsMode, isSurahFivesMode]);
+      .catch(() => {
+        setHijriData(calcHijriOffline(today));
+      });
+  }, [isPageStartsMode, isSurahFivesMode, hijriRefreshKey]);
 
   useEffect(() => {
     if (hijriData.length === 0) return undefined;
@@ -1370,8 +1410,13 @@ function App() {
 
         {!isPageStartsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' && <button
           className="action-icon calendar-icon"
-          title="التاريخ الهجري"
+          title="التاريخ الهجري - انقر للتحديث"
           style={{ width: '65px', height: '65px' }}
+          onClick={() => {
+            try { localStorage.removeItem(HIJRI_CACHE_KEY); } catch {}
+            setHijriData([]);
+            setHijriRefreshKey(k => k + 1);
+          }}
         >
           {hijriData.length > 0 ? (
             <span style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>
@@ -1931,7 +1976,20 @@ function App() {
             <div className="progress-container">
               <div className="progress-bar" style={{ width: `${Math.min(((currentIndex + 1) / 1202) * 100, 100)}%` }}></div>
             </div>
-            <div className="progress-text">
+            <div className="progress-text" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                onClick={() => {
+                  try { localStorage.removeItem(HIJRI_CACHE_KEY); } catch {}
+                  setHijriData([]);
+                  setHijriRefreshKey(k => k + 1);
+                }}
+                title="تحديث"
+                style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--app-muted)', display: 'flex', alignItems: 'center', borderRadius: '50%', flexShrink: 0 }}
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                  <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                </svg>
+              </button>
               {currentIndex + 1} / 1202
             </div>
           </div>
