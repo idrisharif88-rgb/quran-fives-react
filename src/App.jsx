@@ -99,6 +99,16 @@ function calcHijriOffline(date) {
   return [dayName, String(dayInMonth), HIJRI_MONTHS_AR[month - 1], String(year)];
 }
 
+function formatHijriTimestamp(ms) {
+  const d = new Date(ms);
+  const [dayName, day, month, year] = calcHijriOffline(d);
+  const hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const period = hours >= 12 ? 'م' : 'ص';
+  const hour12 = hours % 12 || 12;
+  return `${dayName} ${day} ${month} ${year} — ${hour12}:${minutes} ${period}`;
+}
+
 function App() {
   const [persistedAppState] = useState(() => loadStoredState(APP_STORAGE_KEY) || {});
   const [showSessionPrompt, setShowSessionPrompt] = useState(() => (
@@ -175,6 +185,19 @@ function App() {
   const [hijriData, setHijriData] = useState([]);
   const [hijriIndex, setHijriIndex] = useState(0);
   const [hijriRefreshKey, setHijriRefreshKey] = useState(0);
+  const [khatmaList, setKhatmaList] = useState(() => (
+    Array.isArray(persistedAppState.khatmaList) ? persistedAppState.khatmaList : []
+  ));
+  const [showKhatmaInput, setShowKhatmaInput] = useState(false);
+  const [khatmaNameInput, setKhatmaNameInput] = useState('');
+  const [khatmaIntentionInput, setKhatmaIntentionInput] = useState('');
+  const [pendingKhatmaTime, setPendingKhatmaTime] = useState(null);
+  const [khatmaNameError, setKhatmaNameError] = useState('');
+  const [isKhatmaListOpen, setIsKhatmaListOpen] = useState(false);
+  const [editingKhatmaId, setEditingKhatmaId] = useState(null);
+  const [editKhatmaName, setEditKhatmaName] = useState('');
+  const [editKhatmaIntention, setEditKhatmaIntention] = useState('');
+  const [editKhatmaNameError, setEditKhatmaNameError] = useState('');
   
   // إعدادات الخط
   const [isAyahMenuOpen, setIsAyahMenuOpen] = useState(false);
@@ -314,6 +337,7 @@ function App() {
       fontColor,
       quranicWondersNotes, // إضافة الملاحظات للحفظ
       isNightMode,
+      khatmaList,
     });
   }, [
     activeReciter,
@@ -334,6 +358,7 @@ function App() {
     isNightTimerRunning,
     sharedGroupIndex,
     quranicWondersNotes, // إضافة الملاحظات إلى مصفوفة التبعيات
+    khatmaList,
     starredIndices,
     starredPages,
     surahFivesIndex,
@@ -1152,6 +1177,53 @@ function App() {
 
   backHandlerRef.current = handleHardwareBack;
 
+  // ─── دوال ختماتي ───
+  const addKhatmaEntry = (name, intention) => {
+    setKhatmaList(prev => [...prev, {
+      id: String(pendingKhatmaTime),
+      name,
+      intention,
+      timestamp: pendingKhatmaTime,
+    }]);
+    setShowKhatmaInput(false);
+    setPendingKhatmaTime(null);
+    setKhatmaNameInput('');
+    setKhatmaIntentionInput('');
+    setKhatmaNameError('');
+  };
+
+  const handleSaveKhatma = () => {
+    const name = khatmaNameInput.trim();
+    if (!name) { setKhatmaNameError('الرجاء إدخال اسم'); return; }
+    if (khatmaList.some(k => k.name === name)) { setKhatmaNameError('الرجاء إدخال اسم جديد'); return; }
+    addKhatmaEntry(name, khatmaIntentionInput.trim());
+  };
+
+  const handleCancelKhatmaInput = () => {
+    let n = khatmaList.length + 1;
+    let autoName = `ختمة ${n}`;
+    while (khatmaList.some(k => k.name === autoName)) { n++; autoName = `ختمة ${n}`; }
+    addKhatmaEntry(autoName, khatmaIntentionInput.trim());
+  };
+
+  const startEditKhatma = (khatma) => {
+    setEditingKhatmaId(khatma.id);
+    setEditKhatmaName(khatma.name);
+    setEditKhatmaIntention(khatma.intention || '');
+    setEditKhatmaNameError('');
+  };
+
+  const saveEditKhatma = (id) => {
+    const name = editKhatmaName.trim();
+    if (!name) { setEditKhatmaNameError('الرجاء إدخال اسم'); return; }
+    if (khatmaList.some(k => k.name === name && k.id !== id)) { setEditKhatmaNameError('الرجاء إدخال اسم جديد'); return; }
+    setKhatmaList(prev => prev.map(k => k.id === id ? { ...k, name, intention: editKhatmaIntention.trim() } : k));
+    setEditingKhatmaId(null);
+    setEditKhatmaNameError('');
+  };
+
+  const cancelEditKhatma = () => { setEditingKhatmaId(null); setEditKhatmaNameError(''); };
+
   // تجهيز الدالة ليتم استدعاؤها من كود الجافا في أندرويد ستوديو
   useEffect(() => {
     window.handleAndroidBack = () => {
@@ -1278,13 +1350,14 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['العداد', 'الوضع الليلي', 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'السور المتشابهة في العدد'].map(option => (
+                  {['العداد', 'ختماتي', 'الوضع الليلي', 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'السور المتشابهة في العدد'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
                       className={`ayah-menu-item ${(option === 'الوضع الليلي' && isNightMode) || (option === 'السور المتشابهة في العدد' && viewMode === 'shared-verses') ? 'active' : ''}`}
                       onClick={() => {
                         if (option === 'العداد') { setViewMode('night-counter'); setIsMoreMenuOpen(false); return; }
+                        if (option === 'ختماتي') { setIsKhatmaListOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'خماسيات - سور') { setSurahFivesIndex(0); setViewMode('surah-fives'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'الوضع الليلي') { setIsNightMode(prev => !prev); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'إعدادات الصوت') { setIsAudioSettingsOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -1729,6 +1802,32 @@ function App() {
                   <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true">
                     <path d="M12 5V2L7 7l5 5V8c2.97 0 5.44 2.16 5.91 5h2.02A8.004 8.004 0 0 0 12 5zm-5.91 6H4.07A8.004 8.004 0 0 0 12 19v3l5-5-5-5v3c-2.97 0-5.44-2.16-5.91-5z"/>
                   </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPendingKhatmaTime(Date.now());
+                    setKhatmaNameInput('');
+                    setKhatmaIntentionInput('');
+                    setKhatmaNameError('');
+                    setShowKhatmaInput(true);
+                  }}
+                  title="سجِّل ختمة جديدة"
+                  style={{
+                    width: '88px', height: '88px', borderRadius: '50%', border: 'none',
+                    background: 'linear-gradient(145deg, #22c55e, #15803d)',
+                    color: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
+                    padding: '6px', boxShadow: '0 6px 18px rgba(21,128,61,0.5)',
+                    lineHeight: '1.2', gap: '1px',
+                  }}
+                >
+                  {khatmaList.length > 0 && (
+                    <span style={{ fontSize: '26px', fontWeight: '900', lineHeight: '1' }}>{khatmaList.length}</span>
+                  )}
+                  <span style={{ fontSize: khatmaList.length > 0 ? '10px' : '12px', fontWeight: 'bold', textAlign: 'center', direction: 'rtl' }}>
+                    مسجِّل الخِتم
+                  </span>
                 </button>
                 <button
                   type="button"
@@ -2220,6 +2319,221 @@ function App() {
       />
         </>
       )}
+      {/* ─── نافذة تسجيل ختمة جديدة ─── */}
+      {showKhatmaInput && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 12000, padding: '20px', fontFamily: 'inherit',
+        }} dir="rtl">
+          <div style={{
+            background: 'var(--app-surface)', borderRadius: '22px',
+            padding: '26px 22px', width: '100%', maxWidth: '320px',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.45)',
+          }}>
+            <h3 style={{ margin: '0 0 4px', fontSize: '19px', color: 'var(--app-text)', textAlign: 'center', fontWeight: 900 }}>
+              تسجيل ختمة جديدة
+            </h3>
+            <p style={{ margin: '0 0 18px', fontSize: '12px', color: 'var(--app-muted)', textAlign: 'center' }}>
+              {formatHijriTimestamp(pendingKhatmaTime)}
+            </p>
+
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ fontSize: '13px', color: 'var(--app-muted)', display: 'block', marginBottom: '6px' }}>
+                الاسم <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <input
+                type="text"
+                value={khatmaNameInput}
+                onChange={e => { setKhatmaNameInput(e.target.value); setKhatmaNameError(''); }}
+                onKeyDown={e => e.key === 'Enter' && handleSaveKhatma()}
+                placeholder="مثال: رمضان 1447"
+                dir="rtl"
+                autoFocus
+                style={{
+                  width: '100%', boxSizing: 'border-box', padding: '10px 13px',
+                  borderRadius: '11px',
+                  border: `1.5px solid ${khatmaNameError ? '#ef4444' : 'var(--app-border)'}`,
+                  background: 'var(--app-surface-2)', color: 'var(--app-text)',
+                  fontSize: '15px', fontFamily: 'inherit', outline: 'none',
+                }}
+              />
+              {khatmaNameError && (
+                <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#ef4444' }}>{khatmaNameError}</p>
+              )}
+            </div>
+
+            <div style={{ marginBottom: '22px' }}>
+              <label style={{ fontSize: '13px', color: 'var(--app-muted)', display: 'block', marginBottom: '6px' }}>
+                النية
+              </label>
+              <textarea
+                value={khatmaIntentionInput}
+                onChange={e => setKhatmaIntentionInput(e.target.value)}
+                placeholder="مثال: عن روح والدي رحمه الله"
+                dir="rtl"
+                rows={3}
+                style={{
+                  width: '100%', boxSizing: 'border-box', padding: '10px 13px',
+                  borderRadius: '11px', border: '1.5px solid var(--app-border)',
+                  background: 'var(--app-surface-2)', color: 'var(--app-text)',
+                  fontSize: '14px', fontFamily: 'inherit', outline: 'none', resize: 'none',
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={handleSaveKhatma}
+                style={{
+                  flex: 1, padding: '13px', borderRadius: '12px', border: 'none',
+                  background: 'linear-gradient(145deg, #22c55e, #15803d)',
+                  color: '#fff', fontSize: '15px', fontWeight: 'bold',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >حفظ</button>
+              <button
+                type="button"
+                onClick={handleCancelKhatmaInput}
+                style={{
+                  flex: 1, padding: '13px', borderRadius: '12px',
+                  border: '1.5px solid var(--app-border)',
+                  background: 'var(--app-surface-2)', color: 'var(--app-muted)',
+                  fontSize: '15px', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── قسم ختماتي ─── */}
+      {isKhatmaListOpen && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'var(--app-bg)',
+          zIndex: 11000, display: 'flex', flexDirection: 'column', fontFamily: 'inherit',
+        }} dir="rtl">
+          <div style={{
+            padding: '20px 20px 16px', borderBottom: '1px solid var(--app-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
+          }}>
+            <div>
+              <h2 style={{ margin: '0 0 2px', fontSize: '22px', color: 'var(--app-text)', fontWeight: 900 }}>ختماتي</h2>
+              <span style={{ fontSize: '13px', color: 'var(--app-muted)' }}>{khatmaList.length} ختمة مسجلة</span>
+            </div>
+            <button
+              onClick={() => { setIsKhatmaListOpen(false); setEditingKhatmaId(null); }}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--app-muted)', fontSize: '28px', lineHeight: 1, padding: '4px',
+              }}
+            >×</button>
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+            {khatmaList.length === 0 ? (
+              <div style={{ textAlign: 'center', color: 'var(--app-muted)', marginTop: '80px', fontSize: '16px' }}>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>📖</div>
+                لا توجد ختمات مسجلة بعد
+              </div>
+            ) : (
+              khatmaList.map((k, i) => (
+                <div key={k.id} style={{
+                  background: 'var(--app-surface)', borderRadius: '16px',
+                  padding: '16px', marginBottom: '12px', border: '1px solid var(--app-border)',
+                }}>
+                  {editingKhatmaId === k.id ? (
+                    <div>
+                      <div style={{ marginBottom: '10px' }}>
+                        <label style={{ fontSize: '12px', color: 'var(--app-muted)', display: 'block', marginBottom: '4px' }}>الاسم</label>
+                        <input
+                          type="text"
+                          value={editKhatmaName}
+                          onChange={e => { setEditKhatmaName(e.target.value); setEditKhatmaNameError(''); }}
+                          onKeyDown={e => e.key === 'Enter' && saveEditKhatma(k.id)}
+                          dir="rtl"
+                          autoFocus
+                          style={{
+                            width: '100%', boxSizing: 'border-box', padding: '8px 11px',
+                            borderRadius: '9px',
+                            border: `1.5px solid ${editKhatmaNameError ? '#ef4444' : 'var(--app-border)'}`,
+                            background: 'var(--app-surface-2)', color: 'var(--app-text)',
+                            fontSize: '14px', fontFamily: 'inherit', outline: 'none',
+                          }}
+                        />
+                        {editKhatmaNameError && (
+                          <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#ef4444' }}>{editKhatmaNameError}</p>
+                        )}
+                      </div>
+                      <div style={{ marginBottom: '12px' }}>
+                        <label style={{ fontSize: '12px', color: 'var(--app-muted)', display: 'block', marginBottom: '4px' }}>النية</label>
+                        <textarea
+                          value={editKhatmaIntention}
+                          onChange={e => setEditKhatmaIntention(e.target.value)}
+                          dir="rtl"
+                          rows={2}
+                          style={{
+                            width: '100%', boxSizing: 'border-box', padding: '8px 11px',
+                            borderRadius: '9px', border: '1.5px solid var(--app-border)',
+                            background: 'var(--app-surface-2)', color: 'var(--app-text)',
+                            fontSize: '13px', fontFamily: 'inherit', outline: 'none', resize: 'none',
+                          }}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button type="button" onClick={() => saveEditKhatma(k.id)} style={{
+                          flex: 1, padding: '9px', borderRadius: '9px', border: 'none',
+                          background: 'linear-gradient(145deg, #22c55e, #15803d)',
+                          color: '#fff', fontSize: '13px', fontWeight: 'bold',
+                          cursor: 'pointer', fontFamily: 'inherit',
+                        }}>حفظ</button>
+                        <button type="button" onClick={cancelEditKhatma} style={{
+                          flex: 1, padding: '9px', borderRadius: '9px',
+                          border: '1.5px solid var(--app-border)',
+                          background: 'var(--app-surface-2)', color: 'var(--app-muted)',
+                          fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
+                        }}>إلغاء</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{
+                            background: 'linear-gradient(145deg, #22c55e, #15803d)',
+                            color: '#fff', borderRadius: '50%', width: '30px', height: '30px',
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '13px', fontWeight: 'bold', flexShrink: 0,
+                          }}>{i + 1}</span>
+                          <span style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--app-text)' }}>{k.name}</span>
+                        </div>
+                        <button type="button" onClick={() => startEditKhatma(k)} title="تعديل" style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: 'var(--app-accent)', padding: '4px', flexShrink: 0,
+                        }}>
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                          </svg>
+                        </button>
+                      </div>
+                      {k.intention && (
+                        <p style={{ margin: '0 40px 8px', fontSize: '13px', color: 'var(--app-muted)', lineHeight: '1.6' }}>
+                          {k.intention}
+                        </p>
+                      )}
+                      <p style={{ margin: '0 40px 0', fontSize: '11px', color: 'var(--app-muted)', direction: 'rtl' }}>
+                        {formatHijriTimestamp(k.timestamp)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
       {showExitToast && (
         <div className="exit-toast">
           هل تريد الخروج من التطبيق؟ اضغط مرة أخرى للتأكيد
