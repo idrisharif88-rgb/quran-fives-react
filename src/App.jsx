@@ -19,6 +19,7 @@ import AudioSettings from './components/AudioSettings';
 import QRSync from './components/QRSync';
 import SurahTransitionToast from './components/SurahTransitionToast';
 import { DEFAULT_RECITER } from './data/reciters';
+import { FIQH_DATA } from './data/fiqhData';
 import { getAudioUrl } from './utils/audioDownloader';
 import {
   APP_STORAGE_KEY,
@@ -194,6 +195,7 @@ function App() {
   const [pendingKhatmaTime, setPendingKhatmaTime] = useState(null);
   const [khatmaNameError, setKhatmaNameError] = useState('');
   const [isKhatmaListOpen, setIsKhatmaListOpen] = useState(false);
+  const [isFiqhOpen, setIsFiqhOpen] = useState(false);
   const [editingKhatmaId, setEditingKhatmaId] = useState(null);
   const [editKhatmaName, setEditKhatmaName] = useState('');
   const [editKhatmaIntention, setEditKhatmaIntention] = useState('');
@@ -1350,7 +1352,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['العداد', 'ختماتي', 'الوضع الليلي', 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'السور المتشابهة في العدد'].map(option => (
+                  {['العداد', 'ختماتي', 'فقهيات', 'الوضع الليلي', 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'السور المتشابهة في العدد'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -1358,6 +1360,7 @@ function App() {
                       onClick={() => {
                         if (option === 'العداد') { setViewMode('night-counter'); setIsMoreMenuOpen(false); return; }
                         if (option === 'ختماتي') { setIsKhatmaListOpen(true); setIsMoreMenuOpen(false); return; }
+                        if (option === 'فقهيات') { setIsFiqhOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'خماسيات - سور') { setSurahFivesIndex(0); setViewMode('surah-fives'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'الوضع الليلي') { setIsNightMode(prev => !prev); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'إعدادات الصوت') { setIsAudioSettingsOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -2319,6 +2322,106 @@ function App() {
       />
         </>
       )}
+      {/* ─── قسم فقهيات ─── */}
+      {isFiqhOpen && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'var(--app-bg)',
+          zIndex: 11000, display: 'flex', flexDirection: 'column', fontFamily: 'inherit',
+        }} dir="rtl">
+
+          {/* رأس الصفحة */}
+          <div style={{
+            padding: '20px 20px 14px', borderBottom: '1px solid var(--app-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
+          }}>
+            <div>
+              <h2 style={{ margin: '0 0 2px', fontSize: '22px', color: 'var(--app-text)', fontWeight: 900 }}>فقهيات</h2>
+              <span style={{ fontSize: '12px', color: 'var(--app-muted)' }}>
+                مسائل من فقه الأئمة رضوان الله عليهم — {FIQH_DATA.length} مسألة
+              </span>
+            </div>
+            <button onClick={() => setIsFiqhOpen(false)} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--app-muted)', fontSize: '28px', lineHeight: 1, padding: '4px',
+            }}>×</button>
+          </div>
+
+          {/* القائمة */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+            {FIQH_DATA.map((item) => (
+              <div key={item.id} style={{
+                background: 'var(--app-surface)', borderRadius: '18px',
+                padding: '20px', marginBottom: '16px',
+                border: '1px solid var(--app-border)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              }}>
+
+                {/* شارة الإمام */}
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center',
+                  background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
+                  borderRadius: '20px', padding: '4px 14px',
+                  fontSize: '13px', fontWeight: 'bold', marginBottom: '16px',
+                }}>
+                  {item.imam}
+                </div>
+
+                {/* السؤال */}
+                <div style={{ marginBottom: '14px' }}>
+                  <span style={{
+                    fontSize: '11px', fontWeight: 900, color: 'var(--app-muted)',
+                    letterSpacing: '0.5px', display: 'block', marginBottom: '6px',
+                  }}>السؤال</span>
+                  <p style={{ margin: 0, fontSize: '15px', color: 'var(--app-text)', lineHeight: '1.8' }}>
+                    {item.question}
+                  </p>
+                </div>
+
+                {/* الجواب */}
+                <div style={{ marginBottom: '18px' }}>
+                  <span style={{
+                    fontSize: '11px', fontWeight: 900, color: 'var(--app-accent)',
+                    letterSpacing: '0.5px', display: 'block', marginBottom: '6px',
+                  }}>الجواب</span>
+                  <p style={{ margin: 0, fontSize: '15px', color: 'var(--app-text)', lineHeight: '1.9' }}>
+                    {item.answer}
+                  </p>
+                </div>
+
+                {/* مربع المصدر */}
+                <div style={{
+                  background: 'var(--app-surface-2)', borderRadius: '12px',
+                  padding: '14px 16px', border: '1px solid var(--app-border)',
+                }}>
+                  <div style={{
+                    fontSize: '11px', fontWeight: 900, color: 'var(--app-muted)',
+                    marginBottom: '10px', letterSpacing: '0.5px',
+                  }}>المصدر</div>
+                  {[
+                    ['الكتاب',       item.source.book],
+                    ['المؤلف',       item.source.author],
+                    ['الصفحة',       item.source.page],
+                    ['تاريخ النشر',  item.source.publishDate],
+                    ['ملاحظات',      item.source.notes],
+                  ].filter(([, v]) => v).map(([label, value]) => (
+                    <div key={label} style={{
+                      display: 'flex', gap: '10px', marginBottom: '5px',
+                      fontSize: '13px', lineHeight: '1.5',
+                    }}>
+                      <span style={{ color: 'var(--app-muted)', flexShrink: 0, minWidth: '85px' }}>
+                        {label}
+                      </span>
+                      <span style={{ color: 'var(--app-text)' }}>{value}</span>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ─── نافذة تسجيل ختمة جديدة ─── */}
       {showKhatmaInput && (
         <div style={{
