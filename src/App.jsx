@@ -131,9 +131,10 @@ function App() {
   const [surahFivesIndex, setSurahFivesIndex] = useState(() => (
     Number.isInteger(persistedAppState.surahFivesIndex) ? persistedAppState.surahFivesIndex : 0
   ));
-  const [sharedGroupIndex, setSharedGroupIndex] = useState(() => (
-    Number.isInteger(persistedAppState.sharedGroupIndex) ? persistedAppState.sharedGroupIndex : 0
-  ));
+  const [sharedGroupIndex, setSharedGroupIndex] = useState(() => {
+    const saved = persistedAppState.sharedGroupIndex;
+    return Number.isInteger(saved) && saved >= 0 && saved < SHARED_VERSE_GROUPS.length ? saved : 0;
+  });
   const [starredIndices, setStarredIndices] = useState(() => (
     new Set(Array.isArray(persistedAppState.starredIndices) ? persistedAppState.starredIndices : [])
   ));
@@ -185,21 +186,17 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hijriData, setHijriData] = useState([]);
   const [hijriIndex, setHijriIndex] = useState(0);
-  const [hijriRefreshKey, setHijriRefreshKey] = useState(0);
   const [khatmaList, setKhatmaList] = useState(() => (
     Array.isArray(persistedAppState.khatmaList) ? persistedAppState.khatmaList : []
   ));
   const [showKhatmaInput, setShowKhatmaInput] = useState(false);
-  const [khatmaNameInput, setKhatmaNameInput] = useState('');
   const [khatmaIntentionInput, setKhatmaIntentionInput] = useState('');
   const [pendingKhatmaTime, setPendingKhatmaTime] = useState(null);
-  const [khatmaNameError, setKhatmaNameError] = useState('');
   const [isKhatmaListOpen, setIsKhatmaListOpen] = useState(false);
   const [isFiqhOpen, setIsFiqhOpen] = useState(false);
+  const [expandedFiqhId, setExpandedFiqhId] = useState(null);
   const [editingKhatmaId, setEditingKhatmaId] = useState(null);
-  const [editKhatmaName, setEditKhatmaName] = useState('');
   const [editKhatmaIntention, setEditKhatmaIntention] = useState('');
-  const [editKhatmaNameError, setEditKhatmaNameError] = useState('');
   
   // إعدادات الخط
   const [isAyahMenuOpen, setIsAyahMenuOpen] = useState(false);
@@ -620,7 +617,7 @@ function App() {
       .catch(() => {
         setHijriData(calcHijriOffline(today));
       });
-  }, [isPageStartsMode, isSurahFivesMode, hijriRefreshKey]);
+  }, [isPageStartsMode, isSurahFivesMode]);
 
   useEffect(() => {
     if (hijriData.length === 0) return undefined;
@@ -1180,52 +1177,38 @@ function App() {
   backHandlerRef.current = handleHardwareBack;
 
   // ─── دوال ختماتي ───
-  const addKhatmaEntry = (name, intention) => {
+  const addKhatmaEntry = (intention) => {
     setKhatmaList(prev => [...prev, {
       id: String(pendingKhatmaTime),
-      name,
       intention,
       timestamp: pendingKhatmaTime,
     }]);
     setShowKhatmaInput(false);
     setPendingKhatmaTime(null);
-    setKhatmaNameInput('');
     setKhatmaIntentionInput('');
-    setKhatmaNameError('');
   };
 
   const handleSaveKhatma = () => {
-    const name = khatmaNameInput.trim();
-    if (!name) { setKhatmaNameError('الرجاء إدخال اسم'); return; }
-    if (khatmaList.some(k => k.name === name)) { setKhatmaNameError('الرجاء إدخال اسم جديد'); return; }
-    addKhatmaEntry(name, khatmaIntentionInput.trim());
+    addKhatmaEntry(khatmaIntentionInput.trim());
   };
 
   const handleCancelKhatmaInput = () => {
     setShowKhatmaInput(false);
     setPendingKhatmaTime(null);
-    setKhatmaNameInput('');
     setKhatmaIntentionInput('');
-    setKhatmaNameError('');
   };
 
   const startEditKhatma = (khatma) => {
     setEditingKhatmaId(khatma.id);
-    setEditKhatmaName(khatma.name);
     setEditKhatmaIntention(khatma.intention || '');
-    setEditKhatmaNameError('');
   };
 
   const saveEditKhatma = (id) => {
-    const name = editKhatmaName.trim();
-    if (!name) { setEditKhatmaNameError('الرجاء إدخال اسم'); return; }
-    if (khatmaList.some(k => k.name === name && k.id !== id)) { setEditKhatmaNameError('الرجاء إدخال اسم جديد'); return; }
-    setKhatmaList(prev => prev.map(k => k.id === id ? { ...k, name, intention: editKhatmaIntention.trim() } : k));
+    setKhatmaList(prev => prev.map(k => k.id === id ? { ...k, intention: editKhatmaIntention.trim() } : k));
     setEditingKhatmaId(null);
-    setEditKhatmaNameError('');
   };
 
-  const cancelEditKhatma = () => { setEditingKhatmaId(null); setEditKhatmaNameError(''); };
+  const cancelEditKhatma = () => { setEditingKhatmaId(null); };
 
   // تجهيز الدالة ليتم استدعاؤها من كود الجافا في أندرويد ستوديو
   useEffect(() => {
@@ -1811,9 +1794,7 @@ function App() {
                   type="button"
                   onClick={() => {
                     setPendingKhatmaTime(Date.now());
-                    setKhatmaNameInput('');
                     setKhatmaIntentionInput('');
-                    setKhatmaNameError('');
                     setShowKhatmaInput(true);
                   }}
                   title="سجِّل ختمة جديدة"
@@ -1864,10 +1845,10 @@ function App() {
           ) : viewMode === 'shared-verses' ? (
             <div className="verse-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div style={{ color: fontColor, fontWeight: fontWeight, fontSize: '48px', marginBottom: '20px' }}>
-                {SHARED_VERSE_GROUPS[sharedGroupIndex].count}
+                {SHARED_VERSE_GROUPS[sharedGroupIndex]?.count ?? ''}
               </div>
               <div style={{ color: fontColor, fontWeight: fontWeight, fontSize: `calc(${fontSize}px * 0.85)`, lineHeight: '1.8' }}>
-                {SHARED_VERSE_GROUPS[sharedGroupIndex].surahs.map(s => `[${SURAH_NAMES[s - 1]}]`).join(' ، ')}
+                {(SHARED_VERSE_GROUPS[sharedGroupIndex]?.surahs ?? []).map(s => `[${SURAH_NAMES[s - 1]}]`).join(' ، ')}
               </div>
             </div>
           ) : viewMode === 'surah-pages' ? (
@@ -2090,20 +2071,7 @@ function App() {
             <div className="progress-container">
               <div className="progress-bar" style={{ width: `${Math.min(((currentIndex + 1) / 1202) * 100, 100)}%` }}></div>
             </div>
-            <div className="progress-text" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <button
-                onClick={() => {
-                  try { localStorage.removeItem(HIJRI_CACHE_KEY); } catch {}
-                  setHijriData([]);
-                  setHijriRefreshKey(k => k + 1);
-                }}
-                title="تحديث"
-                style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--app-muted)', display: 'flex', alignItems: 'center', borderRadius: '50%', flexShrink: 0 }}
-              >
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                  <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-                </svg>
-              </button>
+            <div className="progress-text">
               {currentIndex + 1} / 1202
             </div>
           </div>
@@ -2304,7 +2272,8 @@ function App() {
             starredIndices,
             starredPages,
             nightCounters,
-            quranicWondersNotes
+            quranicWondersNotes,
+            khatmaList
           }}
           onRestore={(data) => {
             if (data.c !== undefined) setCurrentIndex(data.c);
@@ -2313,6 +2282,7 @@ function App() {
             if (data.sp !== undefined) setStarredPages(new Set(data.sp));
             if (data.n !== undefined) setNightCounters(data.n);
             if (data.qw !== undefined) setQuranicWondersNotes(data.qw);
+            if (Array.isArray(data.kl)) setKhatmaList(data.kl);
             
             // إغلاق النافذة بصمت بعد نجاح الاستعادة وبدون رسالة منبثقة مزعجة
             setIsQRSyncOpen(false);
@@ -2360,76 +2330,94 @@ function App() {
 
           {/* القائمة */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-            {FIQH_DATA.map((item) => (
-              <div key={item.id} style={{
-                background: 'var(--app-surface)', borderRadius: '18px',
-                padding: '20px', marginBottom: '16px',
-                border: '1px solid var(--app-border)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-              }}>
-
-                {/* شارة الإمام */}
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center',
-                  background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
-                  borderRadius: '20px', padding: '4px 14px',
-                  fontSize: '13px', fontWeight: 'bold', marginBottom: '16px',
+            {FIQH_DATA.map((item) => {
+              const isOpen = expandedFiqhId === item.id;
+              return (
+                <div key={item.id} style={{
+                  background: 'var(--app-surface)', borderRadius: '18px',
+                  marginBottom: '12px', border: '1px solid var(--app-border)',
+                  overflow: 'hidden',
                 }}>
-                  {item.imam}
-                </div>
 
-                {/* السؤال */}
-                <div style={{ marginBottom: '14px' }}>
-                  <span style={{
-                    fontSize: '11px', fontWeight: 900, color: 'var(--app-muted)',
-                    letterSpacing: '0.5px', display: 'block', marginBottom: '6px',
-                  }}>السؤال</span>
-                  <p style={{ margin: 0, fontSize: '15px', color: 'var(--app-text)', lineHeight: '1.8' }}>
-                    {item.question}
-                  </p>
-                </div>
-
-                {/* الجواب */}
-                <div style={{ marginBottom: '18px' }}>
-                  <span style={{
-                    fontSize: '11px', fontWeight: 900, color: 'var(--app-accent)',
-                    letterSpacing: '0.5px', display: 'block', marginBottom: '6px',
-                  }}>الجواب</span>
-                  <p style={{ margin: 0, fontSize: '15px', color: 'var(--app-text)', lineHeight: '1.9' }}>
-                    {item.answer}
-                  </p>
-                </div>
-
-                {/* مربع المصدر */}
-                <div style={{
-                  background: 'var(--app-surface-2)', borderRadius: '12px',
-                  padding: '14px 16px', border: '1px solid var(--app-border)',
-                }}>
-                  <div style={{
-                    fontSize: '11px', fontWeight: 900, color: 'var(--app-muted)',
-                    marginBottom: '10px', letterSpacing: '0.5px',
-                  }}>المصدر</div>
-                  {[
-                    ['الكتاب',       item.source.book],
-                    ['المؤلف',       item.source.author],
-                    ['الصفحة',       item.source.page],
-                    ['تاريخ النشر',  item.source.publishDate],
-                    ['ملاحظات',      item.source.notes],
-                  ].filter(([, v]) => v).map(([label, value]) => (
-                    <div key={label} style={{
-                      display: 'flex', gap: '10px', marginBottom: '5px',
-                      fontSize: '13px', lineHeight: '1.5',
-                    }}>
-                      <span style={{ color: 'var(--app-muted)', flexShrink: 0, minWidth: '85px' }}>
-                        {label}
-                      </span>
-                      <span style={{ color: 'var(--app-text)' }}>{value}</span>
+                  {/* رأس العنوان — قابل للضغط */}
+                  <button
+                    onClick={() => setExpandedFiqhId(isOpen ? null : item.id)}
+                    style={{
+                      width: '100%', background: 'none', border: 'none',
+                      padding: '16px 18px', cursor: 'pointer', textAlign: 'right',
+                      display: 'flex', flexDirection: 'column', gap: '8px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center',
+                        background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
+                        borderRadius: '20px', padding: '3px 12px',
+                        fontSize: '12px', fontWeight: 'bold', flexShrink: 0,
+                      }}>
+                        {item.imam}
+                      </div>
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+                        stroke="var(--app-muted)" strokeWidth="2.5" strokeLinecap="round"
+                        style={{ flexShrink: 0, transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
                     </div>
-                  ))}
-                </div>
+                    <p style={{
+                      margin: 0, fontSize: '15px', color: 'var(--app-text)',
+                      lineHeight: '1.7', textAlign: 'right', fontWeight: isOpen ? 'bold' : 'normal',
+                    }}>
+                      {item.question}
+                    </p>
+                  </button>
 
-              </div>
-            ))}
+                  {/* المحتوى المطوي */}
+                  {isOpen && (
+                    <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--app-border)' }}>
+
+                      {/* الجواب */}
+                      <div style={{ margin: '16px 0' }}>
+                        <span style={{
+                          fontSize: '11px', fontWeight: 900, color: 'var(--app-accent)',
+                          letterSpacing: '0.5px', display: 'block', marginBottom: '8px',
+                        }}>الجواب</span>
+                        <p style={{ margin: 0, fontSize: '15px', color: 'var(--app-text)', lineHeight: '1.9', whiteSpace: 'pre-wrap' }}>
+                          {item.answer}
+                        </p>
+                      </div>
+
+                      {/* مربع المصدر */}
+                      <div style={{
+                        background: 'var(--app-surface-2)', borderRadius: '12px',
+                        padding: '14px 16px', border: '1px solid var(--app-border)',
+                      }}>
+                        <div style={{
+                          fontSize: '11px', fontWeight: 900, color: 'var(--app-muted)',
+                          marginBottom: '10px', letterSpacing: '0.5px',
+                        }}>المصدر</div>
+                        {[
+                          ['الكتاب',      item.source.book],
+                          ['المؤلف',      item.source.author],
+                          ['الصفحة',      item.source.page],
+                          ['تاريخ النشر', item.source.publishDate],
+                          ['ملاحظات',     item.source.notes],
+                        ].filter(([, v]) => v).map(([label, value]) => (
+                          <div key={label} style={{
+                            display: 'flex', gap: '10px', marginBottom: '5px',
+                            fontSize: '13px', lineHeight: '1.5',
+                          }}>
+                            <span style={{ color: 'var(--app-muted)', flexShrink: 0, minWidth: '85px' }}>{label}</span>
+                            <span style={{ color: 'var(--app-text)' }}>{value}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                    </div>
+                  )}
+
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -2452,31 +2440,6 @@ function App() {
             <p style={{ margin: '0 0 18px', fontSize: '12px', color: 'var(--app-muted)', textAlign: 'center' }}>
               {formatHijriTimestamp(pendingKhatmaTime)}
             </p>
-
-            <div style={{ marginBottom: '14px' }}>
-              <label style={{ fontSize: '13px', color: 'var(--app-muted)', display: 'block', marginBottom: '6px' }}>
-                الاسم <span style={{ color: '#ef4444' }}>*</span>
-              </label>
-              <input
-                type="text"
-                value={khatmaNameInput}
-                onChange={e => { setKhatmaNameInput(e.target.value); setKhatmaNameError(''); }}
-                onKeyDown={e => e.key === 'Enter' && handleSaveKhatma()}
-                placeholder="مثال: رمضان 1447"
-                dir="rtl"
-                autoFocus
-                style={{
-                  width: '100%', boxSizing: 'border-box', padding: '10px 13px',
-                  borderRadius: '11px',
-                  border: `1.5px solid ${khatmaNameError ? '#ef4444' : 'var(--app-border)'}`,
-                  background: 'var(--app-surface-2)', color: 'var(--app-text)',
-                  fontSize: '15px', fontFamily: 'inherit', outline: 'none',
-                }}
-              />
-              {khatmaNameError && (
-                <p style={{ margin: '5px 0 0', fontSize: '12px', color: '#ef4444' }}>{khatmaNameError}</p>
-              )}
-            </div>
 
             <div style={{ marginBottom: '22px' }}>
               <label style={{ fontSize: '13px', color: 'var(--app-muted)', display: 'block', marginBottom: '6px' }}>
@@ -2560,27 +2523,6 @@ function App() {
                 }}>
                   {editingKhatmaId === k.id ? (
                     <div>
-                      <div style={{ marginBottom: '10px' }}>
-                        <label style={{ fontSize: '12px', color: 'var(--app-muted)', display: 'block', marginBottom: '4px' }}>الاسم</label>
-                        <input
-                          type="text"
-                          value={editKhatmaName}
-                          onChange={e => { setEditKhatmaName(e.target.value); setEditKhatmaNameError(''); }}
-                          onKeyDown={e => e.key === 'Enter' && saveEditKhatma(k.id)}
-                          dir="rtl"
-                          autoFocus
-                          style={{
-                            width: '100%', boxSizing: 'border-box', padding: '8px 11px',
-                            borderRadius: '9px',
-                            border: `1.5px solid ${editKhatmaNameError ? '#ef4444' : 'var(--app-border)'}`,
-                            background: 'var(--app-surface-2)', color: 'var(--app-text)',
-                            fontSize: '14px', fontFamily: 'inherit', outline: 'none',
-                          }}
-                        />
-                        {editKhatmaNameError && (
-                          <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#ef4444' }}>{editKhatmaNameError}</p>
-                        )}
-                      </div>
                       <div style={{ marginBottom: '12px' }}>
                         <label style={{ fontSize: '12px', color: 'var(--app-muted)', display: 'block', marginBottom: '4px' }}>النية</label>
                         <textarea
@@ -2616,12 +2558,12 @@ function App() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <span style={{
-                            background: 'linear-gradient(145deg, #22c55e, #15803d)',
-                            color: '#fff', borderRadius: '50%', width: '30px', height: '30px',
+                            background: 'var(--app-accent)',
+                            color: 'var(--app-accent-contrast)', borderRadius: '50%', width: '30px', height: '30px',
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: '13px', fontWeight: 'bold', flexShrink: 0,
                           }}>{i + 1}</span>
-                          <span style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--app-text)' }}>{k.name}</span>
+                          <span style={{ fontSize: '13px', color: 'var(--app-muted)' }}>{formatHijriTimestamp(k.timestamp)}</span>
                         </div>
                         <button type="button" onClick={() => startEditKhatma(k)} title="تعديل" style={{
                           background: 'none', border: 'none', cursor: 'pointer',

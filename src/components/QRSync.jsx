@@ -46,7 +46,8 @@ const QRSync = ({ appState, onRestore, onClose }) => {
       s: appState?.starredIndices ? Array.from(appState.starredIndices) : [],
       sp: appState?.starredPages ? Array.from(appState.starredPages) : [],
       n: appState?.nightCounters || [],
-      qw: appState?.quranicWondersNotes || []
+      qw: appState?.quranicWondersNotes || [],
+      kl: appState?.khatmaList || []
     };
     // تغليف النص لحماية الحروف العربية من التشوه عند المسح
     payload = encodeURIComponent(JSON.stringify(rawData));
