@@ -1202,10 +1202,11 @@ function App() {
   };
 
   const handleCancelKhatmaInput = () => {
-    let n = khatmaList.length + 1;
-    let autoName = `ختمة ${n}`;
-    while (khatmaList.some(k => k.name === autoName)) { n++; autoName = `ختمة ${n}`; }
-    addKhatmaEntry(autoName, khatmaIntentionInput.trim());
+    setShowKhatmaInput(false);
+    setPendingKhatmaTime(null);
+    setKhatmaNameInput('');
+    setKhatmaIntentionInput('');
+    setKhatmaNameError('');
   };
 
   const startEditKhatma = (khatma) => {
@@ -1817,21 +1818,32 @@ function App() {
                   }}
                   title="سجِّل ختمة جديدة"
                   style={{
-                    width: '88px', height: '88px', borderRadius: '50%', border: 'none',
-                    background: 'linear-gradient(145deg, #22c55e, #15803d)',
-                    color: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
-                    padding: '6px', boxShadow: '0 6px 18px rgba(21,128,61,0.5)',
-                    lineHeight: '1.2', gap: '1px',
+                    width: '88px', height: '88px', borderRadius: '50%',
+                    border: 'none',
+                    background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', padding: '0', flexShrink: 0,
                   }}
                 >
-                  {khatmaList.length > 0 && (
-                    <span style={{ fontSize: '26px', fontWeight: '900', lineHeight: '1' }}>{khatmaList.length}</span>
-                  )}
-                  <span style={{ fontSize: khatmaList.length > 0 ? '10px' : '12px', fontWeight: 'bold', textAlign: 'center', direction: 'rtl' }}>
-                    مسجِّل الخِتم
-                  </span>
+                  <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor" aria-hidden="true">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5l-4-4 1.41-1.41L10 13.67l6.59-6.59L18 8.5l-8 8z"/>
+                  </svg>
                 </button>
+                <div
+                  aria-label={`${khatmaList.length} ختمة مسجلة`}
+                  style={{
+                    width: '88px', height: '88px', borderRadius: '50%',
+                    border: 'none',
+                    background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    justifyContent: 'center', flexShrink: 0, lineHeight: '1.2', gap: '1px',
+                  }}
+                >
+                  <span style={{ fontSize: '30px', fontWeight: '900', lineHeight: '1' }}>
+                    {khatmaList.length}
+                  </span>
+                  <span style={{ fontSize: '9px', fontWeight: 'bold', direction: 'rtl' }}>ختماتي</span>
+                </div>
                 <button
                   type="button"
                   className="night-counter-btn secondary night-counter-minus-btn"
