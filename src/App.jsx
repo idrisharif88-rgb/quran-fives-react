@@ -1433,16 +1433,16 @@ function App() {
                       className={`ayah-menu-item ${(option === 'الوضع الليلي' && isNightMode) || (option === 'السور المتشابهة في العدد' && viewMode === 'shared-verses') ? 'active' : ''}`}
                       onClick={() => {
                         if (option === 'العداد') { setViewMode('night-counter'); setIsMoreMenuOpen(false); return; }
-                        if (option === 'ختماتي') { setIsKhatmaListOpen(true); setIsMoreMenuOpen(false); return; }
-                        if (option === 'فقهيات') { setIsFiqhOpen(true); setIsMoreMenuOpen(false); return; }
-                        if (option === 'خماسيات - سور') { setSurahFivesIndex(0); setViewMode('surah-fives'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'ختماتي') { mainKeyboard.closeKeyboard(); setIsKhatmaListOpen(true); setIsMoreMenuOpen(false); return; }
+                        if (option === 'فقهيات') { mainKeyboard.closeKeyboard(); setIsFiqhOpen(true); setIsMoreMenuOpen(false); return; }
+                        if (option === 'خماسيات - سور') { mainKeyboard.closeKeyboard(); setSurahFivesIndex(0); setViewMode('surah-fives'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'الوضع الليلي') { setIsNightMode(prev => !prev); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
-                        if (option === 'إعدادات الصوت') { setIsAudioSettingsOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
-                        if (option === 'الخط') { setIsMoreMenuOpen(false); setIsFontMenuOpen(true); return; }
-                        if (option === 'عجائب قرآنية') { setViewMode('quranic-wonders'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
-                        if (option === 'اختبار سور') { setActiveSurahNamesQuiz(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
-                        if (option === 'شرح البرنامج') { setIsUserManualOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
-                        if (option === 'مزامنة QR') { setIsQRSyncOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'إعدادات الصوت') { mainKeyboard.closeKeyboard(); setIsAudioSettingsOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'الخط') { mainKeyboard.closeKeyboard(); setIsMoreMenuOpen(false); setIsFontMenuOpen(true); return; }
+                        if (option === 'عجائب قرآنية') { mainKeyboard.closeKeyboard(); setViewMode('quranic-wonders'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'اختبار سور') { mainKeyboard.closeKeyboard(); setActiveSurahNamesQuiz(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'شرح البرنامج') { mainKeyboard.closeKeyboard(); setIsUserManualOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'مزامنة QR') { mainKeyboard.closeKeyboard(); setIsQRSyncOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'السور المتشابهة في العدد') { setViewMode(prev => prev === 'shared-verses' ? 'khmasiyat' : 'shared-verses'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         setIsMoreMenuOpen(false);
                       }}
@@ -1929,6 +1929,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => {
+                    mainKeyboard.closeKeyboard();
                     setPendingKhatmaTime(Date.now());
                     setKhatmaIntentionInput('');
                     setShowKhatmaInput(true);
