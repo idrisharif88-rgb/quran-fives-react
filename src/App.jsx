@@ -700,6 +700,12 @@ function App() {
   useEffect(() => { setIsPageEndRevealed(false); }, [currentPageEndIndex]);
 
   useEffect(() => {
+    if (viewMode !== 'khmasiyat') return;
+    setSurahToast(null);
+    prevSurahRef.current = currentKhmasiyat.surah;
+  }, [viewMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     const toArabicNum = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
     if (viewMode !== 'khmasiyat') {
       prevSurahRef.current = currentKhmasiyat.surah;
