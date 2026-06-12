@@ -1568,7 +1568,7 @@ button:focus-visible,
   bottom: max(12px, env(safe-area-inset-bottom));
   display: flex;
   justify-content: center;
-  z-index: 980;
+  z-index: 13000;
   pointer-events: none;
 }
 

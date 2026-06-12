@@ -1169,6 +1169,24 @@ function App() {
       submitLabel: 'اذهب',
       onSubmit: handlePageJump,
     },
+    counterValue: {
+      value: nightCounterValueInput,
+      setValue: setNightCounterValueInput,
+      allowColon: false,
+      maxLength: 7,
+      label: 'العدد الحالي',
+      submitLabel: 'حفظ',
+      onSubmit: applyNightCounterInputs,
+    },
+    counterLimit: {
+      value: nightCounterLimitInput,
+      setValue: setNightCounterLimitInput,
+      allowColon: false,
+      maxLength: 7,
+      label: 'الهدف (اختياري)',
+      submitLabel: 'حفظ',
+      onSubmit: applyNightCounterInputs,
+    },
   });
 
   const handleHardwareBack = () => {
@@ -2381,25 +2399,17 @@ function App() {
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', color: 'var(--app-muted)', marginBottom: '5px' }}>العدد الحالي</label>
                   <input
-                    type="number"
-                    className="night-counter-input"
-                    value={nightCounterValueInput}
-                    onChange={(e) => setNightCounterValueInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && applyNightCounterInputs()}
+                    type="text"
                     placeholder="العدد"
-                    min="0"
+                    {...mainKeyboard.getInputProps('counterValue', { className: 'night-counter-input' })}
                   />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', color: 'var(--app-muted)', marginBottom: '5px' }}>الهدف (اختياري)</label>
                   <input
-                    type="number"
-                    className="night-counter-input"
-                    value={nightCounterLimitInput}
-                    onChange={(e) => setNightCounterLimitInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && applyNightCounterInputs()}
+                    type="text"
                     placeholder="الحد"
-                    min="0"
+                    {...mainKeyboard.getInputProps('counterLimit', { className: 'night-counter-input' })}
                   />
                 </div>
               </div>
