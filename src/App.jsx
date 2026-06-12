@@ -7,6 +7,7 @@ import { SURAH_PAGE_COUNTS } from './data/surahPageCounts';
 import CounterRing from './components/CounterRing';
 import CustomKeyboard, { useCustomKeyboard } from './components/CustomKeyboard';
 import { PAGE_STARTS } from './data/pageStarts';
+import { PAGE_ENDS } from './data/pageEnds';
 import menuMainIcon from './assets/menu-main-icon.png';
 import KhmasiyatQuiz from './utils/KhmasiyatQuiz';
 import RandomAyahQuiz from './utils/RandomAyahQuiz';
@@ -214,8 +215,17 @@ function App() {
   const [currentPageIndex, setCurrentPageIndex] = useState(() => (
     Number.isInteger(persistedAppState.currentPageIndex) ? persistedAppState.currentPageIndex : 0
   ));
+  const [pageEndsData, setPageEndsData] = useState([]);
+  const [isPageEndsLoading, setIsPageEndsLoading] = useState(false);
+  const [pageEndsError, setPageEndsError] = useState('');
+  const [currentPageEndIndex, setCurrentPageEndIndex] = useState(() => (
+    Number.isInteger(persistedAppState.currentPageEndIndex) ? persistedAppState.currentPageEndIndex : 0
+  ));
   const [starredPages, setStarredPages] = useState(() => (
     new Set(Array.isArray(persistedAppState.starredPages) ? persistedAppState.starredPages : [])
+  ));
+  const [starredPageEnds, setStarredPageEnds] = useState(() => (
+    new Set(Array.isArray(persistedAppState.starredPageEnds) ? persistedAppState.starredPageEnds : [])
   ));
   const [isFontMenuOpen, setIsFontMenuOpen] = useState(false);
   const [fontSize, setFontSize] = useState(() => (
@@ -244,6 +254,7 @@ function App() {
   const [surahToast, setSurahToast] = useState(null);
   const [isKhRevealed, setIsKhRevealed] = useState(false);
   const [isPageRevealed, setIsPageRevealed] = useState(false);
+  const [isPageEndRevealed, setIsPageEndRevealed] = useState(false);
 
   const actionButtonsRef = useRef(null);
   const audioRef = useRef(null);
@@ -265,8 +276,10 @@ function App() {
 
   const starredArray = Array.from(starredIndices).sort((a, b) => a - b);
   const starredPagesArray = Array.from(starredPages).sort((a, b) => a - b);
+  const starredPageEndsArray = Array.from(starredPageEnds).sort((a, b) => a - b);
 
   const isPageStartsMode = viewMode === 'page-starts' || viewMode === 'page-starred';
+  const isPageEndsMode = viewMode === 'page-ends' || viewMode === 'page-ends-starred';
   const isNightCounterMode = viewMode === 'night-counter';
   const isSurahFivesMode = viewMode === 'surah-fives';
   const clampedSurahFivesIndex = Math.min(
@@ -278,8 +291,8 @@ function App() {
   const activeNightCounter = nightCounters.find(counter => counter.id === activeNightCounterId) || nightCounters[0];
 
   useEffect(() => {
-    if (isPageStartsMode) setIsFontMenuOpen(false);
-  }, [isPageStartsMode]);
+    if (isPageStartsMode || isPageEndsMode) setIsFontMenuOpen(false);
+  }, [isPageStartsMode, isPageEndsMode]);
 
   useEffect(() => {
     if (surahFivesIndex < 0 || surahFivesIndex >= SURAH_FIVES_ORDER.length) {
@@ -329,7 +342,9 @@ function App() {
       activeAyahTest,
       activePageStartsTest,
       currentPageIndex,
+      currentPageEndIndex,
       starredPages: Array.from(starredPages),
+      starredPageEnds: Array.from(starredPageEnds),
       fontSize,
       fontFamily,
       fontWeight,
@@ -344,6 +359,7 @@ function App() {
     activePageStartsTest,
     currentIndex,
     currentPageIndex,
+    currentPageEndIndex,
     fontColor,
     fontFamily,
     fontSize,
@@ -360,6 +376,7 @@ function App() {
     khatmaList,
     starredIndices,
     starredPages,
+    starredPageEnds,
     surahFivesIndex,
     viewMode,
   ]);
@@ -404,8 +421,11 @@ function App() {
     }
   }
   const currentPageStartVerse = pageStartsData[currentPageIndex] || null;
+  const currentPageEndVerse = pageEndsData[currentPageEndIndex] || null;
   const currentVersesText = isPageStartsMode
     ? (currentPageStartVerse ? [currentPageStartVerse] : [])
+    : isPageEndsMode
+    ? (currentPageEndVerse ? [currentPageEndVerse] : [])
     : khmasiyatVersesText;
 
   const lastVerseOfKhmasiya = QURAN_VERSES[currentKhmasiyat.absoluteEndIndex - 1];
@@ -474,7 +494,7 @@ function App() {
     { id: 'random-ayat', label: 'اختبار آيات عشوائي' },
     { id: 'surah-count', label: 'اختبار سور - عدد آيات' }
   ];
-  const pageStartsOptions = ['بدايات صفحات', 'اختبار بدايات صفحات'];
+  const pageStartsOptions = ['بدايات صفحات', 'اختبار بدايات صفحات', 'نهايات الصفحات'];
   const loadPageStartsData = async () => {
     if (isPageStartsLoading || pageStartsData.length > 0) return;
     setIsPageStartsLoading(true);
@@ -537,6 +557,23 @@ function App() {
     }
   };
 
+  const loadPageEndsData = () => {
+    if (isPageEndsLoading || pageEndsData.length > 0) return;
+    setIsPageEndsLoading(true);
+    setPageEndsError('');
+    try {
+      if (Array.isArray(PAGE_ENDS) && PAGE_ENDS.length === 604) {
+        setPageEndsData(PAGE_ENDS);
+      } else {
+        setPageEndsError('تعذر تحميل نهايات الصفحات.');
+      }
+    } catch (e) {
+      setPageEndsError('تعذر تحميل نهايات الصفحات حالياً.');
+    } finally {
+      setIsPageEndsLoading(false);
+    }
+  };
+
   const handleAyahOptionClick = (optionId) => {
     if (['khmasiyat', 'random-ayat', 'surah-count'].includes(optionId)) {
       setActiveAyahTest(optionId);
@@ -552,6 +589,9 @@ function App() {
       loadPageStartsData();
     } else if (option === 'اختبار بدايات صفحات') {
       setActivePageStartsTest('page-starts');
+    } else if (option === 'نهايات الصفحات') {
+      setViewMode('page-ends');
+      loadPageEndsData();
     }
     setIsPageStartsMenuOpen(false);
     setIsMoreMenuOpen(false);
@@ -567,6 +607,9 @@ function App() {
   useEffect(() => {
     if (viewMode === 'page-starts' || viewMode === 'page-starred') {
       loadPageStartsData();
+    }
+    if (viewMode === 'page-ends' || viewMode === 'page-ends-starred') {
+      loadPageEndsData();
     }
   }, [viewMode]);
 
@@ -654,6 +697,7 @@ function App() {
 
   useEffect(() => { setIsKhRevealed(false); }, [currentIndex]);
   useEffect(() => { setIsPageRevealed(false); }, [currentPageIndex]);
+  useEffect(() => { setIsPageEndRevealed(false); }, [currentPageEndIndex]);
 
   useEffect(() => {
     const toArabicNum = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
@@ -778,6 +822,15 @@ function App() {
     });
   };
 
+  const togglePageEndStar = (index) => {
+    setStarredPageEnds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) newSet.delete(index);
+      else newSet.add(index);
+      return newSet;
+    });
+  };
+
   const playNightCounterSound = async (type) => {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
@@ -863,17 +916,21 @@ function App() {
       if (direction === 'next') setCurrentPageIndex(prev => Math.min(pageStartsData.length - 1, prev + 1));
       if (direction === 'prev') setCurrentPageIndex(prev => Math.max(0, prev - 1));
     }
+    if (viewMode === 'page-ends') {
+      if (direction === 'next') setCurrentPageEndIndex(prev => Math.min(pageEndsData.length - 1, prev + 1));
+      if (direction === 'prev') setCurrentPageEndIndex(prev => Math.max(0, prev - 1));
+    }
   };
 
   const onSwipeTouchStart = (e) => {
-    if (viewMode !== 'khmasiyat' && viewMode !== 'page-starts' && viewMode !== 'surah-fives') return;
+    if (viewMode !== 'khmasiyat' && viewMode !== 'page-starts' && viewMode !== 'page-ends' && viewMode !== 'surah-fives') return;
     const t = e.touches?.[0];
     if (!t) return;
     swipeStartRef.current = { x: t.clientX, y: t.clientY };
   };
 
   const onSwipeTouchEnd = (e) => {
-    if (viewMode !== 'khmasiyat' && viewMode !== 'page-starts' && viewMode !== 'surah-fives') return;
+    if (viewMode !== 'khmasiyat' && viewMode !== 'page-starts' && viewMode !== 'page-ends' && viewMode !== 'surah-fives') return;
     const start = swipeStartRef.current;
     swipeStartRef.current = null;
     if (!start) return;
@@ -939,6 +996,7 @@ function App() {
     setPageStartsError('');
     setCurrentPageIndex(0);
     setStarredPages(new Set());
+    setStarredPageEnds(new Set());
     setIsFontMenuOpen(false);
     setFontSize(38);
     setFontFamily("'Tajawal', sans-serif");
@@ -1010,7 +1068,11 @@ function App() {
       return;
     }
 
-    setCurrentPageIndex(page - 1);
+    if (viewMode === 'page-ends') {
+      setCurrentPageEndIndex(page - 1);
+    } else {
+      setCurrentPageIndex(page - 1);
+    }
     setPageJumpInput('');
   };
 
@@ -1162,11 +1224,15 @@ function App() {
       setViewMode('page-starts');
       return true;
     }
+    if (viewMode === 'page-ends-starred') {
+      setViewMode('page-ends');
+      return true;
+    }
     if (viewMode === 'quranic-wonders') {
       setViewMode('khmasiyat');
       return true;
     }
-    if (viewMode === 'starred' || viewMode === 'shared-verses' || viewMode === 'night-counter' || viewMode === 'page-starts' || viewMode === 'surah-fives' || viewMode === 'surah-pages') {
+    if (viewMode === 'starred' || viewMode === 'shared-verses' || viewMode === 'night-counter' || viewMode === 'page-starts' || viewMode === 'page-ends' || viewMode === 'surah-fives' || viewMode === 'surah-pages') {
       setViewMode('khmasiyat');
       return true;
     }
@@ -1286,9 +1352,9 @@ function App() {
         </div>
       )}
       {/* الأزرار العلوية */}
-      {!isQuizMode && viewMode !== 'starred' && viewMode !== 'page-starred' && viewMode !== 'night-counter' && viewMode !== 'quranic-wonders' && viewMode !== 'surah-pages' && (
+      {!isQuizMode && viewMode !== 'starred' && viewMode !== 'page-starred' && viewMode !== 'page-ends-starred' && viewMode !== 'night-counter' && viewMode !== 'quranic-wonders' && viewMode !== 'surah-pages' && (
       <div className="action-buttons-container upper-actions">
-        {(isPageStartsMode || isNightCounterMode || isSurahFivesMode) && (
+        {(isPageStartsMode || isPageEndsMode || isNightCounterMode || isSurahFivesMode) && (
           <>
             {!isNightCounterMode && (
               <button
@@ -1314,7 +1380,7 @@ function App() {
             </svg>
           </button>
         )}
-        {!isPageStartsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' && viewMode !== 'surah-pages' && (
+        {!isPageStartsMode && !isPageEndsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' && viewMode !== 'surah-pages' && (
           <>
             <div className="icon-wrapper" ref={moreMenuRef}>
               <button
@@ -1468,14 +1534,13 @@ function App() {
         )}
         
 
-        {!isPageStartsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' && <button
+        {!isPageStartsMode && !isPageEndsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' && <button
           className="action-icon calendar-icon"
-          title="التاريخ الهجري - انقر للتحديث"
+          title="التاريخ الهجري"
           style={{ width: '65px', height: '65px' }}
           onClick={() => {
             try { localStorage.removeItem(HIJRI_CACHE_KEY); } catch {}
             setHijriData([]);
-            setHijriRefreshKey(k => k + 1);
           }}
         >
           {hijriData.length > 0 ? (
@@ -1541,16 +1606,16 @@ function App() {
 
       {!isQuizMode && viewMode !== 'quranic-wonders' && ( // إخفاء هذا القسم عند تفعيل عجائب قرآنية
         <>
-      {viewMode === 'starred' || viewMode === 'page-starred' ? (
+      {viewMode === 'starred' || viewMode === 'page-starred' || viewMode === 'page-ends-starred' ? (
         <>
           <div className="top-stars-container starred-mode-stars">
-            <button 
+            <button
               className="top-star-btn"
               title="العودة للقراءة"
-              onClick={() => setViewMode(viewMode === 'page-starred' ? 'page-starts' : 'khmasiyat')}
+              onClick={() => setViewMode(viewMode === 'page-starred' ? 'page-starts' : viewMode === 'page-ends-starred' ? 'page-ends' : 'khmasiyat')}
               style={{ color: 'var(--app-warn)' }}
             >
-              <span style={{ fontSize: '26px', fontWeight: 'bold', paddingTop: '2px' }}>{viewMode === 'page-starred' ? starredPages.size : starredIndices.size}</span>
+              <span style={{ fontSize: '26px', fontWeight: 'bold', paddingTop: '2px' }}>{viewMode === 'page-starred' ? starredPages.size : viewMode === 'page-ends-starred' ? starredPageEnds.size : starredIndices.size}</span>
               <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
                 <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
               </svg>
@@ -1571,13 +1636,34 @@ function App() {
               starredPagesArray.map(index => {
                 const verse = pageStartsData[index];
                 return (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className="starred-rectangle"
                     onClick={() => {
                       setCurrentPageIndex(index);
                       setViewMode('page-starts');
                     }}
+                  >
+                    <div className="starred-title">سورة {SURAH_NAMES[verse.s - 1]} - صفحة {verse.page}</div>
+                    <div className="starred-preview starred-preview--blurred">
+                      {verse?.t} <span className="starred-verse-num">﴿{verse?.a}﴾</span>
+                    </div>
+                  </div>
+                );
+              })
+            )
+          ) : viewMode === 'page-ends-starred' ? (
+            starredPageEndsArray.length === 0 ? (
+              <div className="empty-starred">لا توجد نهايات صفحات مثبتة بعد</div>
+            ) : (
+              starredPageEndsArray.map(index => {
+                const verse = pageEndsData[index];
+                if (!verse) return null;
+                return (
+                  <div
+                    key={index}
+                    className="starred-rectangle"
+                    onClick={() => { setCurrentPageEndIndex(index); setViewMode('page-ends'); }}
                   >
                     <div className="starred-title">سورة {SURAH_NAMES[verse.s - 1]} - صفحة {verse.page}</div>
                     <div className="starred-preview starred-preview--blurred">
@@ -1620,13 +1706,19 @@ function App() {
       ) : (
         <div className={`content-layout ${viewMode === 'night-counter' ? 'night-counter-layout' : ''}`} onTouchStart={onSwipeTouchStart} onTouchEnd={onSwipeTouchEnd} style={{ flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
           {viewMode !== 'shared-verses' && viewMode !== 'night-counter' && viewMode !== 'surah-fives' && viewMode !== 'surah-pages' && <div className="top-stars-container inside-text-field">
-            <button 
+            <button
               className="top-star-btn"
-              title={isPageStartsMode ? "قائمة الصفحات للتثبيت" : "قائمة الخماسيات للتثبيت"}
-              onClick={() => setViewMode(isPageStartsMode ? 'page-starred' : 'starred')}
+              title={isPageStartsMode ? "قائمة الصفحات للتثبيت" : isPageEndsMode ? "قائمة نهايات الصفحات" : "قائمة الخماسيات للتثبيت"}
+              onClick={() => {
+                if (isPageStartsMode) setViewMode('page-starred');
+                else if (viewMode === 'page-ends') setViewMode('page-ends-starred');
+                else setViewMode('starred');
+              }}
               style={{ color: 'var(--app-accent)' }}
             >
-              <span style={{ fontSize: '26px', fontWeight: 'bold', paddingTop: '2px' }}>{isPageStartsMode ? starredPages.size : starredIndices.size}</span>
+              <span style={{ fontSize: '26px', fontWeight: 'bold', paddingTop: '2px' }}>
+                {isPageStartsMode ? starredPages.size : viewMode === 'page-ends' ? starredPageEnds.size : starredIndices.size}
+              </span>
               <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
                 <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
               </svg>
@@ -1641,13 +1733,30 @@ function App() {
                 صفحة {currentPageIndex + 1}
               </div>
             )}
-            <button 
+            {viewMode === 'page-ends' && pageEndsData.length > 0 && (
+              <div className="khmasiyat-page-display">
+                صفحة {currentPageEndIndex + 1}
+              </div>
+            )}
+            <button
               className="top-star-btn"
-              title={isPageStartsMode ? "تثبيت الصفحة" : "تثبيت الخماسية"}
-              onClick={() => isPageStartsMode ? togglePageStar(currentPageIndex) : toggleStar(currentIndex)}
-              style={{ color: (isPageStartsMode ? starredPages.has(currentPageIndex) : starredIndices.has(currentIndex)) ? 'var(--app-warn)' : 'var(--app-accent)' }}
+              title={isPageStartsMode ? "تثبيت الصفحة" : viewMode === 'page-ends' ? "تثبيت نهاية الصفحة" : "تثبيت الخماسية"}
+              onClick={() => {
+                if (isPageStartsMode) togglePageStar(currentPageIndex);
+                else if (viewMode === 'page-ends') togglePageEndStar(currentPageEndIndex);
+                else toggleStar(currentIndex);
+              }}
+              style={{ color: (
+                isPageStartsMode ? starredPages.has(currentPageIndex) :
+                viewMode === 'page-ends' ? starredPageEnds.has(currentPageEndIndex) :
+                starredIndices.has(currentIndex)
+              ) ? 'var(--app-warn)' : 'var(--app-accent)' }}
             >
-              {(isPageStartsMode ? starredPages.has(currentPageIndex) : starredIndices.has(currentIndex)) ? (
+              {(
+                isPageStartsMode ? starredPages.has(currentPageIndex) :
+                viewMode === 'page-ends' ? starredPageEnds.has(currentPageEndIndex) :
+                starredIndices.has(currentIndex)
+              ) ? (
                 <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
               ) : (
                 <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></svg>
@@ -1664,14 +1773,17 @@ function App() {
                   setSharedGroupIndex(prev => Math.max(0, prev - 1));
                 } else if (viewMode === 'page-starts') {
                   setCurrentPageIndex(prev => Math.max(0, prev - 1));
+                } else if (viewMode === 'page-ends') {
+                  setCurrentPageEndIndex(prev => Math.max(0, prev - 1));
                 } else if (viewMode === 'surah-fives') {
                   setSurahFivesIndex(prev => Math.max(0, prev - 1));
                 }
               }}
               className="nav-arrow prev-arrow"
-              disabled={(viewMode === 'khmasiyat' && currentIndex === 0) || 
+              disabled={(viewMode === 'khmasiyat' && currentIndex === 0) ||
                         (viewMode === 'shared-verses' && sharedGroupIndex === 0) ||
                         (viewMode === 'page-starts' && currentPageIndex === 0) ||
+                        (viewMode === 'page-ends' && currentPageEndIndex === 0) ||
                         (viewMode === 'surah-fives' && clampedSurahFivesIndex === 0)}
               title="السابق">
               <svg viewBox="0 0 24 24" fill="currentColor">
@@ -1896,6 +2008,14 @@ function App() {
             <div className="verse-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <div style={{ color: 'var(--app-danger)', fontWeight: fontWeight, fontSize: `calc(${fontSize}px * 0.85)` }}>{pageStartsError}</div>
             </div>
+          ) : viewMode === 'page-ends' && isPageEndsLoading ? (
+            <div className="verse-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ color: fontColor, fontWeight: fontWeight, fontSize: `calc(${fontSize}px * 0.85)` }}>جاري تحميل بيانات الصفحات...</div>
+            </div>
+          ) : viewMode === 'page-ends' && pageEndsError ? (
+            <div className="verse-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ color: 'var(--app-danger)', fontWeight: fontWeight, fontSize: `calc(${fontSize}px * 0.85)` }}>{pageEndsError}</div>
+            </div>
           ) : (() => {
             const showKhBlur = viewMode === 'khmasiyat'
               && starredIndices.has(currentIndex)
@@ -1903,10 +2023,13 @@ function App() {
             const showPageBlur = viewMode === 'page-starts'
               && starredPages.has(currentPageIndex)
               && !isPageRevealed;
+            const showPageEndBlur = viewMode === 'page-ends'
+              && starredPageEnds.has(currentPageEndIndex)
+              && !isPageEndRevealed;
             const cornerNumber = viewMode === 'khmasiyat'
               ? currentVersesText[0]?.a
               : undefined;
-            if (showKhBlur || showPageBlur) {
+            if (showKhBlur || showPageBlur || showPageEndBlur) {
               return (
                 <div className="kh-blur-wrapper">
                   <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} />
@@ -1916,7 +2039,11 @@ function App() {
                     </svg>
                     <button
                       className="kh-reveal-btn"
-                      onClick={() => showKhBlur ? setIsKhRevealed(true) : setIsPageRevealed(true)}
+                      onClick={() => {
+                        if (showKhBlur) setIsKhRevealed(true);
+                        else if (showPageBlur) setIsPageRevealed(true);
+                        else setIsPageEndRevealed(true);
+                      }}
                     >
                       كشف
                     </button>
@@ -1940,6 +2067,8 @@ function App() {
                   setSharedGroupIndex(prev => Math.min(SHARED_VERSE_GROUPS.length - 1, prev + 1));
                 } else if (viewMode === 'page-starts') {
                   setCurrentPageIndex(prev => Math.min(pageStartsData.length - 1, prev + 1));
+                } else if (viewMode === 'page-ends') {
+                  setCurrentPageEndIndex(prev => Math.min(pageEndsData.length - 1, prev + 1));
                 } else if (viewMode === 'surah-fives') {
                   setSurahFivesIndex(prev => Math.min(SURAH_FIVES_ORDER.length - 1, prev + 1));
                 }
@@ -1948,6 +2077,7 @@ function App() {
               disabled={(viewMode === 'khmasiyat' && currentIndex === 1201) || 
                         (viewMode === 'shared-verses' && sharedGroupIndex === SHARED_VERSE_GROUPS.length - 1) ||
                         (viewMode === 'page-starts' && currentPageIndex === pageStartsData.length - 1) ||
+                        (viewMode === 'page-ends' && currentPageEndIndex === pageEndsData.length - 1) ||
                         (viewMode === 'surah-fives' && clampedSurahFivesIndex === SURAH_FIVES_ORDER.length - 1)}
               title="التالي">
               <svg viewBox="0 0 24 24" fill="currentColor">
@@ -1963,7 +2093,7 @@ function App() {
         <SurahTransitionToast toast={surahToast} />
       )}
 
-      {!isPageStartsMode && !isNightCounterMode && viewMode !== 'starred' && viewMode !== 'surah-fives' && viewMode !== 'quranic-wonders' && ( // إخفاء الأزرار السفلية
+      {!isPageStartsMode && !isPageEndsMode && !isNightCounterMode && viewMode !== 'starred' && viewMode !== 'surah-fives' && viewMode !== 'quranic-wonders' && ( // إخفاء الأزرار السفلية
       <div className="action-buttons-container" ref={actionButtonsRef}>
         {viewMode !== 'shared-verses' && viewMode !== 'surah-pages' && (
           <>
@@ -2078,6 +2208,37 @@ function App() {
         </>
       )}
 
+      {viewMode === 'page-ends' && !isPageEndsLoading && pageEndsData.length > 0 && (
+        <>
+        <div className="jump-to-container">
+          <div className="jump-input-wrapper">
+            <div className={`input-inner-wrapper ${pageJumpError ? 'shake border-error' : ''}`}>
+              <input
+                type="text"
+                value={pageJumpInput}
+                placeholder="1"
+                min="1"
+                max="604"
+                dir="ltr"
+                {...mainKeyboard.getInputProps('pageJump', { className: 'jump-input' })}
+              />
+            </div>
+            <button onClick={() => { mainKeyboard.closeKeyboard(); handlePageJump(); }} className="jump-button">اذهب</button>
+          </div>
+          <div className="jump-error-container">
+            {pageJumpError && <p className="jump-error-message">{pageJumpError}</p>}
+          </div>
+        </div>
+        <div className="progress-wrapper big-progress">
+          <div className="progress-container">
+            <div className="progress-bar" style={{ width: `${Math.min(((currentPageEndIndex + 1) / 604) * 100, 100)}%`, backgroundColor: 'var(--app-warn)' }}></div>
+          </div>
+          <div className="progress-text">
+            صفحة {currentPageEndIndex + 1} / 604
+          </div>
+        </div>
+        </>
+      )}
       {viewMode === 'page-starts' && !isPageStartsLoading && pageStartsData.length > 0 && viewMode !== 'quranic-wonders' && ( // إخفاء هذا القسم عند تفعيل عجائب قرآنية
         <>
         <div className="jump-to-container">
@@ -2271,6 +2432,7 @@ function App() {
             currentPageIndex,
             starredIndices,
             starredPages,
+            starredPageEnds,
             nightCounters,
             quranicWondersNotes,
             khatmaList
@@ -2280,6 +2442,7 @@ function App() {
             if (data.p !== undefined) setCurrentPageIndex(data.p);
             if (data.s !== undefined) setStarredIndices(new Set(data.s));
             if (data.sp !== undefined) setStarredPages(new Set(data.sp));
+            if (Array.isArray(data.spe)) setStarredPageEnds(new Set(data.spe));
             if (data.n !== undefined) setNightCounters(data.n);
             if (data.qw !== undefined) setQuranicWondersNotes(data.qw);
             if (Array.isArray(data.kl)) setKhatmaList(data.kl);

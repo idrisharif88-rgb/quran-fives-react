@@ -45,6 +45,7 @@ const QRSync = ({ appState, onRestore, onClose }) => {
       p: appState?.currentPageIndex || 0,
       s: appState?.starredIndices ? Array.from(appState.starredIndices) : [],
       sp: appState?.starredPages ? Array.from(appState.starredPages) : [],
+      spe: appState?.starredPageEnds ? Array.from(appState.starredPageEnds) : [],
       n: appState?.nightCounters || [],
       qw: appState?.quranicWondersNotes || [],
       kl: appState?.khatmaList || []
