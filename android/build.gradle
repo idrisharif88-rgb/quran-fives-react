@@ -1,7 +1,10 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    
+    // Set kotlin_version here so it is available to subproject buildscript blocks
+    // (rootProject.ext set here is readable during subproject buildscript evaluation)
+    ext.kotlin_version = '2.1.21'
+
     repositories {
         google()
         mavenCentral()
