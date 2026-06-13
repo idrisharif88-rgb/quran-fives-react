@@ -19,6 +19,9 @@ import PageStartsQuiz from './utils/PageStartsQuiz';
 import AudioSettings from './components/AudioSettings';
 import QRSync from './components/QRSync';
 import SurahTransitionToast from './components/SurahTransitionToast';
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import { DEFAULT_RECITER } from './data/reciters';
 import { FIQH_DATA } from './data/fiqhData';
 import { getAudioUrl } from './utils/audioDownloader';
@@ -1209,6 +1212,24 @@ function App() {
     }
 
     // الأولوية 1: إغلاق القوائم والنوافذ المنبثقة المفتوحة
+    if (showKhatmaInput) {
+      setShowKhatmaInput(false);
+      setPendingKhatmaTime(null);
+      setKhatmaIntentionInput('');
+      return true;
+    }
+    if (editingKhatmaId !== null) {
+      setEditingKhatmaId(null);
+      return true;
+    }
+    if (isKhatmaListOpen) {
+      setIsKhatmaListOpen(false);
+      return true;
+    }
+    if (isFiqhOpen) {
+      setIsFiqhOpen(false);
+      return true;
+    }
     if (isNightCounterSettingsOpen) {
       setIsNightCounterSettingsOpen(false);
       return true;
@@ -1509,20 +1530,43 @@ function App() {
     // Share / download
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     if (!blob) { alert('تعذّر إنشاء الصورة'); return; }
-    const file = new File([blob], 'khatma.png', { type: 'image/png' });
-    const canShareFile = navigator.share && (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] }));
-    if (canShareFile) {
+
+    // ── Native Android/iOS via Capacitor ──────────────────────────────────
+    if (Capacitor.isNativePlatform()) {
       try {
-        await navigator.share({ files: [file], title: 'ختمة القرآن الكريم' });
+        const base64 = canvas.toDataURL('image/png').split(',')[1];
+        const fileName = `khatma_${Date.now()}.png`;
+        await Filesystem.writeFile({ path: fileName, data: base64, directory: Directory.Cache });
+        const { uri } = await Filesystem.getUri({ path: fileName, directory: Directory.Cache });
+        await Share.share({ title: 'ختمة القرآن الكريم', files: [uri] });
+        await Filesystem.deleteFile({ path: fileName, directory: Directory.Cache });
       } catch (e) {
-        if (e.name !== 'AbortError') {
-          const a = document.createElement('a');
-          a.download = 'khatma.png'; a.href = canvas.toDataURL('image/png'); a.click();
-        }
+        if (e?.message !== 'Share canceled') alert('تعذّر المشاركة: ' + (e?.message || ''));
       }
-    } else {
+      return;
+    }
+
+    // ── Web browser fallback ──────────────────────────────────────────────
+    const file = new File([blob], 'khatma.png', { type: 'image/png' });
+    let shared = false;
+    if (navigator.share) {
+      try {
+        const canShare = !navigator.canShare || navigator.canShare({ files: [file] });
+        if (canShare) {
+          await navigator.share({ files: [file], title: 'ختمة القرآن الكريم' });
+          shared = true;
+        }
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+      }
+    }
+    if (!shared) {
       const a = document.createElement('a');
-      a.download = 'khatma.png'; a.href = canvas.toDataURL('image/png'); a.click();
+      a.download = 'khatma.png';
+      a.href = canvas.toDataURL('image/png');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
   };
 
