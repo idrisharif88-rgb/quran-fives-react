@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import CustomKeyboard, { useCustomKeyboard } from '../components/CustomKeyboard';
 import { QURAN_VERSES } from '../data/quranVerses';
-import { buildShuffledIndices } from './quizUtils';
+import { buildShuffledIndices, evaluateRandomAyahAnswer } from './quizUtils';
 import { RANDOM_AYAH_QUIZ_STORAGE_KEY, loadStoredState, saveStoredState } from './persistence';
 
 export default function RandomAyahQuiz({ onClose }) {
@@ -158,34 +158,23 @@ export default function RandomAyahQuiz({ onClose }) {
       setRandomAyahResult('لا يوجد سؤال حالي. اختر المدى ثم اضغط "تطبيق".');
       return;
     }
-    const guessedSurah = Number(randomAyahSurahGuess);
-    const guessedVerse = Number(randomAyahVerseGuess);
-    const surahInvalid = !Number.isInteger(guessedSurah);
-    const verseInvalid = !Number.isInteger(guessedVerse);
-    
-    if (surahInvalid || verseInvalid) {
-      setRandomAyahResult('يرجى إدخال رقم السورة ورقم الآية.');
-      if (surahInvalid) triggerShake(setIsSurahShaking);
-      if (verseInvalid) triggerShake(setIsVerseShaking);
-      return;
-    }
 
-    const randomAyahData = QURAN_VERSES[randomAyahIndex];
-    const correctSurah = randomAyahData?.s ?? 0;
-    const correctVerse = randomAyahData?.a ?? 0;
-    
-    if (guessedSurah === correctSurah && guessedVerse === correctVerse) {
-      setRandomAyahResult('إجابة صحيحة');
+    const result = evaluateRandomAyahAnswer(
+      randomAyahSurahGuess,
+      randomAyahVerseGuess,
+      QURAN_VERSES[randomAyahIndex],
+    );
+
+    setRandomAyahResult(result.message);
+    if (result.shakeSurah) triggerShake(setIsSurahShaking);
+    if (result.shakeVerse) triggerShake(setIsVerseShaking);
+
+    if (result.correct) {
       setCorrectCount(c => c + 1);
       playCorrectSound();
-      setTimeout(() => {
-        createRandomAyahQuestion();
-      }, 200);
-    } else {
-      setRandomAyahResult(`غير صحيح. السورة: ${correctSurah} | الآية: ${correctVerse}`);
+      setTimeout(() => createRandomAyahQuestion(), 200);
+    } else if (result.valid) {
       setIncorrectCount(c => c + 1);
-      if (guessedSurah !== correctSurah) triggerShake(setIsSurahShaking);
-      if (guessedVerse !== correctVerse) triggerShake(setIsVerseShaking);
     }
   };
 
