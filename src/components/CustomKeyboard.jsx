@@ -144,10 +144,12 @@ export default function CustomKeyboard({
     { value: '9', area: 'nine' },
   ];
 
+  const noCtx = (e) => e.preventDefault();
+
   return (
     <>
       <div className="custom-keyboard-spacer" aria-hidden="true" />
-      <div className="custom-keyboard-shell" role="dialog" aria-label={label || 'لوحة إدخال'} aria-modal="false">
+      <div className="custom-keyboard-shell" role="dialog" aria-label={label || 'لوحة إدخال'} aria-modal="false" onContextMenu={noCtx}>
         <div className="custom-keyboard-sheet">
           <div className="custom-keyboard-entry-row">
             <div className="custom-keyboard-preview" dir="ltr">

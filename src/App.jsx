@@ -401,12 +401,16 @@ function App() {
   useEffect(() => {
     document.documentElement.style.height = '100%';
     document.body.style.height = '100%';
-    document.body.style.overflow = 'hidden'; // Prevent main document scroll
+    document.body.style.overflow = 'hidden';
+
+    const blockContextMenu = (e) => e.preventDefault();
+    document.addEventListener('contextmenu', blockContextMenu);
 
     return () => {
       document.documentElement.style.height = '';
       document.body.style.height = '';
       document.body.style.overflow = '';
+      document.removeEventListener('contextmenu', blockContextMenu);
     };
   }, []);
   const currentKhmasiyat = getSurahAndRange(currentIndex);
@@ -1300,6 +1304,228 @@ function App() {
 
   const cancelEditKhatma = () => { setEditingKhatmaId(null); };
 
+  const handleShareKhatma = async (k) => {
+    await document.fonts.ready;
+    try {
+      await Promise.all([
+        document.fonts.load('bold 54px Tajawal'),
+        document.fonts.load('28px Amiri'),
+      ]);
+    } catch (_) { /* continue with system fonts if needed */ }
+
+    const khatmaIndex = khatmaList.findIndex(item => item.id === k.id);
+    const num = khatmaIndex >= 0 ? khatmaIndex + 1 : 1;
+    const ORDINALS = ['','الأولى','الثانية','الثالثة','الرابعة','الخامسة','السادسة','السابعة','الثامنة','التاسعة','العاشرة'];
+    const toAr = (n) => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
+    const khatmaLabel = num <= 10 ? `الختمة ${ORDINALS[num]}` : `الختمة ${toAr(num)}`;
+    const [, hDay, hMonth, hYear] = calcHijriOffline(new Date(k.timestamp));
+    const hijriDate = `${toAr(hDay)} ${hMonth} ${toAr(hYear)} هـ`;
+
+    const rrect = (c, x, y, w, h, r) => {
+      c.beginPath();
+      c.moveTo(x + r, y); c.lineTo(x + w - r, y);
+      c.quadraticCurveTo(x + w, y, x + w, y + r);
+      c.lineTo(x + w, y + h - r);
+      c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      c.lineTo(x + r, y + h);
+      c.quadraticCurveTo(x, y + h, x, y + h - r);
+      c.lineTo(x, y + r);
+      c.quadraticCurveTo(x, y, x + r, y);
+      c.closePath();
+    };
+    const diamond = (c, cx, cy, r) => {
+      c.beginPath();
+      c.moveTo(cx, cy - r); c.lineTo(cx + r, cy);
+      c.lineTo(cx, cy + r); c.lineTo(cx - r, cy);
+      c.closePath();
+    };
+    const drawStar = (c, cx, cy, spikes, ro, ri) => {
+      let a = -Math.PI / 2;
+      const step = Math.PI / spikes;
+      c.beginPath();
+      c.moveTo(cx + ro * Math.cos(a), cy + ro * Math.sin(a));
+      for (let i = 0; i < spikes; i++) {
+        a += step; c.lineTo(cx + ri * Math.cos(a), cy + ri * Math.sin(a));
+        a += step; c.lineTo(cx + ro * Math.cos(a), cy + ro * Math.sin(a));
+      }
+      c.closePath();
+    };
+    const wrapText = (c, text, maxW) => {
+      const words = text.split(' ');
+      const lines = [];
+      let cur = '';
+      for (const word of words) {
+        const test = cur ? `${cur} ${word}` : word;
+        if (c.measureText(test).width > maxW && cur) { lines.push(cur); cur = word; }
+        else { cur = test; }
+      }
+      if (cur) lines.push(cur);
+      return lines;
+    };
+
+    const W = 600, H = 900;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    ctx.direction = 'rtl';
+    ctx.textAlign = 'center';
+
+    // Background
+    ctx.fillStyle = '#1c3d0d';
+    ctx.fillRect(0, 0, W, H);
+
+    // Gold top bar
+    ctx.fillStyle = '#c9a84c';
+    ctx.fillRect(0, 0, W, 12);
+
+    // Header bg
+    ctx.fillStyle = '#152e09';
+    ctx.fillRect(0, 12, W, 155);
+
+    // Header bottom border
+    ctx.strokeStyle = 'rgba(201,168,76,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, 167); ctx.lineTo(W, 167); ctx.stroke();
+
+    // Geometric ornament row
+    ctx.strokeStyle = 'rgba(201,168,76,0.55)';
+    ctx.lineWidth = 1;
+    [60, 90, 120].forEach(x => { diamond(ctx, x, 42, 10); ctx.stroke(); });
+    [480, 510, 540].forEach(x => { diamond(ctx, x, 42, 10); ctx.stroke(); });
+    ctx.setLineDash([4, 8]);
+    ctx.strokeStyle = 'rgba(201,168,76,0.3)';
+    ctx.beginPath(); ctx.moveTo(140, 42); ctx.lineTo(282, 42); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(318, 42); ctx.lineTo(460, 42); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(201,168,76,0.75)';
+    ctx.beginPath(); ctx.arc(300, 42, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(201,168,76,0.4)';
+    ctx.beginPath(); ctx.arc(280, 42, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(320, 42, 3, 0, Math.PI * 2); ctx.fill();
+
+    // App name
+    ctx.fillStyle = '#c9a84c';
+    ctx.font = 'bold 54px Tajawal, Arial';
+    ctx.fillText('خماسيات', 300, 116);
+
+    // Subtitle
+    ctx.fillStyle = 'rgba(201,168,76,0.45)';
+    ctx.font = '22px Tajawal, Arial';
+    ctx.fillText('تطبيق القرآن الكريم', 300, 150);
+
+    // Quran book icon
+    const ic = { x: 272, y: 192, w: 56, h: 62, r: 6 };
+    ctx.fillStyle = 'rgba(201,168,76,0.1)';
+    rrect(ctx, ic.x, ic.y, ic.w, ic.h, ic.r); ctx.fill();
+    ctx.strokeStyle = '#c9a84c'; ctx.lineWidth = 1.5;
+    rrect(ctx, ic.x, ic.y, ic.w, ic.h, ic.r); ctx.stroke();
+    ctx.strokeStyle = 'rgba(201,168,76,0.3)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(300, ic.y + 4); ctx.lineTo(300, ic.y + ic.h - 4); ctx.stroke();
+    ctx.fillStyle = 'rgba(201,168,76,0.5)';
+    [0, 8, 16, 24].forEach(o => {
+      ctx.fillRect(ic.x + 7, ic.y + 14 + o, 13, 2);
+      ctx.fillRect(300 + 7, ic.y + 14 + o, 13, 2);
+    });
+
+    // Main title
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 40px Tajawal, Arial';
+    ctx.fillText('ختمة القرآن الكريم', 300, 312);
+
+    // Khatma badge
+    ctx.font = '26px Tajawal, Arial';
+    const bw = Math.max(ctx.measureText(khatmaLabel).width + 60, 180);
+    const bx = 300 - bw / 2, by = 328, bh = 44;
+    ctx.fillStyle = 'rgba(201,168,76,0.08)';
+    rrect(ctx, bx, by, bw, bh, 22); ctx.fill();
+    ctx.strokeStyle = 'rgba(201,168,76,0.45)'; ctx.lineWidth = 1.5;
+    rrect(ctx, bx, by, bw, bh, 22); ctx.stroke();
+    ctx.fillStyle = '#d4b060';
+    ctx.fillText(khatmaLabel, 300, by + 30);
+
+    // Divider with star
+    ctx.strokeStyle = 'rgba(201,168,76,0.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(80, 402); ctx.lineTo(270, 402); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(330, 402); ctx.lineTo(520, 402); ctx.stroke();
+    ctx.fillStyle = 'rgba(201,168,76,0.55)';
+    drawStar(ctx, 300, 402, 5, 9, 4); ctx.fill();
+
+    // Dynamic content
+    let curY = 448;
+
+    if (k.intention) {
+      ctx.fillStyle = '#d4b060';
+      ctx.font = '22px Tajawal, Arial';
+      ctx.fillText('النية', 300, curY); curY += 42;
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.font = '30px Tajawal, Arial';
+      wrapText(ctx, k.intention, 460).slice(0, 2).forEach(line => {
+        ctx.fillText(line, 300, curY); curY += 44;
+      });
+      curY += 10;
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.42)';
+    ctx.font = '24px Tajawal, Arial';
+    ctx.fillText(hijriDate, 300, curY); curY += 55;
+
+    // Verse box
+    const verseBoxX = 56, verseBoxW = 488;
+    const verse = '﴿وَنُنَزِّلُ مِنَ الْقُرْآنِ مَا هُوَ شِفَاءٌ وَرَحْمَةٌ لِّلْمُؤْمِنِينَ﴾';
+    ctx.font = '28px Amiri, serif';
+    const verseLines = wrapText(ctx, verse, 420);
+    const verseBoxH = verseLines.length * 48 + 62;
+    const verseBoxY = curY;
+
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    rrect(ctx, verseBoxX, verseBoxY, verseBoxW, verseBoxH, 12); ctx.fill();
+    ctx.strokeStyle = 'rgba(201,168,76,0.15)'; ctx.lineWidth = 1;
+    rrect(ctx, verseBoxX, verseBoxY, verseBoxW, verseBoxH, 12); ctx.stroke();
+    ctx.strokeStyle = 'rgba(201,168,76,0.65)'; ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(verseBoxX + verseBoxW - 3, verseBoxY + 18);
+    ctx.lineTo(verseBoxX + verseBoxW - 3, verseBoxY + verseBoxH - 18);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.font = '28px Amiri, serif';
+    verseLines.forEach((line, i) => { ctx.fillText(line, 300, verseBoxY + 46 + i * 48); });
+    ctx.fillStyle = 'rgba(201,168,76,0.4)';
+    ctx.font = '20px Tajawal, Arial';
+    ctx.fillText('الإسراء: ٨٢', 300, verseBoxY + verseBoxH - 14);
+
+    // Footer ornament
+    ctx.strokeStyle = 'rgba(201,168,76,0.3)'; ctx.lineWidth = 0.9;
+    [260, 300, 340].forEach(x => { diamond(ctx, x, H - 34, 7); ctx.stroke(); });
+    ctx.fillStyle = 'rgba(201,168,76,0.18)';
+    ctx.font = '16px Tajawal, Arial';
+    ctx.fillText('خماسيات', 300, H - 18);
+
+    // Gold bottom bar
+    ctx.fillStyle = '#c9a84c';
+    ctx.fillRect(0, H - 12, W, 12);
+
+    // Share / download
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) { alert('تعذّر إنشاء الصورة'); return; }
+    const file = new File([blob], 'khatma.png', { type: 'image/png' });
+    const canShareFile = navigator.share && (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] }));
+    if (canShareFile) {
+      try {
+        await navigator.share({ files: [file], title: 'ختمة القرآن الكريم' });
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          const a = document.createElement('a');
+          a.download = 'khatma.png'; a.href = canvas.toDataURL('image/png'); a.click();
+        }
+      }
+    } else {
+      const a = document.createElement('a');
+      a.download = 'khatma.png'; a.href = canvas.toDataURL('image/png'); a.click();
+    }
+  };
+
   // تجهيز الدالة ليتم استدعاؤها من كود الجافا في أندرويد ستوديو
   useEffect(() => {
     window.handleAndroidBack = () => {
@@ -1558,14 +1784,9 @@ function App() {
         )}
         
 
-        {!isPageStartsMode && !isPageEndsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' && <button
+        {!isPageStartsMode && !isPageEndsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' && <div
           className="action-icon calendar-icon"
-          title="التاريخ الهجري"
-          style={{ width: '65px', height: '65px' }}
-          onClick={() => {
-            try { localStorage.removeItem(HIJRI_CACHE_KEY); } catch {}
-            setHijriData([]);
-          }}
+          style={{ width: '65px', height: '65px', cursor: 'default' }}
         >
           {hijriData.length > 0 ? (
             <span style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>
@@ -1574,7 +1795,7 @@ function App() {
           ) : (
             <span style={{ fontSize: '14px' }}>...</span>
           )}
-        </button>}
+        </div>}
 
       </div>
       )}
@@ -2745,14 +2966,26 @@ function App() {
                           }}>{i + 1}</span>
                           <span style={{ fontSize: '13px', color: 'var(--app-muted)' }}>{formatHijriTimestamp(k.timestamp)}</span>
                         </div>
-                        <button type="button" onClick={() => startEditKhatma(k)} title="تعديل" style={{
-                          background: 'none', border: 'none', cursor: 'pointer',
-                          color: 'var(--app-accent)', padding: '4px', flexShrink: 0,
-                        }}>
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                          </svg>
-                        </button>
+                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                          <button type="button" onClick={() => handleShareKhatma(k)} title="مشاركة" style={{
+                            background: 'var(--app-surface-2)', border: '1px solid var(--app-border)',
+                            borderRadius: '10px', cursor: 'pointer',
+                            color: 'var(--app-accent)', padding: '10px',
+                          }}>
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                              <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
+                            </svg>
+                          </button>
+                          <button type="button" onClick={() => startEditKhatma(k)} title="تعديل" style={{
+                            background: 'var(--app-surface-2)', border: '1px solid var(--app-border)',
+                            borderRadius: '10px', cursor: 'pointer',
+                            color: 'var(--app-accent)', padding: '10px',
+                          }}>
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                              <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                       {k.intention && (
                         <p style={{ margin: '0 40px 8px', fontSize: '13px', color: 'var(--app-muted)', lineHeight: '1.6' }}>
