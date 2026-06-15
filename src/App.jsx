@@ -286,6 +286,7 @@ function App() {
   const swipeStartRef = useRef(null);
   const backHandlerRef = useRef();
   const prevSurahRef = useRef(null);
+  const skipSurahToastRef = useRef(true);
   const lastBackPressTimeRef = useRef(0);
   const cloudSyncReadyRef = useRef(false);
   const cloudPushTimerRef = useRef(null);
@@ -765,18 +766,17 @@ function App() {
   useEffect(() => { setIsPageEndRevealed(false); }, [currentPageEndIndex]);
 
   useEffect(() => {
-    if (viewMode !== 'khmasiyat') return;
-    setSurahToast(null);
-    prevSurahRef.current = currentKhmasiyat.surah;
-  }, [viewMode]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
     const toArabicNum = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+    // خارج وضع الخماسيات: لا إشعار، أبقِ المرجع متزامناً واطلب تخطّي أول استقرار عند العودة
     if (viewMode !== 'khmasiyat') {
       prevSurahRef.current = currentKhmasiyat.surah;
+      skipSurahToastRef.current = true;
+      setSurahToast(null);
       return;
     }
-    if (prevSurahRef.current === null) {
+    // أول استقرار بعد الدخول/العودة لوضع الخماسيات: مزامنة فقط دون إشعار
+    if (skipSurahToastRef.current) {
+      skipSurahToastRef.current = false;
       prevSurahRef.current = currentKhmasiyat.surah;
       return;
     }
@@ -787,7 +787,7 @@ function App() {
       });
     }
     prevSurahRef.current = currentKhmasiyat.surah;
-  }, [currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentIndex, viewMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // تشغيل المؤثر الصوتي عند التنقل بين الصفحات
   useEffect(() => {
