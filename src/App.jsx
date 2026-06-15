@@ -36,10 +36,16 @@ import {
   removeStoredState,
   saveStoredState
 } from './utils/persistence';
+import { pullRemoteIfNewer, pushLocal } from './utils/cloudSync';
+import { SYNC_ENABLED } from './utils/syncConfig';
+import SyncStatusIndicator from './components/SyncStatusIndicator';
 import './App.css';
 
+// كلمة مرور حذف الختمات (قفل بسيط لمنع الحذف العَرَضي، وليست حماية أمنية)
+const KHATMA_DELETE_PASSWORD = '27956';
+
 // مصفوفة بأسماء السور الـ 114
-const SURAH_NAMES = "الفاتحة,البقرة,آل عمران,النساء,المائدة,الأنعام,الأعراف,الأنفال,التوبة,يونس,هود,يوسف,الرعد,إبراهيم,الحجر,النحل,الإسراء,الكهف,مريم,طه,الأنبياء,الحج,المؤمنون,النور,الفرقان,الشعراء,النمل,القصص,العنكبوت,الروم,لقمان,السجدة,الأحزاب,سبأ,فاطر,يس,الصافات,ص,الزمر,غافر,فصلت,الشورى,الزخرف,الدخان,الجاثية,الأحقاف,محمد,الفتح,الحجرات,ق,الذاريات,الطور,النجم,القمر,الرحمن,الواقعة,الحديد,المجادلة,الحشر,الممتحنة,الصف,الجمعة,المنافقون,التغابن,الطلاق,التحريم,الملك,القلم,الحاقة,المعارج,نوح,الجن,المزمل,المدثر,القيامة,الإنسان,المرسلات,النبأ,النازعات,عبس,التكوير,الانفطار,المطففين,الانشقاق,البروج,الطارق,الأعلى,الغاشية,الفجر,البلد,الشمس,الليل,الضحى,الشرح,التين,العلق,القدر,البينة,الزلزلة,العاديات,القارعة,التكاثر,العصر,الهمزة,الفيل,قريش,الماعون,الكوثر,الكافرون,النصر,المسد,الإخلاص,الفلق,الناس".split(",");
+const SURAH_NAMES ="الفاتحة,البقرة,آل عمران,النساء,المائدة,الأنعام,الأعراف,الأنفال,التوبة,يونس,هود,يوسف,الرعد,إبراهيم,الحجر,النحل,الإسراء,الكهف,مريم,طه,الأنبياء,الحج,المؤمنون,النور,الفرقان,الشعراء,النمل,القصص,العنكبوت,الروم,لقمان,السجدة,الأحزاب,سبأ,فاطر,يس,الصافات,ص,الزمر,غافر,فصلت,الشورى,الزخرف,الدخان,الجاثية,الأحقاف,محمد,الفتح,الحجرات,ق,الذاريات,الطور,النجم,القمر,الرحمن,الواقعة,الحديد,المجادلة,الحشر,الممتحنة,الصف,الجمعة,المنافقون,التغابن,الطلاق,التحريم,الملك,القلم,الحاقة,المعارج,نوح,الجن,المزمل,المدثر,القيامة,الإنسان,المرسلات,النبأ,النازعات,عبس,التكوير,الانفطار,المطففين,الانشقاق,البروج,الطارق,الأعلى,الغاشية,الفجر,البلد,الشمس,الليل,الضحى,الشرح,التين,العلق,القدر,البينة,الزلزلة,العاديات,القارعة,التكاثر,العصر,الهمزة,الفيل,قريش,الماعون,الكوثر,الكافرون,النصر,المسد,الإخلاص,الفلق,الناس".split(",");
 
 // خماسيات السور: 1 (الفاتحة) ثم 5، 10، 15... حتى 110
 const SURAH_FIVES_ORDER = [1, ...Array.from({ length: Math.floor(114 / 5) }, (_, i) => (i + 1) * 5)];
@@ -201,7 +207,10 @@ function App() {
   const [expandedFiqhId, setExpandedFiqhId] = useState(null);
   const [editingKhatmaId, setEditingKhatmaId] = useState(null);
   const [editKhatmaIntention, setEditKhatmaIntention] = useState('');
-  
+  const [deletingKhatmaId, setDeletingKhatmaId] = useState(null);
+  const [deleteKhatmaPassword, setDeleteKhatmaPassword] = useState('');
+  const [deleteKhatmaError, setDeleteKhatmaError] = useState(false);
+
   // إعدادات الخط
   const [isAyahMenuOpen, setIsAyahMenuOpen] = useState(false);
   const [activeAyahTest, setActiveAyahTest] = useState(() => (
@@ -253,6 +262,8 @@ function App() {
   const [isUserManualOpen, setIsUserManualOpen] = useState(false);
   const [showExitToast, setShowExitToast] = useState(false);
   const [isQRSyncOpen, setIsQRSyncOpen] = useState(false);
+  const [syncFailed, setSyncFailed] = useState(false);
+  const [syncRetrying, setSyncRetrying] = useState(false);
   const [counterConfirm, setCounterConfirm] = useState({ type: null, id: null });
   const [surahToast, setSurahToast] = useState(null);
   const [isKhRevealed, setIsKhRevealed] = useState(false);
@@ -276,6 +287,9 @@ function App() {
   const backHandlerRef = useRef();
   const prevSurahRef = useRef(null);
   const lastBackPressTimeRef = useRef(0);
+  const cloudSyncReadyRef = useRef(false);
+  const cloudPushTimerRef = useRef(null);
+  const lastSnapshotRef = useRef(null);
 
   const starredArray = Array.from(starredIndices).sort((a, b) => a - b);
   const starredPagesArray = Array.from(starredPages).sort((a, b) => a - b);
@@ -328,8 +342,40 @@ function App() {
     );
   }, [activeNightCounterId, activeNightCounter]);
 
+  // عند فتح التطبيق: اسحب الحالة من الخادم، وإن كانت أحدث طبّقها بإعادة تحميل سريعة.
+  // لا يبدأ الرفع التلقائي إلا بعد اكتمال هذه المحاولة (عبر cloudSyncReadyRef).
   useEffect(() => {
-    saveStoredState(APP_STORAGE_KEY, {
+    if (!SYNC_ENABLED) {
+      cloudSyncReadyRef.current = true;
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const applied = await pullRemoteIfNewer();
+        if (applied && !cancelled) {
+          window.location.reload();
+          return;
+        }
+      } catch {
+        // غير متصل أو خطأ شبكة: نكمل بالحالة المحلية
+      }
+      if (!cancelled) cloudSyncReadyRef.current = true;
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleSyncRetry = () => {
+    if (syncRetrying || !lastSnapshotRef.current) return;
+    setSyncRetrying(true);
+    pushLocal(lastSnapshotRef.current)
+      .then(() => setSyncFailed(false))
+      .catch(() => setSyncFailed(true))
+      .finally(() => setSyncRetrying(false));
+  };
+
+  useEffect(() => {
+    const appStateSnapshot = {
       activeReciter,
       currentIndex,
       viewMode,
@@ -355,7 +401,19 @@ function App() {
       quranicWondersNotes, // إضافة الملاحظات للحفظ
       isNightMode,
       khatmaList,
-    });
+    };
+    saveStoredState(APP_STORAGE_KEY, appStateSnapshot);
+    lastSnapshotRef.current = appStateSnapshot;
+
+    // رفع الحالة للسحابة بعد توقّف قصير (debounce) ولا يبدأ إلا بعد اكتمال السحب الأولي
+    if (SYNC_ENABLED && cloudSyncReadyRef.current) {
+      clearTimeout(cloudPushTimerRef.current);
+      cloudPushTimerRef.current = setTimeout(() => {
+        pushLocal(appStateSnapshot)
+          .then(() => setSyncFailed(false))
+          .catch(() => setSyncFailed(true));
+      }, 2500);
+    }
   }, [
     activeReciter,
     activeAyahTest,
@@ -1212,6 +1270,10 @@ function App() {
     }
 
     // الأولوية 1: إغلاق القوائم والنوافذ المنبثقة المفتوحة
+    if (deletingKhatmaId !== null) {
+      cancelDeleteKhatma();
+      return true;
+    }
     if (showKhatmaInput) {
       setShowKhatmaInput(false);
       setPendingKhatmaTime(null);
@@ -1324,6 +1386,29 @@ function App() {
   };
 
   const cancelEditKhatma = () => { setEditingKhatmaId(null); };
+
+  // حذف ختمة محميّ بكلمة مرور لمنع الحذف العَرَضي
+  const requestDeleteKhatma = (id) => {
+    setDeletingKhatmaId(id);
+    setDeleteKhatmaPassword('');
+    setDeleteKhatmaError(false);
+  };
+
+  const cancelDeleteKhatma = () => {
+    setDeletingKhatmaId(null);
+    setDeleteKhatmaPassword('');
+    setDeleteKhatmaError(false);
+  };
+
+  const confirmDeleteKhatma = () => {
+    if (deleteKhatmaPassword !== KHATMA_DELETE_PASSWORD) {
+      setDeleteKhatmaError(true);
+      setDeleteKhatmaPassword('');
+      return;
+    }
+    setKhatmaList(prev => prev.filter(k => k.id !== deletingKhatmaId));
+    cancelDeleteKhatma();
+  };
 
   const handleShareKhatma = async (k) => {
     await document.fonts.ready;
@@ -2735,6 +2820,64 @@ function App() {
           onClose={() => setIsQRSyncOpen(false)}
         />
       )}
+      {deletingKhatmaId !== null && (
+        <div
+          dir="rtl"
+          onClick={cancelDeleteKhatma}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 10001,
+            background: 'rgba(0,0,0,0.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+          }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--app-surface)', borderRadius: '16px', padding: '22px',
+            width: '100%', maxWidth: '320px', border: '1px solid var(--app-border)',
+          }}>
+            <h3 style={{ margin: '0 0 6px', fontSize: '17px', color: 'var(--app-text-strong)', textAlign: 'center' }}>
+              حذف الختمة
+            </h3>
+            <p style={{ margin: '0 0 16px', fontSize: '13px', color: 'var(--app-muted)', textAlign: 'center', lineHeight: '1.6' }}>
+              أدخل كلمة المرور لتأكيد الحذف. لا يمكن التراجع عن هذا الإجراء.
+            </p>
+            <input
+              type="password"
+              inputMode="numeric"
+              autoFocus
+              value={deleteKhatmaPassword}
+              onChange={e => { setDeleteKhatmaPassword(e.target.value); setDeleteKhatmaError(false); }}
+              onKeyDown={e => { if (e.key === 'Enter') confirmDeleteKhatma(); }}
+              placeholder="كلمة المرور"
+              style={{
+                width: '100%', boxSizing: 'border-box', padding: '11px',
+                borderRadius: '10px',
+                border: `1.5px solid ${deleteKhatmaError ? 'var(--app-danger)' : 'var(--app-border)'}`,
+                background: 'var(--app-surface-2)', color: 'var(--app-text)',
+                fontSize: '16px', fontFamily: 'inherit', outline: 'none', textAlign: 'center',
+              }}
+            />
+            {deleteKhatmaError && (
+              <p style={{ margin: '8px 0 0', fontSize: '12px', color: 'var(--app-danger)', textAlign: 'center' }}>
+                كلمة المرور غير صحيحة
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+              <button type="button" onClick={confirmDeleteKhatma} style={{
+                flex: 1, padding: '10px', borderRadius: '10px', border: 'none',
+                background: 'var(--app-danger)', color: '#fff',
+                fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit',
+              }}>حذف</button>
+              <button type="button" onClick={cancelDeleteKhatma} style={{
+                flex: 1, padding: '10px', borderRadius: '10px',
+                border: '1.5px solid var(--app-border)',
+                background: 'var(--app-surface-2)', color: 'var(--app-muted)',
+                fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit',
+              }}>إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <SyncStatusIndicator failed={syncFailed} retrying={syncRetrying} onRetry={handleSyncRetry} />
       <CustomKeyboard
         visible={mainKeyboard.showKeyboard}
         label={mainKeyboard.activeConfig?.label}
@@ -3027,6 +3170,15 @@ function App() {
                           }}>
                             <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
                               <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                            </svg>
+                          </button>
+                          <button type="button" onClick={() => requestDeleteKhatma(k.id)} title="حذف" style={{
+                            background: 'var(--app-surface-2)', border: '1px solid var(--app-border)',
+                            borderRadius: '10px', cursor: 'pointer',
+                            color: 'var(--app-danger)', padding: '10px',
+                          }}>
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                             </svg>
                           </button>
                         </div>
