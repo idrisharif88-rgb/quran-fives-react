@@ -1252,6 +1252,16 @@ function App() {
       submitLabel: 'حفظ',
       onSubmit: applyNightCounterInputs,
     },
+    deletePassword: {
+      value: deleteKhatmaPassword,
+      setValue: (updater) => { setDeleteKhatmaPassword(updater); setDeleteKhatmaError(false); },
+      allowColon: false,
+      maxLength: 8,
+      label: 'كلمة المرور',
+      submitLabel: 'حذف',
+      closeOnSubmit: false,
+      onSubmit: () => confirmDeleteKhatma(),
+    },
   });
 
   const handleHardwareBack = () => {
@@ -1395,6 +1405,7 @@ function App() {
   };
 
   const cancelDeleteKhatma = () => {
+    mainKeyboard.closeKeyboard();
     setDeletingKhatmaId(null);
     setDeleteKhatmaPassword('');
     setDeleteKhatmaError(false);
@@ -2841,19 +2852,17 @@ function App() {
               أدخل كلمة المرور لتأكيد الحذف. لا يمكن التراجع عن هذا الإجراء.
             </p>
             <input
+              {...mainKeyboard.getInputProps('deletePassword')}
               type="password"
-              inputMode="numeric"
-              autoFocus
               value={deleteKhatmaPassword}
-              onChange={e => { setDeleteKhatmaPassword(e.target.value); setDeleteKhatmaError(false); }}
-              onKeyDown={e => { if (e.key === 'Enter') confirmDeleteKhatma(); }}
-              placeholder="كلمة المرور"
+              placeholder="اضغط للإدخال"
               style={{
                 width: '100%', boxSizing: 'border-box', padding: '11px',
                 borderRadius: '10px',
                 border: `1.5px solid ${deleteKhatmaError ? 'var(--app-danger)' : 'var(--app-border)'}`,
                 background: 'var(--app-surface-2)', color: 'var(--app-text)',
                 fontSize: '16px', fontFamily: 'inherit', outline: 'none', textAlign: 'center',
+                cursor: 'pointer',
               }}
             />
             {deleteKhatmaError && (
