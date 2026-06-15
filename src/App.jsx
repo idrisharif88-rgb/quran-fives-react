@@ -2825,7 +2825,7 @@ function App() {
           dir="rtl"
           onClick={cancelDeleteKhatma}
           style={{
-            position: 'fixed', inset: 0, zIndex: 10001,
+            position: 'fixed', inset: 0, zIndex: 12000,
             background: 'rgba(0,0,0,0.55)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
           }}
