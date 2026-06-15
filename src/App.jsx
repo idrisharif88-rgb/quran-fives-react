@@ -611,7 +611,7 @@ function App() {
     { id: 'random-ayat', label: 'اختبار آيات عشوائي' },
     { id: 'surah-count', label: 'اختبار سور - عدد آيات' }
   ];
-  const pageStartsOptions = ['بدايات صفحات', 'اختبار بدايات صفحات', 'نهايات الصفحات'];
+  const pageStartsOptions = ['بدايات صفحات', 'اختبار بدايات صفحات', 'نهايات صفحات'];
   const loadPageStartsData = async () => {
     if (isPageStartsLoading || pageStartsData.length > 0) return;
     setIsPageStartsLoading(true);
@@ -706,7 +706,7 @@ function App() {
       loadPageStartsData();
     } else if (option === 'اختبار بدايات صفحات') {
       setActivePageStartsTest('page-starts');
-    } else if (option === 'نهايات الصفحات') {
+    } else if (option === 'نهايات صفحات') {
       setViewMode('page-ends');
       loadPageEndsData();
     }
@@ -2151,13 +2151,14 @@ function App() {
           {viewMode !== 'shared-verses' && viewMode !== 'night-counter' && viewMode !== 'surah-fives' && viewMode !== 'surah-pages' && <div className="top-stars-container inside-text-field">
             <button
               className="top-star-btn"
-              title={isPageStartsMode ? "قائمة الصفحات للتثبيت" : isPageEndsMode ? "قائمة نهايات الصفحات" : "قائمة الخماسيات للتثبيت"}
+              title={isPageStartsMode ? "قائمة الصفحات للتثبيت" : isPageEndsMode ? "قائمة نهايات صفحات" : "قائمة الخماسيات للتثبيت"}
               onClick={() => {
-                // التقاط موضع المرساة عند أول دخول للمراجعة (لا نعيد التقاطه إن كانت مرساة نشطة)
-                if (reviewAnchor === null) {
-                  if (isPageStartsMode) setReviewAnchor({ mode: 'page-starts', index: currentPageIndex });
-                  else if (viewMode === 'page-ends') setReviewAnchor({ mode: 'page-ends', index: currentPageEndIndex });
-                  else setReviewAnchor({ mode: 'khmasiyat', index: currentIndex });
+                // تحديد الوضع والموضع الحاليين للقراءة
+                const readMode = isPageStartsMode ? 'page-starts' : viewMode === 'page-ends' ? 'page-ends' : 'khmasiyat';
+                const readIndex = readMode === 'page-starts' ? currentPageIndex : readMode === 'page-ends' ? currentPageEndIndex : currentIndex;
+                // التقاط مرساة جديدة إن لم توجد مرساة أو كانت لقسم مختلف (يمنع بقاء مرساة قديمة من قسم آخر)
+                if (!reviewAnchor || reviewAnchor.mode !== readMode) {
+                  setReviewAnchor({ mode: readMode, index: readIndex });
                 }
                 if (isPageStartsMode) setViewMode('page-starred');
                 else if (viewMode === 'page-ends') setViewMode('page-ends-starred');
