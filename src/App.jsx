@@ -260,6 +260,8 @@ function App() {
   ));
   const [activeSurahNamesQuiz, setActiveSurahNamesQuiz] = useState(false);
   const [isUserManualOpen, setIsUserManualOpen] = useState(false);
+  // مرساة الموضع قبل دخول مراجعة المثبتات { mode, index } للعودة إليه لاحقاً
+  const [reviewAnchor, setReviewAnchor] = useState(null);
   const [showExitToast, setShowExitToast] = useState(false);
   const [isQRSyncOpen, setIsQRSyncOpen] = useState(false);
   const [syncFailed, setSyncFailed] = useState(false);
@@ -298,6 +300,52 @@ function App() {
 
   const isPageStartsMode = viewMode === 'page-starts' || viewMode === 'page-starred';
   const isPageEndsMode = viewMode === 'page-ends' || viewMode === 'page-ends-starred';
+
+  // موضع المرساة الحالي حسب الوضع، وشرط ظهور زر العودة لموضع ما قبل المراجعة
+  const indexForReviewMode = (mode) => (
+    mode === 'khmasiyat' ? currentIndex : mode === 'page-starts' ? currentPageIndex : currentPageEndIndex
+  );
+  const showReturnToAnchor = Boolean(
+    reviewAnchor &&
+    viewMode === reviewAnchor.mode &&
+    indexForReviewMode(reviewAnchor.mode) !== reviewAnchor.index
+  );
+
+  const handleReturnToAnchor = () => {
+    if (!reviewAnchor) return;
+    if (reviewAnchor.mode === 'khmasiyat') setCurrentIndex(reviewAnchor.index);
+    else if (reviewAnchor.mode === 'page-starts') setCurrentPageIndex(reviewAnchor.index);
+    else if (reviewAnchor.mode === 'page-ends') setCurrentPageEndIndex(reviewAnchor.index);
+    setReviewAnchor(null);
+  };
+
+  // زر «آخر آية»: يظهر بين حقل الإدخال وشريط النسبة، يعيدك لموضعك قبل مراجعة المثبتات
+  const renderReturnToAnchor = () => (
+    showReturnToAnchor ? (
+      <div className="last-verse-bar">
+        <button type="button" className="last-verse-btn" onClick={handleReturnToAnchor}>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="currentColor" strokeWidth="0.8" aria-hidden="true">
+            <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>
+          </svg>
+          <span>آخر آية</span>
+        </button>
+      </div>
+    ) : null
+  );
+
+  // إلغاء المرساة عند العودة لموضعها يدوياً أو مغادرة أقسام المراجعة لقسم آخر
+  useEffect(() => {
+    if (!reviewAnchor) return;
+    const listMode = reviewAnchor.mode === 'khmasiyat' ? 'starred'
+      : reviewAnchor.mode === 'page-starts' ? 'page-starred' : 'page-ends-starred';
+    if (viewMode !== reviewAnchor.mode && viewMode !== listMode) {
+      setReviewAnchor(null);
+      return;
+    }
+    if (viewMode === reviewAnchor.mode && indexForReviewMode(reviewAnchor.mode) === reviewAnchor.index) {
+      setReviewAnchor(null);
+    }
+  }, [viewMode, currentIndex, currentPageIndex, currentPageEndIndex]); // eslint-disable-line react-hooks/exhaustive-deps
   const isNightCounterMode = viewMode === 'night-counter';
   const isSurahFivesMode = viewMode === 'surah-fives';
   const clampedSurahFivesIndex = Math.min(
@@ -2095,6 +2143,12 @@ function App() {
               className="top-star-btn"
               title={isPageStartsMode ? "قائمة الصفحات للتثبيت" : isPageEndsMode ? "قائمة نهايات الصفحات" : "قائمة الخماسيات للتثبيت"}
               onClick={() => {
+                // التقاط موضع المرساة عند أول دخول للمراجعة (لا نعيد التقاطه إن كانت مرساة نشطة)
+                if (reviewAnchor === null) {
+                  if (isPageStartsMode) setReviewAnchor({ mode: 'page-starts', index: currentPageIndex });
+                  else if (viewMode === 'page-ends') setReviewAnchor({ mode: 'page-ends', index: currentPageEndIndex });
+                  else setReviewAnchor({ mode: 'khmasiyat', index: currentIndex });
+                }
                 if (isPageStartsMode) setViewMode('page-starred');
                 else if (viewMode === 'page-ends') setViewMode('page-ends-starred');
                 else setViewMode('starred');
@@ -2583,6 +2637,7 @@ function App() {
               {jumpError && <p className="jump-error-message">{jumpError}</p>}
             </div>
           </div>
+          {renderReturnToAnchor()}
           <div className="progress-wrapper big-progress">
             <div className="progress-container">
               <div className="progress-bar" style={{ width: `${Math.min(((currentIndex + 1) / 1202) * 100, 100)}%` }}></div>
@@ -2615,6 +2670,7 @@ function App() {
             {pageJumpError && <p className="jump-error-message">{pageJumpError}</p>}
           </div>
         </div>
+        {renderReturnToAnchor()}
         <div className="progress-wrapper big-progress">
           <div className="progress-container">
             <div className="progress-bar" style={{ width: `${Math.min(((currentPageEndIndex + 1) / 604) * 100, 100)}%`, backgroundColor: 'var(--app-warn)' }}></div>
@@ -2646,6 +2702,7 @@ function App() {
             {pageJumpError && <p className="jump-error-message">{pageJumpError}</p>}
           </div>
         </div>
+        {renderReturnToAnchor()}
         <div className="progress-wrapper big-progress">
           <div className="progress-container">
             <div className="progress-bar" style={{ width: `${Math.min(((currentPageIndex + 1) / 604) * 100, 100)}%`, backgroundColor: 'var(--app-warn)' }}></div>

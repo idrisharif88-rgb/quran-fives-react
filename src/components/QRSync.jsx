@@ -50,8 +50,10 @@ const QRSync = ({ appState, onRestore, onClose }) => {
       qw: appState?.quranicWondersNotes || [],
       kl: appState?.khatmaList || []
     };
-    // تغليف النص لحماية الحروف العربية من التشوه عند المسح
-    payload = encodeURIComponent(JSON.stringify(rawData));
+    // JSON خام بترميز UTF-8 مباشرة (بلا encodeURIComponent) — يقلّص حجم البيانات
+    // للنص العربي إلى الثلث تقريباً، فتقلّ كثافة مربعات الباركود ويصبح المسح أسرع وأسهل.
+    // الماسح متوافق: يحاول decodeURIComponent ثم يرجع للنص الخام إن لم يكن مُرمّزاً.
+    payload = JSON.stringify(rawData);
   } catch (err) {
     console.error("Error formatting QR data:", err);
   }
@@ -79,7 +81,12 @@ const QRSync = ({ appState, onRestore, onClose }) => {
           
           scanner.start(
             { facingMode: "environment" },
-            { fps: 15 }, // إزالة المربع المقيد لتتمكن الكاميرا من قراءة الشاشة بالكامل وبسرعة أعلى
+            {
+              fps: 24,
+              // استخدام كاشف الباركود الأصلي للنظام (BarcodeDetector) إن توفّر — أسرع بمراحل
+              // من محرّك JavaScript، وهو ما تعتمده الماسحات الاحترافية على الأجهزة الحديثة.
+              experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+            },
             (decodedText) => {
               try {
                 // فك التشفير لحماية اللغة العربية، مع دعم التوافقية للرموز القديمة
@@ -162,7 +169,7 @@ const QRSync = ({ appState, onRestore, onClose }) => {
             <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--app-muted)' }}>امسح هذا الرمز من جهاز آخر لاستعادة تقدمك والمفضلات والعدادات.</p>
             <div style={{ background: 'white', padding: '16px', borderRadius: '8px' }}>
               {SafeQRCode ? (
-                <SafeQRCode value={payload} size={260} level="M" />
+                <SafeQRCode value={payload} size={280} level="L" />
               ) : (
                 <p style={{ color: 'var(--app-danger)', fontSize: '14px' }}>يجب إعادة تشغيل الخادم (Vite) لتحميل المكتبة</p>
               )}

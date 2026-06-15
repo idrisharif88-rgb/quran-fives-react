@@ -2305,3 +2305,34 @@ button:focus-visible,
   85% { opacity: 1; transform: translate(-50%, 0); }
   100% { opacity: 0; transform: translate(-50%, 20px); }
 }
+/* زر «آخر آية» — العودة لموضع ما قبل مراجعة المثبتات */
+.last-verse-bar {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 2px;
+}
+.last-verse-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 22px;
+  border-radius: 12px;
+  border: 2.5px solid #006400;
+  background: var(--app-surface-2);
+  color: #006400;
+  font-size: 15px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+.last-verse-btn:hover {
+  background: #006400;
+  color: #ffffff;
+}
+.last-verse-btn:active {
+  transform: scale(0.97);
+}
+.last-verse-btn svg {
+  flex-shrink: 0;
+}
