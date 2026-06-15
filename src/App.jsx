@@ -262,6 +262,8 @@ function App() {
   const [isUserManualOpen, setIsUserManualOpen] = useState(false);
   // مرساة الموضع قبل دخول مراجعة المثبتات { mode, index } للعودة إليه لاحقاً
   const [reviewAnchor, setReviewAnchor] = useState(null);
+  // مؤشّر تحميل أثناء توليد صورة الختمة (PNG) قبل المشاركة
+  const [isPreparingShare, setIsPreparingShare] = useState(false);
   const [showExitToast, setShowExitToast] = useState(false);
   const [isQRSyncOpen, setIsQRSyncOpen] = useState(false);
   const [syncFailed, setSyncFailed] = useState(false);
@@ -324,8 +326,9 @@ function App() {
     showReturnToAnchor ? (
       <div className="last-verse-bar">
         <button type="button" className="last-verse-btn" onClick={handleReturnToAnchor}>
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" stroke="currentColor" strokeWidth="0.8" aria-hidden="true">
-            <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+            <path d="M3 3v5h5" />
           </svg>
           <span>آخر آية</span>
         </button>
@@ -1470,6 +1473,8 @@ function App() {
   };
 
   const handleShareKhatma = async (k) => {
+    setIsPreparingShare(true);
+    try {
     await document.fonts.ready;
     try {
       await Promise.all([
@@ -1682,6 +1687,7 @@ function App() {
         const fileName = `khatma_${Date.now()}.png`;
         await Filesystem.writeFile({ path: fileName, data: base64, directory: Directory.Cache });
         const { uri } = await Filesystem.getUri({ path: fileName, directory: Directory.Cache });
+        setIsPreparingShare(false);
         await Share.share({ title: 'ختمة القرآن الكريم', files: [uri] });
         await Filesystem.deleteFile({ path: fileName, directory: Directory.Cache });
       } catch (e) {
@@ -1691,6 +1697,7 @@ function App() {
     }
 
     // ── Web browser fallback ──────────────────────────────────────────────
+    setIsPreparingShare(false);
     const file = new File([blob], 'khatma.png', { type: 'image/png' });
     let shared = false;
     if (navigator.share) {
@@ -1711,6 +1718,9 @@ function App() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+    }
+    } finally {
+      setIsPreparingShare(false);
     }
   };
 
@@ -2940,6 +2950,14 @@ function App() {
                 fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit',
               }}>إلغاء</button>
             </div>
+          </div>
+        </div>
+      )}
+      {isPreparingShare && (
+        <div className="share-prep-overlay" dir="rtl">
+          <div className="share-prep-card">
+            <div className="share-prep-spinner" aria-hidden="true"></div>
+            <div className="share-prep-text">جارٍ تجهيز صورة الختمة…</div>
           </div>
         </div>
       )}
