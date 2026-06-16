@@ -45,6 +45,10 @@ import './App.css';
 // كلمة مرور حذف الختمات (قفل بسيط لمنع الحذف العَرَضي، وليست حماية أمنية)
 const KHATMA_DELETE_PASSWORD = '27956';
 
+// كلمة سر تفعيل المزامنة السحابية — معطّلة افتراضياً للجميع، تُفعَّل يدوياً بهذه الكلمة فقط
+const CLOUD_SYNC_PASSWORD = '27956';
+const SYNC_UNLOCK_KEY = 'quran-fives-sync-unlocked-v1';
+
 // مصفوفة بأسماء السور الـ 114
 const SURAH_NAMES ="الفاتحة,البقرة,آل عمران,النساء,المائدة,الأنعام,الأعراف,الأنفال,التوبة,يونس,هود,يوسف,الرعد,إبراهيم,الحجر,النحل,الإسراء,الكهف,مريم,طه,الأنبياء,الحج,المؤمنون,النور,الفرقان,الشعراء,النمل,القصص,العنكبوت,الروم,لقمان,السجدة,الأحزاب,سبأ,فاطر,يس,الصافات,ص,الزمر,غافر,فصلت,الشورى,الزخرف,الدخان,الجاثية,الأحقاف,محمد,الفتح,الحجرات,ق,الذاريات,الطور,النجم,القمر,الرحمن,الواقعة,الحديد,المجادلة,الحشر,الممتحنة,الصف,الجمعة,المنافقون,التغابن,الطلاق,التحريم,الملك,القلم,الحاقة,المعارج,نوح,الجن,المزمل,المدثر,القيامة,الإنسان,المرسلات,النبأ,النازعات,عبس,التكوير,الانفطار,المطففين,الانشقاق,البروج,الطارق,الأعلى,الغاشية,الفجر,البلد,الشمس,الليل,الضحى,الشرح,التين,العلق,القدر,البينة,الزلزلة,العاديات,القارعة,التكاثر,العصر,الهمزة,الفيل,قريش,الماعون,الكوثر,الكافرون,النصر,المسد,الإخلاص,الفلق,الناس".split(",");
 
@@ -270,6 +274,12 @@ function App() {
   const [isFalOpen, setIsFalOpen] = useState(false);
   const [syncFailed, setSyncFailed] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncUnlocked, setSyncUnlocked] = useState(() => {
+    try { return localStorage.getItem(SYNC_UNLOCK_KEY) === '1'; } catch { return false; }
+  });
+  const [isSyncPanelOpen, setIsSyncPanelOpen] = useState(false);
+  const [syncPasswordInput, setSyncPasswordInput] = useState('');
+  const [syncPasswordError, setSyncPasswordError] = useState(false);
   const [counterConfirm, setCounterConfirm] = useState({ type: null, id: null });
   const [surahToast, setSurahToast] = useState(null);
   const [isKhRevealed, setIsKhRevealed] = useState(false);
@@ -400,8 +410,9 @@ function App() {
   // عند فتح التطبيق: اسحب الحالة من الخادم، وإن كانت أحدث طبّقها بإعادة تحميل سريعة.
   // لا يبدأ الرفع التلقائي إلا بعد اكتمال هذه المحاولة (عبر cloudSyncReadyRef).
   useEffect(() => {
-    if (!SYNC_ENABLED) {
-      cloudSyncReadyRef.current = true;
+    // المزامنة معطّلة افتراضياً، ولا تعمل إلا بعد تفعيلها بكلمة السر (syncUnlocked)
+    if (!SYNC_ENABLED || !syncUnlocked) {
+      cloudSyncReadyRef.current = false;
       return;
     }
     let cancelled = false;
@@ -418,12 +429,12 @@ function App() {
       if (!cancelled) cloudSyncReadyRef.current = true;
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [syncUnlocked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // رفع موحّد للسحابة مع حارس تسلسل: آخر عملية رفع فقط هي التي تتحكّم بحالة الواجهة،
   // فلا يكتب رفعٌ قديم فاشل فوق نجاح رفعٍ أحدث (يمنع رسالة «لم تتم» الكاذبة).
   const runCloudPush = (snapshot) => {
-    if (!SYNC_ENABLED || !snapshot) return;
+    if (!SYNC_ENABLED || !syncUnlocked || !snapshot) return;
     const token = ++cloudPushSeqRef.current;
     setIsSyncing(true);
     pushLocal(snapshot)
@@ -435,6 +446,33 @@ function App() {
   const handleSyncRetry = () => {
     if (isSyncing) return;
     runCloudPush(lastSnapshotRef.current);
+  };
+
+  // تفعيل/إيقاف المزامنة بكلمة السر (للاستخدام الشخصي فقط)
+  const handleSyncUnlock = () => {
+    if (syncPasswordInput !== CLOUD_SYNC_PASSWORD) {
+      setSyncPasswordError(true);
+      setSyncPasswordInput('');
+      return;
+    }
+    try { localStorage.setItem(SYNC_UNLOCK_KEY, '1'); } catch { /* تجاهل */ }
+    setSyncUnlocked(true);
+    setSyncPasswordInput('');
+    setSyncPasswordError(false);
+    mainKeyboard.closeKeyboard();
+  };
+
+  const handleSyncDisable = () => {
+    try { localStorage.setItem(SYNC_UNLOCK_KEY, '0'); } catch { /* تجاهل */ }
+    cloudSyncReadyRef.current = false;
+    setSyncUnlocked(false);
+  };
+
+  const closeSyncPanel = () => {
+    mainKeyboard.closeKeyboard();
+    setIsSyncPanelOpen(false);
+    setSyncPasswordInput('');
+    setSyncPasswordError(false);
   };
 
   // إعادة المحاولة تلقائياً عند عودة الاتصال بالإنترنت
@@ -1330,6 +1368,16 @@ function App() {
       closeOnSubmit: false,
       onSubmit: () => confirmDeleteKhatma(),
     },
+    syncPassword: {
+      value: syncPasswordInput,
+      setValue: (updater) => { setSyncPasswordInput(updater); setSyncPasswordError(false); },
+      allowColon: false,
+      maxLength: 12,
+      label: 'كلمة سر المزامنة',
+      submitLabel: 'تفعيل',
+      closeOnSubmit: false,
+      onSubmit: () => handleSyncUnlock(),
+    },
   });
 
   const handleHardwareBack = () => {
@@ -1372,6 +1420,10 @@ function App() {
     }
     if (isFalOpen) {
       setIsFalOpen(false);
+      return true;
+    }
+    if (isSyncPanelOpen) {
+      closeSyncPanel();
       return true;
     }
     if (isNightCounterSettingsOpen) {
@@ -1871,7 +1923,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['العداد', 'ختماتي', 'فقهيات', 'فأل القرآن', 'الوضع الليلي', 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'السور المتشابهة في العدد'].map(option => (
+                  {['العداد', 'ختماتي', 'فقهيات', 'فأل القرآن', 'الوضع الليلي', 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -1889,6 +1941,7 @@ function App() {
                         if (option === 'اختبار سور') { mainKeyboard.closeKeyboard(); setActiveSurahNamesQuiz(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'شرح البرنامج') { mainKeyboard.closeKeyboard(); setIsUserManualOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'مزامنة QR') { mainKeyboard.closeKeyboard(); setIsQRSyncOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'المزامنة السحابية') { mainKeyboard.closeKeyboard(); setIsSyncPanelOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'السور المتشابهة في العدد') { setViewMode(prev => prev === 'shared-verses' ? 'khmasiyat' : 'shared-verses'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         setIsMoreMenuOpen(false);
                       }}
@@ -2978,6 +3031,55 @@ function App() {
         </div>
       )}
       {isFalOpen && <QuranFal onClose={() => setIsFalOpen(false)} />}
+      {isSyncPanelOpen && (
+        <div className="audio-settings-overlay" dir="rtl" style={{ zIndex: 10000 }} onClick={closeSyncPanel}>
+          <div className="audio-settings-card" style={{ maxWidth: '380px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <h2 className="audio-settings-title">المزامنة السحابية</h2>
+            {syncUnlocked ? (
+              <>
+                <p style={{ fontSize: '15px', color: 'var(--app-accent)', fontWeight: 800, margin: '0 0 6px' }}>
+                  المزامنة مفعّلة ✓
+                </p>
+                <p style={{ fontSize: '13px', color: 'var(--app-muted)', margin: '0 0 18px', lineHeight: 1.7 }}>
+                  بياناتك تُرفع وتُسحب تلقائياً مع خادمك. هذه الميزة للاستخدام الشخصي فقط.
+                </p>
+                <button type="button" className="khmasiyat-quiz-btn" onClick={handleSyncDisable} style={{ width: '100%', marginBottom: '10px' }}>
+                  إيقاف المزامنة
+                </button>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: '13px', color: 'var(--app-muted)', margin: '0 0 16px', lineHeight: 1.7 }}>
+                  المزامنة معطّلة. أدخل كلمة السر لتفعيلها على هذا الجهاز (للاستخدام الشخصي).
+                </p>
+                <input
+                  {...mainKeyboard.getInputProps('syncPassword')}
+                  type="password"
+                  value={syncPasswordInput}
+                  placeholder="اضغط للإدخال"
+                  style={{
+                    width: '100%', boxSizing: 'border-box', padding: '11px', borderRadius: '10px',
+                    border: `1.5px solid ${syncPasswordError ? 'var(--app-danger)' : 'var(--app-border)'}`,
+                    background: 'var(--app-surface-2)', color: 'var(--app-text)',
+                    fontSize: '16px', fontFamily: 'inherit', outline: 'none', textAlign: 'center', cursor: 'pointer',
+                  }}
+                />
+                {syncPasswordError && (
+                  <p style={{ margin: '8px 0 0', fontSize: '12px', color: 'var(--app-danger)' }}>كلمة السر غير صحيحة</p>
+                )}
+                <button type="button" className="khmasiyat-quiz-btn" onClick={handleSyncUnlock} style={{ width: '100%', marginTop: '14px' }}>
+                  تفعيل
+                </button>
+              </>
+            )}
+            <div className="audio-settings-actions" style={{ marginTop: '12px' }}>
+              <button type="button" className="khmasiyat-quiz-btn secondary" onClick={closeSyncPanel} style={{ width: '100%' }}>
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {isPreparingShare && (
         <div className="share-prep-overlay" dir="rtl">
           <div className="share-prep-card">
