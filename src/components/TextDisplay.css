@@ -63,3 +63,13 @@
     padding: 0 10px 8px;
   }
 }
+
+/* نمط بطاقة بدايات الصفحات: خلفية كريمية (ورق المصحف) + إطار أخضر داكن، مع إبقاء خط المستخدم */
+.verse-card.page-card-style {
+  background-color: #faf6e9;
+  border: 2px solid #006400;
+}
+.app-container.night-mode .verse-card.page-card-style {
+  background-color: var(--app-surface-2);
+  border-color: var(--app-accent);
+}

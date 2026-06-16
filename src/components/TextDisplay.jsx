@@ -36,9 +36,9 @@ function Verse({ verse }) {
  *                                   (shown as a large number at the bottom-left).
  *                                   Only passed in khmasiyat mode.
  */
-export default function TextDisplay({ verses, cornerNumber }) {
+export default function TextDisplay({ verses, cornerNumber, cardClassName = '' }) {
   return (
-    <div className="verse-card">
+    <div className={`verse-card ${cardClassName}`.trim()}>
       <div className="verse-scroll">
         {verses.map((verse) => (
           <Verse key={`${verse.s}-${verse.a}`} verse={verse} />

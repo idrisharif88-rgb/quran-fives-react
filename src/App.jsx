@@ -39,6 +39,7 @@ import {
 import { pullRemoteIfNewer, pushLocal } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
+import QuranFal from './components/QuranFal';
 import './App.css';
 
 // كلمة مرور حذف الختمات (قفل بسيط لمنع الحذف العَرَضي، وليست حماية أمنية)
@@ -266,6 +267,7 @@ function App() {
   const [isPreparingShare, setIsPreparingShare] = useState(false);
   const [showExitToast, setShowExitToast] = useState(false);
   const [isQRSyncOpen, setIsQRSyncOpen] = useState(false);
+  const [isFalOpen, setIsFalOpen] = useState(false);
   const [syncFailed, setSyncFailed] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [counterConfirm, setCounterConfirm] = useState({ type: null, id: null });
@@ -1368,6 +1370,10 @@ function App() {
       setIsFiqhOpen(false);
       return true;
     }
+    if (isFalOpen) {
+      setIsFalOpen(false);
+      return true;
+    }
     if (isNightCounterSettingsOpen) {
       setIsNightCounterSettingsOpen(false);
       return true;
@@ -1865,7 +1871,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['العداد', 'ختماتي', 'فقهيات', 'الوضع الليلي', 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'السور المتشابهة في العدد'].map(option => (
+                  {['العداد', 'ختماتي', 'فقهيات', 'فأل القرآن', 'الوضع الليلي', 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'السور المتشابهة في العدد'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -1874,6 +1880,7 @@ function App() {
                         if (option === 'العداد') { setViewMode('night-counter'); setIsMoreMenuOpen(false); return; }
                         if (option === 'ختماتي') { mainKeyboard.closeKeyboard(); setIsKhatmaListOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فقهيات') { mainKeyboard.closeKeyboard(); setIsFiqhOpen(true); setIsMoreMenuOpen(false); return; }
+                        if (option === 'فأل القرآن') { mainKeyboard.closeKeyboard(); setIsFalOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'خماسيات - سور') { mainKeyboard.closeKeyboard(); setSurahFivesIndex(0); setViewMode('surah-fives'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'الوضع الليلي') { setIsNightMode(prev => !prev); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'إعدادات الصوت') { mainKeyboard.closeKeyboard(); setIsAudioSettingsOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -2495,10 +2502,11 @@ function App() {
             const cornerNumber = viewMode === 'khmasiyat'
               ? currentVersesText[0]?.a
               : undefined;
+            const cardClass = viewMode === 'page-starts' ? 'page-card-style' : '';
             if (showKhBlur || showPageBlur || showPageEndBlur) {
               return (
                 <div className="kh-blur-wrapper">
-                  <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} />
+                  <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} cardClassName={cardClass} />
                   <div className="kh-blur-overlay">
                     <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor" style={{ color: 'var(--app-warn)' }}>
                       <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
@@ -2517,7 +2525,7 @@ function App() {
                 </div>
               );
             }
-            return <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} />;
+            return <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} cardClassName={cardClass} />;
           })()}
           {/* The main content area (TextDisplay, shared-verses, surah-fives)
               needs to be scrollable if its content overflows.
@@ -2969,6 +2977,7 @@ function App() {
           </div>
         </div>
       )}
+      {isFalOpen && <QuranFal onClose={() => setIsFalOpen(false)} />}
       {isPreparingShare && (
         <div className="share-prep-overlay" dir="rtl">
           <div className="share-prep-card">
