@@ -2502,7 +2502,7 @@ function App() {
             const cornerNumber = viewMode === 'khmasiyat'
               ? currentVersesText[0]?.a
               : undefined;
-            const cardClass = viewMode === 'page-starts' ? 'page-card-style' : '';
+            const cardClass = (viewMode === 'page-starts' || viewMode === 'page-ends' || viewMode === 'khmasiyat') ? 'page-card-style' : '';
             if (showKhBlur || showPageBlur || showPageEndBlur) {
               return (
                 <div className="kh-blur-wrapper">

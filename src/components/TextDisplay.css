@@ -64,12 +64,9 @@
   }
 }
 
-/* نمط بطاقة بدايات الصفحات: خلفية كريمية (ورق المصحف) + إطار أخضر داكن، مع إبقاء خط المستخدم */
+/* نمط البطاقة (خماسيات/بدايات/نهايات): نفس خلفية وإطار صندوق الآية في فأل القرآن،
+   مع إبقاء خط المستخدم المختار. القيم متغيّرات تتكيّف مع الوضع الليلي تلقائياً. */
 .verse-card.page-card-style {
-  background-color: #faf6e9;
-  border: 2px solid #006400;
-}
-.app-container.night-mode .verse-card.page-card-style {
   background-color: var(--app-surface-2);
-  border-color: var(--app-accent);
+  border: 2px solid var(--app-accent);
 }
