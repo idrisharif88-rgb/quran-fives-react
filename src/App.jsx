@@ -267,7 +267,7 @@ function App() {
   const [showExitToast, setShowExitToast] = useState(false);
   const [isQRSyncOpen, setIsQRSyncOpen] = useState(false);
   const [syncFailed, setSyncFailed] = useState(false);
-  const [syncRetrying, setSyncRetrying] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [counterConfirm, setCounterConfirm] = useState({ type: null, id: null });
   const [surahToast, setSurahToast] = useState(null);
   const [isKhRevealed, setIsKhRevealed] = useState(false);
@@ -294,6 +294,7 @@ function App() {
   const lastBackPressTimeRef = useRef(0);
   const cloudSyncReadyRef = useRef(false);
   const cloudPushTimerRef = useRef(null);
+  const cloudPushSeqRef = useRef(0);
   const lastSnapshotRef = useRef(null);
 
   const starredArray = Array.from(starredIndices).sort((a, b) => a - b);
@@ -417,14 +418,30 @@ function App() {
     return () => { cancelled = true; };
   }, []);
 
-  const handleSyncRetry = () => {
-    if (syncRetrying || !lastSnapshotRef.current) return;
-    setSyncRetrying(true);
-    pushLocal(lastSnapshotRef.current)
-      .then(() => setSyncFailed(false))
-      .catch(() => setSyncFailed(true))
-      .finally(() => setSyncRetrying(false));
+  // رفع موحّد للسحابة مع حارس تسلسل: آخر عملية رفع فقط هي التي تتحكّم بحالة الواجهة،
+  // فلا يكتب رفعٌ قديم فاشل فوق نجاح رفعٍ أحدث (يمنع رسالة «لم تتم» الكاذبة).
+  const runCloudPush = (snapshot) => {
+    if (!SYNC_ENABLED || !snapshot) return;
+    const token = ++cloudPushSeqRef.current;
+    setIsSyncing(true);
+    pushLocal(snapshot)
+      .then(() => { if (token === cloudPushSeqRef.current) setSyncFailed(false); })
+      .catch(() => { if (token === cloudPushSeqRef.current) setSyncFailed(true); })
+      .finally(() => { if (token === cloudPushSeqRef.current) setIsSyncing(false); });
   };
+
+  const handleSyncRetry = () => {
+    if (isSyncing) return;
+    runCloudPush(lastSnapshotRef.current);
+  };
+
+  // إعادة المحاولة تلقائياً عند عودة الاتصال بالإنترنت
+  useEffect(() => {
+    if (!SYNC_ENABLED) return;
+    const onOnline = () => { if (syncFailed) runCloudPush(lastSnapshotRef.current); };
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [syncFailed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const appStateSnapshot = {
@@ -461,9 +478,7 @@ function App() {
     if (SYNC_ENABLED && cloudSyncReadyRef.current) {
       clearTimeout(cloudPushTimerRef.current);
       cloudPushTimerRef.current = setTimeout(() => {
-        pushLocal(appStateSnapshot)
-          .then(() => setSyncFailed(false))
-          .catch(() => setSyncFailed(true));
+        runCloudPush(appStateSnapshot);
       }, 2500);
     }
   }, [
@@ -2962,7 +2977,7 @@ function App() {
           </div>
         </div>
       )}
-      <SyncStatusIndicator failed={syncFailed} retrying={syncRetrying} onRetry={handleSyncRetry} />
+      <SyncStatusIndicator failed={syncFailed} syncing={isSyncing} onRetry={handleSyncRetry} />
       <CustomKeyboard
         visible={mainKeyboard.showKeyboard}
         label={mainKeyboard.activeConfig?.label}

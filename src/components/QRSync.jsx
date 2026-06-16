@@ -50,9 +50,8 @@ const QRSync = ({ appState, onRestore, onClose }) => {
       qw: appState?.quranicWondersNotes || [],
       kl: appState?.khatmaList || []
     };
-    // JSON خام بترميز UTF-8 مباشرة (بلا encodeURIComponent) — يقلّص حجم البيانات
-    // للنص العربي إلى الثلث تقريباً، فتقلّ كثافة مربعات الباركود ويصبح المسح أسرع وأسهل.
-    // الماسح متوافق: يحاول decodeURIComponent ثم يرجع للنص الخام إن لم يكن مُرمّزاً.
+    // JSON خام بترميز UTF-8 (بلا encodeURIComponent) — أصغر حجم ممكن لهذه البيانات،
+    // فتقلّ كثافة الباركود. الماسح متوافق: يجرّب decodeURIComponent ثم يرجع للنص الخام.
     payload = JSON.stringify(rawData);
   } catch (err) {
     console.error("Error formatting QR data:", err);
@@ -94,9 +93,9 @@ const QRSync = ({ appState, onRestore, onClose }) => {
                 try {
                   parsedText = decodeURIComponent(decodedText);
                 } catch (e) {}
-                
+
                 const data = JSON.parse(parsedText);
-                if (data.v === 1) {
+                if (data && data.v === 1) {
                   playSuccessBeep(); // 🎵 تشغيل صوت النجاح
                   if (scanner) {
                     scanner.stop().then(() => {

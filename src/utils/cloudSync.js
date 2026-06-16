@@ -20,17 +20,25 @@ function setSyncMeta(meta) {
   }
 }
 
-async function api(path, options = {}) {
-  const res = await fetch(SYNC_URL + path, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Sync-Code': SYNC_CODE,
-      ...(options.headers || {}),
-    },
-  });
-  if (!res.ok) throw new Error('sync http ' + res.status);
-  return res.json();
+async function api(path, options = {}, timeoutMs = 12000) {
+  // مهلة زمنية حتى لا يعلّق الطلب إلى ما لا نهاية على شبكة بطيئة
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(SYNC_URL + path, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Sync-Code': SYNC_CODE,
+        ...(options.headers || {}),
+      },
+    });
+    if (!res.ok) throw new Error('sync http ' + res.status);
+    return res.json();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // يسحب الحالة من الخادم؛ إن كانت أحدث من المحلية يكتبها في localStorage
@@ -51,10 +59,19 @@ export async function pullRemoteIfNewer() {
 export async function pushLocal(state) {
   if (!SYNC_ENABLED) return;
   const updatedAt = Date.now();
-  const result = await api('/api/state', {
-    method: 'PUT',
-    body: JSON.stringify({ updatedAt, state }),
-  });
-  // إن كان الخادم يحوي نسخة أحدث (stale)، نعتمد طابعه لتفادي حلقة رفع
-  setSyncMeta({ updatedAt: result?.updatedAt ?? updatedAt });
+  const body = JSON.stringify({ updatedAt, state });
+  // ٣ محاولات مع تراجع تصاعدي — تتجاوز الأعطال الشبكية العابرة دون إعلان فشل
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const result = await api('/api/state', { method: 'PUT', body });
+      // إن كان الخادم يحوي نسخة أحدث (stale)، نعتمد طابعه لتفادي حلقة رفع
+      setSyncMeta({ updatedAt: result?.updatedAt ?? updatedAt });
+      return;
+    } catch (e) {
+      lastErr = e;
+      if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+    }
+  }
+  throw lastErr;
 }
