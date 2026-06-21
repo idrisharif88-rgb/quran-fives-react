@@ -5,6 +5,21 @@ import { Html5Qrcode } from 'html5-qrcode';
 // معالجة مشكلة توافق استيراد مكتبة QR مع خادم Vite
 const SafeQRCode = typeof QRCode === 'function' ? QRCode : (QRCode && QRCode.default ? QRCode.default : null);
 
+// تحويل بين نص UTF-8 و base64 — base64 نص ASCII صرف يُمسح بموثوقية (يتجاوز مشكلة
+// قراءة العربي UTF-8 خطأً)، وأقل كثافة بكثير من encodeURIComponent.
+const utf8ToBase64 = (str) => {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+};
+const base64ToUtf8 = (b64) => {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+};
+
 // دالة لتشغيل صوت رنين (Beep) عند التقاط الكود بنجاح
 const playSuccessBeep = () => {
   try {
@@ -50,9 +65,9 @@ const QRSync = ({ appState, onRestore, onClose }) => {
       qw: appState?.quranicWondersNotes || [],
       kl: appState?.khatmaList || []
     };
-    // JSON خام بترميز UTF-8 (بلا encodeURIComponent) — أصغر حجم ممكن لهذه البيانات،
-    // فتقلّ كثافة الباركود. الماسح متوافق: يجرّب decodeURIComponent ثم يرجع للنص الخام.
-    payload = JSON.stringify(rawData);
+    // base64 لنص JSON بترميز UTF-8 — ASCII صرف فيُمسح بموثوقية، وأقل كثافة من
+    // encodeURIComponent القديم. الماسح متوافق مع الصيغ القديمة (خام/مُرمّز).
+    payload = utf8ToBase64(JSON.stringify(rawData));
   } catch (err) {
     console.error("Error formatting QR data:", err);
   }
@@ -88,13 +103,19 @@ const QRSync = ({ appState, onRestore, onClose }) => {
             },
             (decodedText) => {
               try {
-                // فك التشفير لحماية اللغة العربية، مع دعم التوافقية للرموز القديمة
-                let parsedText = decodedText;
+                // فك القراءة بترتيب: base64 (الجديد) ← خام/مُرمّز (القديم) — للتوافقية
+                let data = null;
                 try {
-                  parsedText = decodeURIComponent(decodedText);
-                } catch (e) {}
+                  const j = base64ToUtf8(decodedText);
+                  const parsed = JSON.parse(j);
+                  if (parsed && parsed.v === 1) data = parsed;
+                } catch (e) { /* ليس base64، نجرّب الصيغ القديمة */ }
+                if (!data) {
+                  let parsedText = decodedText;
+                  try { parsedText = decodeURIComponent(decodedText); } catch (e) {}
+                  data = JSON.parse(parsedText);
+                }
 
-                const data = JSON.parse(parsedText);
                 if (data && data.v === 1) {
                   playSuccessBeep(); // 🎵 تشغيل صوت النجاح
                   if (scanner) {

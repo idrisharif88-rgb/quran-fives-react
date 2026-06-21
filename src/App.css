@@ -324,7 +324,7 @@ body.night-mode #root {
   border: none;
   width: 88px;
   height: 88px;
-  border-radius: 22px;
+  border-radius: 50%;
   padding: 0;
   background: var(--app-accent);
   color: var(--app-accent-contrast);
@@ -349,11 +349,19 @@ body.night-mode #root {
 }
 
 .night-counter-reset-btn {
-  box-shadow: 0 8px 18px var(--app-accent-shadow);
+  box-shadow: none;
 }
 
 .night-counter-minus-btn {
   line-height: 1;
+}
+
+/* دوائر صف العداد (إضافة الختمة + ختماتي) بنفس حجم أزرار العداد ومتجاوبة */
+.nc-circle-88 {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .verse-text {
@@ -1957,6 +1965,10 @@ button:focus-visible,
     width: 72px;
     height: 72px;
     font-size: 40px;
+  }
+  .nc-circle-88 {
+    width: 72px;
+    height: 72px;
   }
   .night-counter-btn svg {
     width: 32px;

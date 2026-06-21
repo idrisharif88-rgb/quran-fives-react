@@ -100,19 +100,31 @@ const SESSION_STORAGE_KEYS = [
 
 const HIJRI_CACHE_KEY = 'quran-fives-hijri-cache';
 const HIJRI_MONTHS_AR = ['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الثانية','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
-// Anchor: 1 Muharram 1446 = July 7, 2024 (Umm al-Qura)
-const HIJRI_ANCHOR_MS = new Date(2024, 6, 7).getTime();
-const AVG_LUNAR_MONTH = 29.530588853;
+const HIJRI_WEEKDAYS_AR = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+
+// تقويم أم القرى الدقيق المدمج في النظام (بلا انحراف، يصحّح خطأ ±يوم في التقريب القديم)
+const HIJRI_UMALQURA_FMT = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
+  day: 'numeric', month: 'numeric', year: 'numeric',
+});
 
 function calcHijriOffline(date) {
-  const diffDays = Math.round((date.getTime() - HIJRI_ANCHOR_MS) / 86400000);
-  const monthsSince = diffDays / AVG_LUNAR_MONTH;
-  const monthsComplete = Math.floor(monthsSince);
-  const dayInMonth = Math.max(1, Math.floor((monthsSince - monthsComplete) * AVG_LUNAR_MONTH) + 1);
-  const year = 1446 + Math.floor(monthsComplete / 12);
-  const month = ((monthsComplete % 12) + 12) % 12 + 1;
-  const dayName = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'][date.getDay()].replace('ال', '').trim();
-  return [dayName, String(dayInMonth), HIJRI_MONTHS_AR[month - 1], String(year)];
+  let day, month, year;
+  try {
+    const parts = HIJRI_UMALQURA_FMT.formatToParts(date);
+    const get = (t) => parts.find((p) => p.type === t)?.value;
+    day = parseInt(get('day'), 10);
+    month = parseInt(get('month'), 10); // 1..12
+    year = parseInt(get('year'), 10);
+  } catch {
+    // احتياط لبيئة لا تدعم التقويم: تقريب بسيط
+    const diffDays = Math.round((date.getTime() - new Date(2024, 6, 7).getTime()) / 86400000);
+    const mc = Math.floor(diffDays / 29.530588853);
+    day = Math.max(1, Math.floor((diffDays / 29.530588853 - mc) * 29.530588853) + 1);
+    month = ((mc % 12) + 12) % 12 + 1;
+    year = 1446 + Math.floor(mc / 12);
+  }
+  const dayName = HIJRI_WEEKDAYS_AR[date.getDay()].replace('ال', '').trim();
+  return [dayName, String(day), HIJRI_MONTHS_AR[month - 1], String(year)];
 }
 
 function formatHijriTimestamp(ms) {
@@ -2436,12 +2448,12 @@ function App() {
                     setShowKhatmaInput(true);
                   }}
                   title="سجِّل ختمة جديدة"
+                  className="nc-circle-88"
                   style={{
-                    width: '88px', height: '88px', borderRadius: '50%',
                     border: 'none',
                     background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
                     cursor: 'pointer', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', padding: '0', flexShrink: 0,
+                    justifyContent: 'center', padding: '0',
                   }}
                 >
                   <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor" aria-hidden="true">
@@ -2450,12 +2462,12 @@ function App() {
                 </button>
                 <div
                   aria-label={`${khatmaList.length} ختمة مسجلة`}
+                  className="nc-circle-88"
                   style={{
-                    width: '88px', height: '88px', borderRadius: '50%',
                     border: 'none',
                     background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
                     display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    justifyContent: 'center', flexShrink: 0, lineHeight: '1.2', gap: '1px',
+                    justifyContent: 'center', lineHeight: '1.2', gap: '1px',
                   }}
                 >
                   <span style={{ fontSize: '30px', fontWeight: '900', lineHeight: '1' }}>
