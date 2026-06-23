@@ -1,0 +1,12 @@
+{
+	"appId": "com.shoaib.quranfives",
+	"appName": "خماسيات",
+	"webDir": "dist",
+	"plugins": {
+		"Keyboard": {
+			"resize": "body",
+			"style": "dark",
+			"resizeOnFullScreen": true
+		}
+	}
+}

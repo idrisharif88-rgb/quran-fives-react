@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getSurahAndRange } from './utils/quranLogic';
 import TextDisplay from './components/TextDisplay';
 import { QURAN_VERSES } from './data/quranVerses';
@@ -36,7 +36,7 @@ import {
   removeStoredState,
   saveStoredState
 } from './utils/persistence';
-import { pullRemoteIfNewer, pushLocal } from './utils/cloudSync';
+import { pullRemoteIfNewer, pushLocal, authKhitma, getKhitma, putKhitma } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
 import QuranFal from './components/QuranFal';
@@ -213,9 +213,16 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hijriData, setHijriData] = useState([]);
   const [hijriIndex, setHijriIndex] = useState(0);
-  const [khatmaList, setKhatmaList] = useState(() => (
-    Array.isArray(persistedAppState.khatmaList) ? persistedAppState.khatmaList : []
-  ));
+  // سجلّ الختمات خاص الآن: لا يُحفظ في الحالة المشتركة بل يُحمَّل من الخادم بعد الدخول
+  const [khatmaList, setKhatmaList] = useState([]);
+  // قفل الختمات: بيانات الدخول (user + code) وحالة الفتح
+  const [khitmaUnlocked, setKhitmaUnlocked] = useState(false);
+  const [khitmaUserInput, setKhitmaUserInput] = useState('');
+  const [khitmaCodeInput, setKhitmaCodeInput] = useState('');
+  const [khitmaAuthError, setKhitmaAuthError] = useState('');
+  const [khitmaLoading, setKhitmaLoading] = useState(false);
+  const khitmaCredsRef = useRef(null);      // بيانات الدخول المعتمدة للجلسة
+  const khitmaSyncReadyRef = useRef(false);  // لتفادي رفع القائمة فور تحميلها
   const [showKhatmaInput, setShowKhatmaInput] = useState(false);
   const [khatmaIntentionInput, setKhatmaIntentionInput] = useState('');
   const [pendingKhatmaTime, setPendingKhatmaTime] = useState(null);
@@ -521,7 +528,7 @@ function App() {
       fontColor,
       quranicWondersNotes, // إضافة الملاحظات للحفظ
       isNightMode,
-      khatmaList,
+      // ملاحظة: khatmaList لم يعد ضمن الحالة المشتركة — صار خاصاً على الخادم خلف بيانات دخول
     };
     saveStoredState(APP_STORAGE_KEY, appStateSnapshot);
     lastSnapshotRef.current = appStateSnapshot;
@@ -553,7 +560,6 @@ function App() {
     isNightTimerRunning,
     sharedGroupIndex,
     quranicWondersNotes, // إضافة الملاحظات إلى مصفوفة التبعيات
-    khatmaList,
     starredIndices,
     starredPages,
     starredPageEnds,
@@ -1499,6 +1505,55 @@ function App() {
 
   backHandlerRef.current = handleHardwareBack;
 
+  // ─── قفل الختمات: الدخول وتحميل/مزامنة القائمة من الخادم ───
+  const KHITMA_CREDS_KEY = 'quran-fives-khitma-creds-v1';
+
+  const loadKhitmaWithCreds = useCallback(async (creds) => {
+    setKhitmaLoading(true);
+    setKhitmaAuthError('');
+    try {
+      const list = await getKhitma(creds);          // يرمي 401 إن كانت البيانات خاطئة
+      khitmaCredsRef.current = creds;
+      khitmaSyncReadyRef.current = false;            // أول setState تحميل لا رفع
+      setKhatmaList(Array.isArray(list) ? list : []);
+      setKhitmaUnlocked(true);
+      try { localStorage.setItem(KHITMA_CREDS_KEY, JSON.stringify(creds)); } catch { /* تجاهل */ }
+      return true;
+    } catch (e) {
+      const msg = String(e?.message || '');
+      setKhitmaAuthError(msg.includes('401') ? 'بيانات الدخول غير صحيحة' : 'تعذّر الاتصال بالخادم');
+      try { localStorage.removeItem(KHITMA_CREDS_KEY); } catch { /* تجاهل */ }
+      return false;
+    } finally {
+      setKhitmaLoading(false);
+    }
+  }, []);
+
+  const handleKhitmaLogin = () => {
+    const user = khitmaUserInput.trim();
+    const code = khitmaCodeInput.trim();
+    if (!user || !code) { setKhitmaAuthError('أدخل اسم المستخدم والرمز'); return; }
+    loadKhitmaWithCreds({ user, code });
+  };
+
+  // عند فتح قسم الختمات: حاول الدخول تلقائياً ببيانات محفوظة على هذا الجهاز
+  useEffect(() => {
+    if (!isKhatmaListOpen || khitmaUnlocked) return;
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(KHITMA_CREDS_KEY)); } catch { /* تجاهل */ }
+    if (saved?.user && saved?.code) loadKhitmaWithCreds(saved);
+  }, [isKhatmaListOpen, khitmaUnlocked, loadKhitmaWithCreds]);
+
+  // رفع أي تغيير على القائمة للخادم (بعد التحميل الأولي) — تأخير بسيط لتجميع التعديلات
+  useEffect(() => {
+    if (!khitmaUnlocked || !khitmaCredsRef.current) return;
+    if (!khitmaSyncReadyRef.current) { khitmaSyncReadyRef.current = true; return; }
+    const t = setTimeout(() => {
+      putKhitma(khitmaCredsRef.current, khatmaList).catch(() => { /* نتجاهل فشل الرفع العابر */ });
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [khatmaList, khitmaUnlocked]);
+
   // ─── دوال ختماتي ───
   const addKhatmaEntry = (intention) => {
     setKhatmaList(prev => [...prev, {
@@ -2443,6 +2498,8 @@ function App() {
                   type="button"
                   onClick={() => {
                     mainKeyboard.closeKeyboard();
+                    // السجلّ خاص: لا نسجّل ختمة قبل الدخول حتى لا نكتب فوق سجلّ الخادم بقائمة فارغة
+                    if (!khitmaUnlocked) { setIsKhatmaListOpen(true); return; }
                     setPendingKhatmaTime(Date.now());
                     setKhatmaIntentionInput('');
                     setShowKhatmaInput(true);
@@ -3309,7 +3366,9 @@ function App() {
           }}>
             <div>
               <h2 style={{ margin: '0 0 2px', fontSize: '22px', color: 'var(--app-text)', fontWeight: 900 }}>ختماتي</h2>
-              <span style={{ fontSize: '13px', color: 'var(--app-muted)' }}>{khatmaList.length} ختمة مسجلة</span>
+              <span style={{ fontSize: '13px', color: 'var(--app-muted)' }}>
+                {khitmaUnlocked ? `${khatmaList.length} ختمة مسجلة` : '🔒 سجلّ خاص — يتطلّب الدخول'}
+              </span>
             </div>
             <button
               onClick={() => { setIsKhatmaListOpen(false); setEditingKhatmaId(null); }}
@@ -3321,7 +3380,58 @@ function App() {
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-            {khatmaList.length === 0 ? (
+            {!khitmaUnlocked ? (
+              <div style={{ maxWidth: '320px', margin: '40px auto 0', textAlign: 'center' }}>
+                <div style={{ fontSize: '48px', marginBottom: '8px' }}>🔒</div>
+                <p style={{ fontSize: '14px', color: 'var(--app-muted)', margin: '0 0 20px' }}>
+                  سجلّ الختمات خاص. أدخل بيانات الدخول لعرضه.
+                </p>
+                <input
+                  type="text"
+                  value={khitmaUserInput}
+                  onChange={e => { setKhitmaUserInput(e.target.value); setKhitmaAuthError(''); }}
+                  placeholder="اسم المستخدم"
+                  autoComplete="off"
+                  dir="ltr"
+                  style={{
+                    width: '100%', boxSizing: 'border-box', padding: '11px 13px', marginBottom: '10px',
+                    borderRadius: '10px', border: '1.5px solid var(--app-border)',
+                    background: 'var(--app-surface-2)', color: 'var(--app-text)',
+                    fontSize: '14px', fontFamily: 'inherit', outline: 'none', textAlign: 'center',
+                  }}
+                />
+                <input
+                  type="password"
+                  value={khitmaCodeInput}
+                  onChange={e => { setKhitmaCodeInput(e.target.value); setKhitmaAuthError(''); }}
+                  onKeyDown={e => { if (e.key === 'Enter') handleKhitmaLogin(); }}
+                  placeholder="الرمز"
+                  autoComplete="off"
+                  inputMode="numeric"
+                  dir="ltr"
+                  style={{
+                    width: '100%', boxSizing: 'border-box', padding: '11px 13px', marginBottom: '10px',
+                    borderRadius: '10px', border: '1.5px solid var(--app-border)',
+                    background: 'var(--app-surface-2)', color: 'var(--app-text)',
+                    fontSize: '14px', fontFamily: 'inherit', outline: 'none', textAlign: 'center',
+                  }}
+                />
+                {khitmaAuthError && (
+                  <p style={{ color: 'var(--app-danger)', fontSize: '13px', margin: '0 0 10px' }}>{khitmaAuthError}</p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleKhitmaLogin}
+                  disabled={khitmaLoading}
+                  style={{
+                    width: '100%', padding: '12px', borderRadius: '10px', border: 'none',
+                    background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
+                    fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit',
+                    opacity: khitmaLoading ? 0.6 : 1,
+                  }}
+                >{khitmaLoading ? '...جارٍ الدخول' : 'دخول'}</button>
+              </div>
+            ) : khatmaList.length === 0 ? (
               <div style={{ textAlign: 'center', color: 'var(--app-muted)', marginTop: '80px', fontSize: '16px' }}>
                 <div style={{ fontSize: '48px', marginBottom: '12px' }}>📖</div>
                 لا توجد ختمات مسجلة بعد

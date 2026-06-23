@@ -10,6 +10,11 @@ const PORT = process.env.PORT || 3001;
 const SYNC_CODE = process.env.SYNC_CODE || '';
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'state.json');
+const KHITMA_FILE = path.join(DATA_DIR, 'khitma.json');
+
+// بيانات دخول مالك سجلّ الختمات الخاص (تُضبط عبر البيئة، وإلا القيم الافتراضية)
+const KHITMA_USER = process.env.KHITMA_USER || 'IdrisAhmedSh';
+const KHITMA_CODE = process.env.KHITMA_CODE || '27956';
 
 // رفض التشغيل بدون رمز مزامنة حتى لا يبقى الخادم مفتوحاً للعلن
 if (!SYNC_CODE) {
@@ -46,6 +51,52 @@ async function writeState(record) {
   await fs.writeFile(tmp, JSON.stringify(record), 'utf8');
   await fs.rename(tmp, DATA_FILE);
 }
+
+// ─── سجلّ الختمات الخاص (محمي ببيانات المالك user + code) ───
+function khitmaAuthorized(req) {
+  return req.get('X-Khitma-User') === KHITMA_USER && req.get('X-Khitma-Code') === KHITMA_CODE;
+}
+
+async function readKhitma() {
+  try {
+    return JSON.parse(await fs.readFile(KHITMA_FILE, 'utf8'));
+  } catch {
+    return { updatedAt: 0, list: [] };
+  }
+}
+
+async function writeKhitma(record) {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  const tmp = KHITMA_FILE + '.tmp';
+  await fs.writeFile(tmp, JSON.stringify(record), 'utf8');
+  await fs.rename(tmp, KHITMA_FILE);
+}
+
+// تحقّق من بيانات الدخول فقط (لشاشة القفل)
+app.post('/api/khitma/auth', (req, res) => {
+  if (!khitmaAuthorized(req)) return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
+  res.json({ ok: true });
+});
+
+app.get('/api/khitma', async (req, res) => {
+  if (!khitmaAuthorized(req)) return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
+  res.json(await readKhitma());
+});
+
+app.put('/api/khitma', async (req, res) => {
+  if (!khitmaAuthorized(req)) return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
+  const { updatedAt, list } = req.body || {};
+  if (typeof updatedAt !== 'number' || !Array.isArray(list)) {
+    return res.status(400).json({ error: 'حمولة غير صالحة' });
+  }
+  const current = await readKhitma();
+  // آخر تعديل يفوز
+  if (updatedAt < current.updatedAt) {
+    return res.json({ ok: true, updatedAt: current.updatedAt, stale: true });
+  }
+  await writeKhitma({ updatedAt, list });
+  res.json({ ok: true, updatedAt });
+});
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 

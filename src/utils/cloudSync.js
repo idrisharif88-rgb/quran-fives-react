@@ -75,3 +75,30 @@ export async function pushLocal(state) {
   }
   throw lastErr;
 }
+
+// ─── سجلّ الختمات الخاص: محمي ببيانات المالك (user + code) ───
+function khitmaHeaders(creds) {
+  return { 'X-Khitma-User': creds.user, 'X-Khitma-Code': creds.code };
+}
+
+// يتحقّق من بيانات الدخول؛ يرمي خطأ (401) إن كانت غير صحيحة
+export async function authKhitma(creds) {
+  await api('/api/khitma/auth', { method: 'POST', headers: khitmaHeaders(creds) });
+  return true;
+}
+
+// يسحب قائمة الختمات من الخادم (يتطلّب بيانات دخول صحيحة)
+export async function getKhitma(creds) {
+  const r = await api('/api/khitma', { method: 'GET', headers: khitmaHeaders(creds) });
+  return Array.isArray(r?.list) ? r.list : [];
+}
+
+// يرفع قائمة الختمات للخادم بطابع زمني جديد
+export async function putKhitma(creds, list) {
+  const updatedAt = Date.now();
+  return api('/api/khitma', {
+    method: 'PUT',
+    headers: khitmaHeaders(creds),
+    body: JSON.stringify({ updatedAt, list }),
+  });
+}
