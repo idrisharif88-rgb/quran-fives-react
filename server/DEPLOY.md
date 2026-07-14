@@ -101,7 +101,22 @@ And build the APK from Android Studio.
 All require the `X-Sync-Code` header.
 - `GET  /api/health` → `{ ok: true }`
 - `GET  /api/state`  → `{ updatedAt, state }`
-- `PUT  /api/state`  ← `{ updatedAt, state }` (last-write-wins; ignores older)
+- `PUT  /api/state`  ← `{ state, baseUpdatedAt }` → `{ ok: true, updatedAt }`
+  - `updatedAt` is assigned by the **server clock**. Device clocks are never trusted:
+    a device with a skewed clock used to win "last-write-wins" and overwrite newer data.
+  - `baseUpdatedAt` is the `updatedAt` the device last saw. If it no longer matches the
+    stored one, another device wrote in the meantime → **409 Conflict**, nothing is written.
+    The device must `GET` the newer state first, then push again.
+
+## Upgrading an existing server
+The client and server must be deployed together — the request body changed.
+Deploy the server **first**, then rebuild the app. An old client (sending `updatedAt`)
+gets a 400 from the new server; a new client (sending `baseUpdatedAt`) gets a 400 from
+an old server. Devices heal themselves after the upgrade: their first push is rejected
+with 409, then the retry button pulls the newest state.
+
+⚠️ Before copying `index.js` to the server, diff it against what is actually running —
+the deployed file may contain endpoints that were never committed here.
 
 ## Notes
 - Data is stored in `data/state.json` inside the server folder. Back it up periodically.
