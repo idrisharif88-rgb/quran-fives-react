@@ -325,7 +325,6 @@ function App() {
   const skipSurahToastRef = useRef(true);
   const lastBackPressTimeRef = useRef(0);
   const cloudSyncReadyRef = useRef(false);
-  const cloudPushTimerRef = useRef(null);
   const cloudPushSeqRef = useRef(0);
   const cloudPushBusyRef = useRef(false);   // رفعة جارية — لا نطلق ثانية بالتوازي
   const cloudPushPendingRef = useRef(null); // آخر لقطة وصلت أثناء الانشغال، تُرفع بعده
@@ -568,14 +567,6 @@ function App() {
     };
     saveStoredState(APP_STORAGE_KEY, appStateSnapshot);
     lastSnapshotRef.current = appStateSnapshot;
-
-    // رفع الحالة للسحابة بعد توقّف قصير (debounce) ولا يبدأ إلا بعد اكتمال السحب الأولي
-    if (SYNC_ENABLED && cloudSyncReadyRef.current) {
-      clearTimeout(cloudPushTimerRef.current);
-      cloudPushTimerRef.current = setTimeout(() => {
-        runCloudPush(appStateSnapshot);
-      }, 2500);
-    }
   }, [
     activeReciter,
     activeAyahTest,
@@ -596,6 +587,40 @@ function App() {
     isNightTimerRunning,
     sharedGroupIndex,
     quranicWondersNotes, // إضافة الملاحظات إلى مصفوفة التبعيات
+    starredIndices,
+    starredPages,
+    starredPageEnds,
+    surahFivesIndex,
+    viewMode,
+  ]);
+
+  // رفع فوري للسحابة عند كل تغيير حقيقي — دون nightTimerSeconds عمداً:
+  // دقّات المؤقّت (كل ثانية) كانت تعيد ضبط مهلة الرفع إلى الأبد فلا يُرفع شيء
+  // ما دام العدّاد يعمل. الدقّات تُحفظ محلياً أعلاه وتركب مع أول رفعة تالية،
+  // وحارس cloudPushBusyRef يجمع التغييرات المتتابعة في رفعة واحدة.
+  useEffect(() => {
+    if (SYNC_ENABLED && cloudSyncReadyRef.current) {
+      runCloudPush(lastSnapshotRef.current);
+    }
+  }, [ // eslint-disable-line react-hooks/exhaustive-deps
+    activeReciter,
+    activeAyahTest,
+    activePageStartsTest,
+    currentIndex,
+    currentPageIndex,
+    currentPageEndIndex,
+    fontColor,
+    fontFamily,
+    fontSize,
+    fontWeight,
+    isNightMode,
+    jumpInput,
+    pageJumpInput,
+    nightCounters,
+    activeNightCounterId,
+    isNightTimerRunning,
+    sharedGroupIndex,
+    quranicWondersNotes,
     starredIndices,
     starredPages,
     starredPageEnds,
