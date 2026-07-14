@@ -85,15 +85,18 @@ app.get('/api/khitma', async (req, res) => {
 
 app.put('/api/khitma', async (req, res) => {
   if (!khitmaAuthorized(req)) return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
-  const { updatedAt, list } = req.body || {};
-  if (typeof updatedAt !== 'number' || !Array.isArray(list)) {
+  const { list, baseUpdatedAt } = req.body || {};
+  if (!Array.isArray(list) || typeof baseUpdatedAt !== 'number') {
     return res.status(400).json({ error: 'حمولة غير صالحة' });
   }
   const current = await readKhitma();
-  // آخر تعديل يفوز
-  if (updatedAt < current.updatedAt) {
-    return res.json({ ok: true, updatedAt: current.updatedAt, stale: true });
+  // تزامن متفائل كما في /api/state: الجهاز يرفع مستنداً إلى النسخة التي سحبها.
+  // اختلافها يعني أن جهازاً آخر كتب بعده — نرفض بدل أن نفقد ختمات.
+  if (baseUpdatedAt !== current.updatedAt) {
+    return res.status(409).json({ error: 'تعارض: سجلّ الختمات تغيّر على الخادم', updatedAt: current.updatedAt });
   }
+  // ساعة الخادم وحدها — لا نثق بساعات الأجهزة
+  const updatedAt = Date.now();
   await writeKhitma({ updatedAt, list });
   res.json({ ok: true, updatedAt });
 });

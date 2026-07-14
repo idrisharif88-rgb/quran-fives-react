@@ -223,6 +223,7 @@ function App() {
   const [khitmaLoading, setKhitmaLoading] = useState(false);
   const khitmaCredsRef = useRef(null);      // بيانات الدخول المعتمدة للجلسة
   const khitmaSyncReadyRef = useRef(false);  // لتفادي رفع القائمة فور تحميلها
+  const khitmaBaseRef = useRef(0);           // طابع آخر نسخة سحبها الجهاز (أساس الرفع)
   const [showKhatmaInput, setShowKhatmaInput] = useState(false);
   const [khatmaIntentionInput, setKhatmaIntentionInput] = useState('');
   const [pendingKhatmaTime, setPendingKhatmaTime] = useState(null);
@@ -1533,10 +1534,11 @@ function App() {
     setKhitmaLoading(true);
     setKhitmaAuthError('');
     try {
-      const list = await getKhitma(creds);          // يرمي 401 إن كانت البيانات خاطئة
+      const { list, updatedAt } = await getKhitma(creds); // يرمي 401 إن كانت البيانات خاطئة
       khitmaCredsRef.current = creds;
+      khitmaBaseRef.current = updatedAt;             // أساس الرفع = ما سحبناه للتو
       khitmaSyncReadyRef.current = false;            // أول setState تحميل لا رفع
-      setKhatmaList(Array.isArray(list) ? list : []);
+      setKhatmaList(list);
       setKhitmaUnlocked(true);
       try { localStorage.setItem(KHITMA_CREDS_KEY, JSON.stringify(creds)); } catch { /* تجاهل */ }
       return true;
@@ -1570,7 +1572,20 @@ function App() {
     if (!khitmaUnlocked || !khitmaCredsRef.current) return;
     if (!khitmaSyncReadyRef.current) { khitmaSyncReadyRef.current = true; return; }
     const t = setTimeout(() => {
-      putKhitma(khitmaCredsRef.current, khatmaList).catch(() => { /* نتجاهل فشل الرفع العابر */ });
+      const creds = khitmaCredsRef.current;
+      putKhitma(creds, khatmaList, khitmaBaseRef.current)
+        .then((r) => { khitmaBaseRef.current = r.updatedAt; })
+        .catch(async (e) => {
+          // تعارض: جهاز آخر عدّل السجلّ بعد سحبنا. الخادم رفض الكتابة فوقه،
+          // فنعيد تحميل الأحدث بدل إبقاء الجهاز على نسخة مخالفة.
+          if (e?.status !== 409) return; // فشل شبكة عابر: سيُعاد الرفع مع أي تعديل تالٍ
+          try {
+            const { list, updatedAt } = await getKhitma(creds);
+            khitmaBaseRef.current = updatedAt;
+            khitmaSyncReadyRef.current = false; // التحميل لا يُطلق رفعاً جديداً
+            setKhatmaList(list);
+          } catch { /* تجاهل: سيُعاد المحاولة عند فتح السجلّ لاحقاً */ }
+        });
     }, 1500);
     return () => clearTimeout(t);
   }, [khatmaList, khitmaUnlocked]);

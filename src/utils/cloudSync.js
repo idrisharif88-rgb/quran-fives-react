@@ -94,18 +94,19 @@ export async function authKhitma(creds) {
   return true;
 }
 
-// يسحب قائمة الختمات من الخادم (يتطلّب بيانات دخول صحيحة)
+// يسحب قائمة الختمات من الخادم (يتطلّب بيانات دخول صحيحة).
+// يعيد الطابع الزمني أيضاً ليحتفظ به الجهاز أساساً (base) للرفع التالي.
 export async function getKhitma(creds) {
   const r = await api('/api/khitma', { method: 'GET', headers: khitmaHeaders(creds) });
-  return Array.isArray(r?.list) ? r.list : [];
+  return { list: Array.isArray(r?.list) ? r.list : [], updatedAt: r?.updatedAt ?? 0 };
 }
 
-// يرفع قائمة الختمات للخادم بطابع زمني جديد
-export async function putKhitma(creds, list) {
-  const updatedAt = Date.now();
+// يرفع قائمة الختمات مستنداً إلى النسخة التي سحبها الجهاز.
+// الخادم يمنح الطابع الزمني، ويرد 409 إن تغيّر السجلّ منذ السحب.
+export async function putKhitma(creds, list, baseUpdatedAt) {
   return api('/api/khitma', {
     method: 'PUT',
     headers: khitmaHeaders(creds),
-    body: JSON.stringify({ updatedAt, list }),
+    body: JSON.stringify({ list, baseUpdatedAt }),
   });
 }
