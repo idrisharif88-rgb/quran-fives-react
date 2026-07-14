@@ -34,20 +34,26 @@ async function api(path, options = {}, timeoutMs = 12000) {
         ...(options.headers || {}),
       },
     });
-    if (!res.ok) throw new Error('sync http ' + res.status);
+    if (!res.ok) {
+      const err = new Error('sync http ' + res.status);
+      err.status = res.status; // يميّز التعارض (409) عن أعطال الشبكة العابرة
+      throw err;
+    }
     return res.json();
   } finally {
     clearTimeout(timer);
   }
 }
 
-// يسحب الحالة من الخادم؛ إن كانت أحدث من المحلية يكتبها في localStorage
-// ويعيد true ليطلب المستدعي إعادة التحميل لتطبيقها على كامل الحالة.
-export async function pullRemoteIfNewer() {
+// يسحب الحالة من الخادم؛ إن اختلف طابعها عن آخر نسخة رآها هذا الجهاز يكتبها
+// في localStorage ويعيد true ليطلب المستدعي إعادة التحميل لتطبيقها.
+// المقارنة بعدم التساوي لا بالأكبر: الطابع يصدر عن ساعة الخادم وحدها، وأي
+// اختلاف يعني أن جهازاً آخر كتب بعدنا (ويُصلح أيضاً الطوابع القديمة المشوّهة).
+export async function pullRemoteIfChanged() {
   if (!SYNC_ENABLED) return false;
   const remote = await api('/api/state', { method: 'GET' });
   const localMeta = getSyncMeta();
-  if (remote && remote.state && remote.updatedAt > localMeta.updatedAt) {
+  if (remote && remote.state && remote.updatedAt !== localMeta.updatedAt) {
     localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(remote.state));
     setSyncMeta({ updatedAt: remote.updatedAt });
     return true;
@@ -55,21 +61,22 @@ export async function pullRemoteIfNewer() {
   return false;
 }
 
-// يرفع الحالة المحلية للخادم بطابع زمني جديد.
+// يرفع الحالة المحلية مستنداً إلى آخر نسخة رآها هذا الجهاز.
+// الخادم هو من يمنح الطابع الزمني، ويرفض الرفع بـ409 إن تغيّرت الحالة منذئذٍ.
 export async function pushLocal(state) {
   if (!SYNC_ENABLED) return;
-  const updatedAt = Date.now();
-  const body = JSON.stringify({ updatedAt, state });
+  const body = JSON.stringify({ state, baseUpdatedAt: getSyncMeta().updatedAt });
   // ٣ محاولات مع تراجع تصاعدي — تتجاوز الأعطال الشبكية العابرة دون إعلان فشل
   let lastErr;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const result = await api('/api/state', { method: 'PUT', body });
-      // إن كان الخادم يحوي نسخة أحدث (stale)، نعتمد طابعه لتفادي حلقة رفع
-      setSyncMeta({ updatedAt: result?.updatedAt ?? updatedAt });
+      setSyncMeta({ updatedAt: result.updatedAt });
       return;
     } catch (e) {
       lastErr = e;
+      // التعارض وأخطاء الطلب لا تُصلحها إعادة المحاولة — الفشل يُعلن فوراً
+      if (e.status && e.status < 500) break;
       if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
     }
   }

@@ -2413,6 +2413,13 @@ button:focus-visible,
 .sync-status-pill:disabled {
   cursor: default;
 }
+.sync-status-pill--compact {
+  gap: 0;
+  padding: 0;
+  width: 44px;
+  height: 44px;
+  justify-content: center;
+}
 .sync-status-spinner {
   width: 18px;
   height: 18px;

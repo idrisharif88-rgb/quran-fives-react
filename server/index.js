@@ -106,15 +106,19 @@ app.get('/api/state', async (req, res) => {
 });
 
 app.put('/api/state', async (req, res) => {
-  const { updatedAt, state } = req.body || {};
-  if (typeof updatedAt !== 'number' || typeof state !== 'object' || state === null) {
+  const { state, baseUpdatedAt } = req.body || {};
+  if (typeof state !== 'object' || state === null || typeof baseUpdatedAt !== 'number') {
     return res.status(400).json({ error: 'حمولة غير صالحة' });
   }
   const current = await readState();
-  // آخر تعديل يفوز: نتجاهل الرفع الأقدم من المخزّن لمنع جهاز قديم من الكتابة فوق الأحدث
-  if (updatedAt < current.updatedAt) {
-    return res.json({ ok: true, updatedAt: current.updatedAt, stale: true });
+  // تزامن متفائل: الجهاز يرفع مستنداً إلى النسخة التي رآها آخر مرّة.
+  // إن تغيّرت الحالة على الخادم منذ ذلك الحين فهذا تعارض حقيقي — نرفض الرفع
+  // ونطلب من الجهاز السحب أوّلاً، بدل أن يكتب حالته القديمة فوق الأحدث.
+  if (baseUpdatedAt !== current.updatedAt) {
+    return res.status(409).json({ error: 'تعارض: الحالة تغيّرت على الخادم', updatedAt: current.updatedAt });
   }
+  // ساعة الخادم وحدها هي المرجع — لا نثق بساعات الأجهزة (اختلافها يكسر «آخر تعديل يفوز»)
+  const updatedAt = Date.now();
   await writeState({ updatedAt, state });
   res.json({ ok: true, updatedAt });
 });

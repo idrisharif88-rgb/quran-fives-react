@@ -36,7 +36,7 @@ import {
   removeStoredState,
   saveStoredState
 } from './utils/persistence';
-import { pullRemoteIfNewer, pushLocal, authKhitma, getKhitma, putKhitma } from './utils/cloudSync';
+import { pullRemoteIfChanged, pushLocal, authKhitma, getKhitma, putKhitma } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
 import QuranFal from './components/QuranFal';
@@ -437,15 +437,19 @@ function App() {
     let cancelled = false;
     (async () => {
       try {
-        const applied = await pullRemoteIfNewer();
-        if (applied && !cancelled) {
+        const applied = await pullRemoteIfChanged();
+        if (cancelled) return;
+        if (applied) {
           window.location.reload();
           return;
         }
+        cloudSyncReadyRef.current = true;
+        setSyncFailed(false);
       } catch {
-        // غير متصل أو خطأ شبكة: نكمل بالحالة المحلية
+        // فشل السحب: لا نُفعّل الرفع إطلاقاً. الجهاز لم يعرف حالة الخادم بعد،
+        // ورفع حالته المحلية هنا يكتب نسخة قديمة فوق الأحدث من جهاز آخر.
+        if (!cancelled) setSyncFailed(true);
       }
-      if (!cancelled) cloudSyncReadyRef.current = true;
     })();
     return () => { cancelled = true; };
   }, [syncUnlocked]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -458,12 +462,35 @@ function App() {
     setIsSyncing(true);
     pushLocal(snapshot)
       .then(() => { if (token === cloudPushSeqRef.current) setSyncFailed(false); })
-      .catch(() => { if (token === cloudPushSeqRef.current) setSyncFailed(true); })
+      .catch((e) => {
+        // تعارض: جهاز آخر كتب بعدنا. نوقف الرفع حتى يسحب المستخدم الأحدث بزر إعادة المحاولة
+        if (e?.status === 409) cloudSyncReadyRef.current = false;
+        if (token === cloudPushSeqRef.current) setSyncFailed(true);
+      })
       .finally(() => { if (token === cloudPushSeqRef.current) setIsSyncing(false); });
   };
 
-  const handleSyncRetry = () => {
+  // إعادة المحاولة يدوياً: إن لم يكتمل السحب الأوّلي (أو حدث تعارض) نسحب أوّلاً،
+  // فلا يُرفع شيء قبل أن يعرف الجهاز حالة الخادم.
+  const handleSyncRetry = async () => {
     if (isSyncing) return;
+    if (!cloudSyncReadyRef.current) {
+      setIsSyncing(true);
+      try {
+        const applied = await pullRemoteIfChanged();
+        if (applied) {
+          window.location.reload();
+          return;
+        }
+        cloudSyncReadyRef.current = true;
+        setSyncFailed(false);
+      } catch {
+        setSyncFailed(true);
+        return;
+      } finally {
+        setIsSyncing(false);
+      }
+    }
     runCloudPush(lastSnapshotRef.current);
   };
 
@@ -494,13 +521,7 @@ function App() {
     setSyncPasswordError(false);
   };
 
-  // إعادة المحاولة تلقائياً عند عودة الاتصال بالإنترنت
-  useEffect(() => {
-    if (!SYNC_ENABLED) return;
-    const onOnline = () => { if (syncFailed) runCloudPush(lastSnapshotRef.current); };
-    window.addEventListener('online', onOnline);
-    return () => window.removeEventListener('online', onOnline);
-  }, [syncFailed]); // eslint-disable-line react-hooks/exhaustive-deps
+  // لا إعادة محاولة تلقائية عند الفشل — إعادة المحاولة يدوية فقط بالضغط على زر المؤشّر
 
   useEffect(() => {
     const appStateSnapshot = {
