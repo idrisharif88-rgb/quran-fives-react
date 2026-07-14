@@ -19,6 +19,17 @@ Establish a baseline first, scope checks to changed files, and grep for orphaned
 - **Keep the diff focused:** Revert incidental churn (e.g. `package-lock.json` touched by a local `npm install`). Install throwaway tooling with `npm install --no-save`.
 - **Report honestly:** State what passed, what failed, and what was skipped.
 
+# Cloud Sync Rules
+
+- **Deploy order:** client and server share a request contract (`baseUpdatedAt`, `writeId`). Deploy `server/index.js` BEFORE building the APK — mismatched pairs fail with 400.
+- **`.env` is required to build:** without `VITE_SYNC_URL`/`VITE_SYNC_CODE` the APK builds fine but sync is silently disabled (`SYNC_ENABLED=false`). Check it exists before any release build.
+- **Never let fast-ticking state gate cloud pushes:** `nightTimerSeconds` ticks every second; putting it in the push effect's deps reset the debounce forever and killed sync while the timer ran. Ticking values are saved locally and ride along with the next real change — keep them out of push-trigger deps.
+- **One push in flight:** `cloudPushBusyRef` serializes uploads; concurrent pushes 409 against each other.
+
+# Debugging
+
+- When the user reports a precise symptom ("it syncs only when I disable it"), trace that literal code path FIRST — before theorizing about networks, caches, or infrastructure. The symptom described the bug exactly.
+
 # Communication
 
 - Be concise. Lead with the outcome. Do not expand unless asked.
