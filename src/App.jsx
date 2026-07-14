@@ -327,6 +327,8 @@ function App() {
   const cloudSyncReadyRef = useRef(false);
   const cloudPushTimerRef = useRef(null);
   const cloudPushSeqRef = useRef(0);
+  const cloudPushBusyRef = useRef(false);   // رفعة جارية — لا نطلق ثانية بالتوازي
+  const cloudPushPendingRef = useRef(null); // آخر لقطة وصلت أثناء الانشغال، تُرفع بعده
   const lastSnapshotRef = useRef(null);
 
   const starredArray = Array.from(starredIndices).sort((a, b) => a - b);
@@ -459,6 +461,10 @@ function App() {
   // فلا يكتب رفعٌ قديم فاشل فوق نجاح رفعٍ أحدث (يمنع رسالة «لم تتم» الكاذبة).
   const runCloudPush = (snapshot) => {
     if (!SYNC_ENABLED || !syncUnlocked || !snapshot) return;
+    // رفعة واحدة في كل لحظة: التوازي على شبكة بطيئة كان يجعل الرفعة الثانية
+    // تصطدم بـ409 من الأولى (أساسها صار قديماً) فتتعطّل المزامنة بلا سبب حقيقي
+    if (cloudPushBusyRef.current) { cloudPushPendingRef.current = snapshot; return; }
+    cloudPushBusyRef.current = true;
     const token = ++cloudPushSeqRef.current;
     setIsSyncing(true);
     pushLocal(snapshot)
@@ -467,8 +473,16 @@ function App() {
         // تعارض: جهاز آخر كتب بعدنا. نوقف الرفع حتى يسحب المستخدم الأحدث بزر إعادة المحاولة
         if (e?.status === 409) cloudSyncReadyRef.current = false;
         if (token === cloudPushSeqRef.current) setSyncFailed(true);
+        cloudPushPendingRef.current = null; // بعد الفشل لا نكرّر تلقائياً — المعالجة يدوية
       })
-      .finally(() => { if (token === cloudPushSeqRef.current) setIsSyncing(false); });
+      .finally(() => {
+        cloudPushBusyRef.current = false;
+        if (token === cloudPushSeqRef.current) setIsSyncing(false);
+        // ما تجمّع أثناء الانشغال يُرفع الآن بأساس محدّث من الرفعة السابقة
+        const pending = cloudPushPendingRef.current;
+        cloudPushPendingRef.current = null;
+        if (pending) runCloudPush(pending);
+      });
   };
 
   // إعادة المحاولة يدوياً: إن لم يكتمل السحب الأوّلي (أو حدث تعارض) نسحب أوّلاً،

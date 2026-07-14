@@ -61,11 +61,17 @@ export async function pullRemoteIfChanged() {
   return false;
 }
 
+// معرّف كتابة فريد يتكرّر عبر محاولات الرفع نفسها: لو وصلت الكتابة وضاع ردّها،
+// يتعرّف الخادم على إعادة الإرسال ويردّ نجاحاً بدل 409 يعطّل المزامنة.
+function newWriteId() {
+  try { return crypto.randomUUID(); } catch { return String(Date.now()) + '-' + Math.random(); }
+}
+
 // يرفع الحالة المحلية مستنداً إلى آخر نسخة رآها هذا الجهاز.
 // الخادم هو من يمنح الطابع الزمني، ويرفض الرفع بـ409 إن تغيّرت الحالة منذئذٍ.
 export async function pushLocal(state) {
   if (!SYNC_ENABLED) return;
-  const body = JSON.stringify({ state, baseUpdatedAt: getSyncMeta().updatedAt });
+  const body = JSON.stringify({ state, baseUpdatedAt: getSyncMeta().updatedAt, writeId: newWriteId() });
   // ٣ محاولات مع تراجع تصاعدي — تتجاوز الأعطال الشبكية العابرة دون إعلان فشل
   let lastErr;
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -107,6 +113,6 @@ export async function putKhitma(creds, list, baseUpdatedAt) {
   return api('/api/khitma', {
     method: 'PUT',
     headers: khitmaHeaders(creds),
-    body: JSON.stringify({ list, baseUpdatedAt }),
+    body: JSON.stringify({ list, baseUpdatedAt, writeId: newWriteId() }),
   });
 }

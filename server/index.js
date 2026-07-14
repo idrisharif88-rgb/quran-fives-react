@@ -85,11 +85,15 @@ app.get('/api/khitma', async (req, res) => {
 
 app.put('/api/khitma', async (req, res) => {
   if (!khitmaAuthorized(req)) return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
-  const { list, baseUpdatedAt } = req.body || {};
+  const { list, baseUpdatedAt, writeId } = req.body || {};
   if (!Array.isArray(list) || typeof baseUpdatedAt !== 'number') {
     return res.status(400).json({ error: 'حمولة غير صالحة' });
   }
   const current = await readKhitma();
+  // إعادة إرسال لكتابة قبِلناها سلفاً (ضاع ردّها): نجاح مكرّر لا تعارض
+  if (writeId && writeId === current.writeId) {
+    return res.json({ ok: true, updatedAt: current.updatedAt });
+  }
   // تزامن متفائل كما في /api/state: الجهاز يرفع مستنداً إلى النسخة التي سحبها.
   // اختلافها يعني أن جهازاً آخر كتب بعده — نرفض بدل أن نفقد ختمات.
   if (baseUpdatedAt !== current.updatedAt) {
@@ -97,7 +101,7 @@ app.put('/api/khitma', async (req, res) => {
   }
   // ساعة الخادم وحدها — لا نثق بساعات الأجهزة
   const updatedAt = Date.now();
-  await writeKhitma({ updatedAt, list });
+  await writeKhitma({ updatedAt, list, writeId });
   res.json({ ok: true, updatedAt });
 });
 
@@ -109,11 +113,16 @@ app.get('/api/state', async (req, res) => {
 });
 
 app.put('/api/state', async (req, res) => {
-  const { state, baseUpdatedAt } = req.body || {};
+  const { state, baseUpdatedAt, writeId } = req.body || {};
   if (typeof state !== 'object' || state === null || typeof baseUpdatedAt !== 'number') {
     return res.status(400).json({ error: 'حمولة غير صالحة' });
   }
   const current = await readState();
+  // إعادة إرسال لكتابة قبِلناها سلفاً (ضاع ردّها على شبكة بطيئة): نجاح مكرّر لا تعارض.
+  // بدون هذا، إعادة المحاولة كانت تصطدم بـ409 من كتابتها هي نفسها وتُعطّل المزامنة.
+  if (writeId && writeId === current.writeId) {
+    return res.json({ ok: true, updatedAt: current.updatedAt });
+  }
   // تزامن متفائل: الجهاز يرفع مستنداً إلى النسخة التي رآها آخر مرّة.
   // إن تغيّرت الحالة على الخادم منذ ذلك الحين فهذا تعارض حقيقي — نرفض الرفع
   // ونطلب من الجهاز السحب أوّلاً، بدل أن يكتب حالته القديمة فوق الأحدث.
@@ -122,7 +131,7 @@ app.put('/api/state', async (req, res) => {
   }
   // ساعة الخادم وحدها هي المرجع — لا نثق بساعات الأجهزة (اختلافها يكسر «آخر تعديل يفوز»)
   const updatedAt = Date.now();
-  await writeState({ updatedAt, state });
+  await writeState({ updatedAt, state, writeId });
   res.json({ ok: true, updatedAt });
 });
 
