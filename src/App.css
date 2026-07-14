@@ -2348,6 +2348,16 @@ button:focus-visible,
 .last-verse-btn svg {
   flex-shrink: 0;
 }
+/* في الوضع الليلي نعكس اللونين: الأخضر الداكن خلفيةً والأبيض نصاً وأيقونة،
+   لأن الأخضر الداكن على سطح شبه أسود لا يكاد يُرى (الأيقونة ترث اللون بـcurrentColor) */
+.app-container.night-mode .last-verse-btn {
+  background: #006400;
+  color: #ffffff;
+}
+.app-container.night-mode .last-verse-btn:hover {
+  background: #008000;
+  color: #ffffff;
+}
 
 /* طبقة تحميل أثناء توليد صورة الختمة (PNG) قبل المشاركة */
 .share-prep-overlay {
