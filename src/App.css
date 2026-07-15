@@ -352,28 +352,28 @@ body.night-mode #root {
   line-height: 1;
 }
 
-/* دائرتا الختمة (إضافة الختمة + ختماتي): 3سم × 3سم، والأزرار الأربعة تتّسع بصفّ واحد على شاشة Note 9 */
+/* دائرتا الختمة (إضافة الختمة + ختماتي): 2.7سم × 2.7سم، والأزرار الأربعة تتّسع بصفّ واحد على شاشة Note 9 */
 .nc-khitma-circle {
-  width: 3cm;
-  height: 3cm;
+  width: 2.7cm;
+  height: 2.7cm;
   border-radius: 50%;
   flex-shrink: 0;
   border: 3px solid #fff;
 }
 
 .nc-khitma-circle svg {
-  width: 88px;
-  height: 88px;
+  width: 80px;
+  height: 80px;
 }
 
 .nc-khitma-count {
-  font-size: 48px;
+  font-size: 44px;
   font-weight: 900;
   line-height: 1;
 }
 
 .nc-khitma-label {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   direction: rtl;
 }
