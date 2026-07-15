@@ -1706,10 +1706,10 @@ function App() {
     const khatmaLabel = num <= 10 ? `الختمة ${ORDINALS[num]}` : `الختمة ${toAr(num)}`;
     const khatmaDate = new Date(k.timestamp);
     const [, hDay, hMonth, hYear] = calcHijriOffline(khatmaDate);
-    const hijriDate = `${toAr(hDay)} ${hMonth} ${toAr(hYear)} هـ`;
-    // وقت الختمة على البطاقة بجانب التاريخ الهجري
+    // التاريخ والوقت على البطاقة بأرقام إنجليزية
+    const hijriDate = `${hDay} ${hMonth} ${hYear} هـ`;
     const hour12 = khatmaDate.getHours() % 12 || 12;
-    const timeLabel = `${toAr(hour12)}:${toAr(String(khatmaDate.getMinutes()).padStart(2, '0'))} ${khatmaDate.getHours() >= 12 ? 'م' : 'ص'}`;
+    const timeLabel = `${hour12}:${String(khatmaDate.getMinutes()).padStart(2, '0')} ${khatmaDate.getHours() >= 12 ? 'pm' : 'am'}`;
 
     const rrect = (c, x, y, w, h, r) => {
       c.beginPath();
@@ -2585,20 +2585,20 @@ function App() {
                     setShowKhatmaInput(true);
                   }}
                   title="سجِّل ختمة جديدة"
-                  className="nc-circle-88"
+                  className="nc-khitma-circle"
                   style={{
                     background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
                     cursor: 'pointer', display: 'flex', alignItems: 'center',
                     justifyContent: 'center', padding: '0',
                   }}
                 >
-                  <svg viewBox="0 0 24 24" width="76" height="76" fill="currentColor" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="152" height="152" fill="currentColor" aria-hidden="true">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5l-4-4 1.41-1.41L10 13.67l6.59-6.59L18 8.5l-8 8z"/>
                   </svg>
                 </button>
                 <div
                   aria-label={`${khatmaList.length} ختمة مسجلة`}
-                  className="nc-circle-88"
+                  className="nc-khitma-circle"
                   style={{
                     background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
                     display: 'flex', flexDirection: 'column', alignItems: 'center',

@@ -308,8 +308,10 @@ body.night-mode #root {
 
 .night-counter-actions {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
   align-items: center;
+  gap: 8px;
   direction: ltr;
   width: 100%;
   margin-top: 0;
@@ -350,28 +352,28 @@ body.night-mode #root {
   line-height: 1;
 }
 
-/* دوائر صف العداد (إضافة الختمة + ختماتي) بنفس حجم أزرار العداد ومتجاوبة */
-.nc-circle-88 {
-  width: 88px;
-  height: 88px;
+/* دائرتا الختمة (إضافة الختمة + ختماتي): ضعف حجم أزرار العداد */
+.nc-khitma-circle {
+  width: 176px;
+  height: 176px;
   border-radius: 50%;
   flex-shrink: 0;
   border: 3px solid #fff;
 }
 
-.nc-circle-88 svg {
-  width: 76px;
-  height: 76px;
+.nc-khitma-circle svg {
+  width: 152px;
+  height: 152px;
 }
 
 .nc-khitma-count {
-  font-size: 56px;
+  font-size: 108px;
   font-weight: 900;
   line-height: 1;
 }
 
 .nc-khitma-label {
-  font-size: 18px;
+  font-size: 34px;
   font-weight: bold;
   direction: rtl;
 }
@@ -1978,19 +1980,19 @@ button:focus-visible,
     height: 72px;
     font-size: 40px;
   }
-  .nc-circle-88 {
-    width: 72px;
-    height: 72px;
+  .nc-khitma-circle {
+    width: 144px;
+    height: 144px;
   }
-  .nc-circle-88 svg {
-    width: 60px;
-    height: 60px;
+  .nc-khitma-circle svg {
+    width: 124px;
+    height: 124px;
   }
   .nc-khitma-count {
-    font-size: 44px;
+    font-size: 88px;
   }
   .nc-khitma-label {
-    font-size: 14px;
+    font-size: 28px;
   }
   .night-counter-btn svg {
     width: 32px;
