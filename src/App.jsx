@@ -22,7 +22,7 @@ import SurahTransitionToast from './components/SurahTransitionToast';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { DEFAULT_RECITER } from './data/reciters';
+import { RECITERS, DEFAULT_RECITER } from './data/reciters';
 import { FIQH_DATA } from './data/fiqhData';
 import { getAudioUrl } from './utils/audioDownloader';
 import {
@@ -143,8 +143,9 @@ function App() {
     SESSION_STORAGE_KEYS.some(storageKey => hasStoredState(storageKey))
   ));
 
+  // قارئ محفوظ حُذف من القائمة (مثل أصوات المرتّل القديمة) يعود للافتراضي
   const [activeReciter, setActiveReciter] = useState(() => (
-    typeof persistedAppState.activeReciter === 'string' ? persistedAppState.activeReciter : DEFAULT_RECITER
+    RECITERS.some(r => r.id === persistedAppState.activeReciter) ? persistedAppState.activeReciter : DEFAULT_RECITER
   ));
   const [isAudioSettingsOpen, setIsAudioSettingsOpen] = useState(false);
 
@@ -1703,8 +1704,12 @@ function App() {
     const ORDINALS = ['','الأولى','الثانية','الثالثة','الرابعة','الخامسة','السادسة','السابعة','الثامنة','التاسعة','العاشرة'];
     const toAr = (n) => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
     const khatmaLabel = num <= 10 ? `الختمة ${ORDINALS[num]}` : `الختمة ${toAr(num)}`;
-    const [, hDay, hMonth, hYear] = calcHijriOffline(new Date(k.timestamp));
+    const khatmaDate = new Date(k.timestamp);
+    const [, hDay, hMonth, hYear] = calcHijriOffline(khatmaDate);
     const hijriDate = `${toAr(hDay)} ${hMonth} ${toAr(hYear)} هـ`;
+    // وقت الختمة على البطاقة بجانب التاريخ الهجري
+    const hour12 = khatmaDate.getHours() % 12 || 12;
+    const timeLabel = `${toAr(hour12)}:${toAr(String(khatmaDate.getMinutes()).padStart(2, '0'))} ${khatmaDate.getHours() >= 12 ? 'م' : 'ص'}`;
 
     const rrect = (c, x, y, w, h, r) => {
       c.beginPath();
@@ -1852,7 +1857,7 @@ function App() {
 
     ctx.fillStyle = 'rgba(255,255,255,0.42)';
     ctx.font = '24px Tajawal, Arial';
-    ctx.fillText(hijriDate, 300, curY); curY += 55;
+    ctx.fillText(`${hijriDate} — ${timeLabel}`, 300, curY); curY += 55;
 
     // Verse box
     const verseBoxX = 56, verseBoxW = 488;
@@ -2582,13 +2587,12 @@ function App() {
                   title="سجِّل ختمة جديدة"
                   className="nc-circle-88"
                   style={{
-                    border: 'none',
                     background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
                     cursor: 'pointer', display: 'flex', alignItems: 'center',
                     justifyContent: 'center', padding: '0',
                   }}
                 >
-                  <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="76" height="76" fill="currentColor" aria-hidden="true">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5l-4-4 1.41-1.41L10 13.67l6.59-6.59L18 8.5l-8 8z"/>
                   </svg>
                 </button>
@@ -2596,20 +2600,19 @@ function App() {
                   aria-label={`${khatmaList.length} ختمة مسجلة`}
                   className="nc-circle-88"
                   style={{
-                    border: 'none',
                     background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
                     display: 'flex', flexDirection: 'column', alignItems: 'center',
                     justifyContent: 'center', lineHeight: '1.2', gap: '1px',
                   }}
                 >
-                  <span style={{ fontSize: '30px', fontWeight: '900', lineHeight: '1' }}>
+                  <span className="nc-khitma-count">
                     {khatmaList.length}
                   </span>
-                  <span style={{ fontSize: '9px', fontWeight: 'bold', direction: 'rtl' }}>ختماتي</span>
+                  <span className="nc-khitma-label">ختماتي</span>
                 </div>
                 <button
                   type="button"
-                  className="night-counter-btn secondary night-counter-minus-btn"
+                  className="night-counter-btn night-counter-minus-btn"
                   onClick={() => {
                     if (!activeNightCounter) return;
                     playNightCounterSound('down');
