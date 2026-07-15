@@ -308,8 +308,10 @@ body.night-mode #root {
 
 .night-counter-actions {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
   align-items: center;
+  gap: 6px;
   direction: ltr;
   width: 100%;
   margin-top: 0;
@@ -350,28 +352,28 @@ body.night-mode #root {
   line-height: 1;
 }
 
-/* دائرتا الختمة (إضافة الختمة + ختماتي): 1.5سم × 1.5سم */
+/* دائرتا الختمة (إضافة الختمة + ختماتي): 3سم × 3سم، والأزرار الأربعة تتّسع بصفّ واحد على شاشة Note 9 */
 .nc-khitma-circle {
-  width: 1.5cm;
-  height: 1.5cm;
+  width: 3cm;
+  height: 3cm;
   border-radius: 50%;
   flex-shrink: 0;
-  border: 2px solid #fff;
+  border: 3px solid #fff;
 }
 
 .nc-khitma-circle svg {
-  width: 44px;
-  height: 44px;
+  width: 88px;
+  height: 88px;
 }
 
 .nc-khitma-count {
-  font-size: 24px;
+  font-size: 48px;
   font-weight: 900;
   line-height: 1;
 }
 
 .nc-khitma-label {
-  font-size: 9px;
+  font-size: 18px;
   font-weight: bold;
   direction: rtl;
 }
