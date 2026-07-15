@@ -323,7 +323,9 @@ body.night-mode #root {
 }
 
 .night-counter-btn {
-  border: 3px solid #fff;
+  /* حلقة بيضاء داخل الدائرة الخضراء نفسها كي تظهر على أي خلفية */
+  border: 3px solid var(--app-accent);
+  box-shadow: inset 0 0 0 3px #fff;
   width: 88px;
   height: 88px;
   border-radius: 50%;
@@ -344,36 +346,34 @@ body.night-mode #root {
   height: 40px;
 }
 
-.night-counter-reset-btn {
-  box-shadow: none;
-}
 
 .night-counter-minus-btn {
   line-height: 1;
 }
 
-/* دائرتا الختمة (إضافة الختمة + ختماتي): 2.7سم × 2.7سم، والأزرار الأربعة تتّسع بصفّ واحد على شاشة Note 9 */
+/* دائرتا الختمة (إضافة الختمة + ختماتي): 2.5سم × 2.5سم، بنفس حلقة الأزرار البيضاء الداخلية */
 .nc-khitma-circle {
-  width: 2.7cm;
-  height: 2.7cm;
+  width: 2.5cm;
+  height: 2.5cm;
   border-radius: 50%;
   flex-shrink: 0;
-  border: 3px solid #fff;
+  border: 3px solid var(--app-accent);
+  box-shadow: inset 0 0 0 3px #fff;
 }
 
 .nc-khitma-circle svg {
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
 }
 
 .nc-khitma-count {
-  font-size: 44px;
+  font-size: 40px;
   font-weight: 900;
   line-height: 1;
 }
 
 .nc-khitma-label {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: bold;
   direction: rtl;
 }
