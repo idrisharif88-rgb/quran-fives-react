@@ -322,10 +322,16 @@ body.night-mode #root {
   height: 64px;
 }
 
+/* الأزرار الأربعة أسفل العدّاد تأخذ نفس مظهر أيقونتَي الأعلى (.action-icon):
+   إطار خارجي بلون السمة وظلّ ناعم — بلا حلقة بيضاء داخليّة */
+.night-counter-btn,
+.nc-khitma-circle {
+  border: 3px solid var(--app-icon-border);
+  box-shadow: 0 4px 8px var(--app-shadow);
+  transition: all 0.2s ease;
+}
+
 .night-counter-btn {
-  /* حلقة بيضاء داخل الدائرة الخضراء نفسها كي تظهر على أي خلفية */
-  border: 3px solid var(--app-accent);
-  box-shadow: inset 0 0 0 3px #fff;
   width: 88px;
   height: 88px;
   border-radius: 50%;
@@ -351,14 +357,22 @@ body.night-mode #root {
   line-height: 1;
 }
 
-/* دائرتا الختمة (إضافة الختمة + ختماتي): 2.5سم × 2.5سم، بنفس حلقة الأزرار البيضاء الداخلية */
+/* دائرتا الختمة (إضافة الختمة + ختماتي): 2.5سم × 2.5سم */
 .nc-khitma-circle {
   width: 2.5cm;
   height: 2.5cm;
   border-radius: 50%;
   flex-shrink: 0;
-  border: 3px solid var(--app-accent);
-  box-shadow: inset 0 0 0 3px #fff;
+  padding: 0;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button.nc-khitma-circle {
+  cursor: pointer;
 }
 
 .nc-khitma-circle svg {
@@ -814,13 +828,17 @@ button:focus-visible,
   font-family: inherit;
 }
 
-.action-icon:hover {
+.action-icon:hover,
+.night-counter-btn:hover,
+button.nc-khitma-circle:hover {
   background-color: var(--app-accent-strong); /* درجة أغمق عند التمرير */
   transform: translateY(-3px);
   box-shadow: 0 6px 12px var(--app-accent-shadow);
 }
 
-.action-icon:active {
+.action-icon:active,
+.night-counter-btn:active,
+button.nc-khitma-circle:active {
   transform: translateY(1px) scale(0.95);
 }
 

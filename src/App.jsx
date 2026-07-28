@@ -2563,7 +2563,7 @@ function App() {
               <div className="night-counter-actions">
                 <button
                   type="button"
-                  className="night-counter-btn night-counter-reset-btn"
+                  className="night-counter-btn"
                   onClick={() => {
                     if (!activeNightCounter) return;
                     setCounterConfirm({ type: 'reset', id: activeNightCounterId });
@@ -2586,24 +2586,21 @@ function App() {
                   }}
                   title="سجِّل ختمة جديدة"
                   className="nc-khitma-circle"
-                  style={{
-                    background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', padding: '0',
-                  }}
                 >
-                  <svg viewBox="0 0 24 24" width="72" height="72" fill="currentColor" aria-hidden="true">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5l-4-4 1.41-1.41L10 13.67l6.59-6.59L18 8.5l-8 8z"/>
+                  {/* علامة صحّ: حلقة مفتوحة من أعلى اليمين وذيل العلامة يخرج منها */}
+                  <svg
+                    viewBox="0 0 24 24" width="72" height="72" aria-hidden="true"
+                    fill="none" stroke="currentColor"
+                    strokeLinecap="round" strokeLinejoin="round"
+                  >
+                    <path d="M15.25 5.14A8.5 8.5 0 1 0 19.47 11.76" strokeWidth="2" />
+                    <path d="M6.5 12.5 10 16.5 20 4" strokeWidth="3.2" />
                   </svg>
                 </button>
                 <div
                   aria-label={`${khatmaList.length} ختمة مسجلة`}
                   className="nc-khitma-circle"
-                  style={{
-                    background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    justifyContent: 'center', lineHeight: '1.2', gap: '1px',
-                  }}
+                  style={{ flexDirection: 'column', lineHeight: '1.2', gap: '1px' }}
                 >
                   <span className="nc-khitma-count">
                     {khatmaList.length}
