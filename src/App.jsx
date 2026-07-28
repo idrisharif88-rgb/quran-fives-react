@@ -40,7 +40,11 @@ import { pullRemoteIfChanged, pushLocal, authKhitma, getKhitma, putKhitma } from
 import { SYNC_ENABLED } from './utils/syncConfig';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
 import QuranFal from './components/QuranFal';
+import useAccentTheme from './hooks/useAccentTheme';
+import { ACCENT_THEMES, ACCENT_THEME_LABEL, getPageBg } from './constants/themes';
 import './App.css';
+// بعد App.css كي تعلو تشكيلة الذهبي على تعريفات الأخضر الافتراضية
+import './styles/themes.css';
 
 // كلمة مرور حذف الختمات (قفل بسيط لمنع الحذف العَرَضي، وليست حماية أمنية)
 const KHATMA_DELETE_PASSWORD = '27956';
@@ -281,6 +285,7 @@ function App() {
   const [isNightMode, setIsNightMode] = useState(() => (
     Boolean(persistedAppState.isNightMode)
   ));
+  const [accentTheme, setAccentTheme] = useAccentTheme(persistedAppState.accentTheme);
   const [quranicWondersNotes, setQuranicWondersNotes] = useState(() => (
     Array.isArray(persistedAppState.quranicWondersNotes) ? persistedAppState.quranicWondersNotes : []
   ));
@@ -564,6 +569,7 @@ function App() {
       fontColor,
       quranicWondersNotes, // إضافة الملاحظات للحفظ
       isNightMode,
+      accentTheme,
       // ملاحظة: khatmaList لم يعد ضمن الحالة المشتركة — صار خاصاً على الخادم خلف بيانات دخول
     };
     saveStoredState(APP_STORAGE_KEY, appStateSnapshot);
@@ -580,6 +586,7 @@ function App() {
     fontSize,
     fontWeight,
     isNightMode,
+    accentTheme,
     jumpInput,
     pageJumpInput,
     nightCounters,
@@ -615,6 +622,7 @@ function App() {
     fontSize,
     fontWeight,
     isNightMode,
+    accentTheme,
     jumpInput,
     pageJumpInput,
     nightCounters,
@@ -632,8 +640,10 @@ function App() {
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.body.classList.toggle('night-mode', isNightMode);
-    document.documentElement.style.backgroundColor = isNightMode ? '#0c1116' : '#f4f6f8';
-    
+    // الخلفية تتبع الوضع واللون معاً، وإلّا ظهرت حوافّ رمادية باردة حول التشكيلة الذهبية
+    const pageBg = getPageBg(isNightMode, accentTheme);
+    document.documentElement.style.backgroundColor = pageBg;
+
     // تحديث لون شريط النظام (Navigation & Status bar) في الأندرويد
     let metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (!metaThemeColor) {
@@ -641,8 +651,8 @@ function App() {
       metaThemeColor.name = 'theme-color';
       document.head.appendChild(metaThemeColor);
     }
-    metaThemeColor.content = isNightMode ? '#0c1116' : '#f4f6f8';
-  }, [isNightMode]);
+    metaThemeColor.content = pageBg;
+  }, [isNightMode, accentTheme]);
 
   // Logic: We pass the state to our pure function to get the exact Surah details
   // Effect to prevent body scrolling and ensure app fills viewport
@@ -1956,7 +1966,7 @@ function App() {
   }, []);
 
   return (
-    <div className={`app-container ${isNightMode ? 'night-mode' : ''}`} style={{
+    <div className={`app-container ${isNightMode ? 'night-mode' : ''}`} data-accent={accentTheme} style={{
       '--app-font-size': `${fontSize}px`,
       '--app-font-family': fontFamily,
       '--app-font-weight': fontWeight,
@@ -2070,11 +2080,11 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['العداد', 'ختماتي', 'فقهيات', 'فأل القرآن', 'الوضع الليلي', 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد'].map(option => (
+                  {['العداد', 'ختماتي', 'فقهيات', 'فأل القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
-                      className={`ayah-menu-item ${(option === 'الوضع الليلي' && isNightMode) || (option === 'السور المتشابهة في العدد' && viewMode === 'shared-verses') ? 'active' : ''}`}
+                      className={`ayah-menu-item ${(option === 'الوضع الليلي' && isNightMode) || (option === ACCENT_THEME_LABEL && accentTheme === ACCENT_THEMES.YELLOW) || (option === 'السور المتشابهة في العدد' && viewMode === 'shared-verses') ? 'active' : ''}`}
                       onClick={() => {
                         if (option === 'العداد') { setViewMode('night-counter'); setIsMoreMenuOpen(false); return; }
                         if (option === 'ختماتي') { mainKeyboard.closeKeyboard(); setIsKhatmaListOpen(true); setIsMoreMenuOpen(false); return; }
@@ -2082,6 +2092,7 @@ function App() {
                         if (option === 'فأل القرآن') { mainKeyboard.closeKeyboard(); setIsFalOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'خماسيات - سور') { mainKeyboard.closeKeyboard(); setSurahFivesIndex(0); setViewMode('surah-fives'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'الوضع الليلي') { setIsNightMode(prev => !prev); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === ACCENT_THEME_LABEL) { setAccentTheme(prev => (prev === ACCENT_THEMES.YELLOW ? ACCENT_THEMES.GREEN : ACCENT_THEMES.YELLOW)); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'إعدادات الصوت') { mainKeyboard.closeKeyboard(); setIsAudioSettingsOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'الخط') { mainKeyboard.closeKeyboard(); setIsMoreMenuOpen(false); setIsFontMenuOpen(true); return; }
                         if (option === 'عجائب قرآنية') { mainKeyboard.closeKeyboard(); setViewMode('quranic-wonders'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -3409,7 +3420,7 @@ function App() {
                 onClick={handleSaveKhatma}
                 style={{
                   flex: 1, padding: '13px', borderRadius: '12px', border: 'none',
-                  background: 'linear-gradient(145deg, #22c55e, #15803d)',
+                  background: 'linear-gradient(145deg, var(--app-save-grad-from), var(--app-save-grad-to))',
                   color: '#fff', fontSize: '15px', fontWeight: 'bold',
                   cursor: 'pointer', fontFamily: 'inherit',
                 }}
@@ -3537,7 +3548,7 @@ function App() {
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button type="button" onClick={() => saveEditKhatma(k.id)} style={{
                           flex: 1, padding: '9px', borderRadius: '9px', border: 'none',
-                          background: 'linear-gradient(145deg, #22c55e, #15803d)',
+                          background: 'linear-gradient(145deg, var(--app-save-grad-from), var(--app-save-grad-to))',
                           color: '#fff', fontSize: '13px', fontWeight: 'bold',
                           cursor: 'pointer', fontFamily: 'inherit',
                         }}>حفظ</button>

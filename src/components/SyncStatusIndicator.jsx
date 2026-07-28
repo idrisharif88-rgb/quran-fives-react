@@ -30,8 +30,8 @@ export default function SyncStatusIndicator({ failed, syncing, onRetry }) {
           strokeWidth="2.4"
           strokeLinejoin="round"
         />
-        <rect x="10.85" y="8.6" width="2.3" height="6.6" rx="1.15" fill="#006400" />
-        <circle cx="12" cy="18" r="1.5" fill="#006400" />
+        <rect x="10.85" y="8.6" width="2.3" height="6.6" rx="1.15" style={{ fill: 'var(--app-accent-deep)' }} />
+        <circle cx="12" cy="18" r="1.5" style={{ fill: 'var(--app-accent-deep)' }} />
       </svg>
     </button>
   );

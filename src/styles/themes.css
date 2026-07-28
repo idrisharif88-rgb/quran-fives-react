@@ -1,0 +1,66 @@
+/* تشكيلات ألوان التطبيق — الذهبي فقط، لأنّ الأخضر معرّف أصلاً في App.css.
+   اللون (أخضر/ذهبي) مستقلّ عن الوضع (نهاري/ليلي) => أربع تشكيلات.
+
+   قاعدة التباين: الذهبي الفاتح #ffd700 يصلح على السطح الليلي الداكن،
+   لكنّه على الخلفية النهارية الفاتحة لا يتجاوز 1.29:1 فلا يُرى الزرّ شكلاً أصلاً.
+   لذا نتبع ما يفعله الأخضر نفسه: درجة داكنة نهاراً وفاتحة ليلاً.
+     نهاراً  #a8820a  → 3.31:1 مقابل الخلفية، و5.12:1 للنصّ الداكن فوقه
+     ليلاً   #ffd700  → تباين عالٍ على السطح الأسود (بلا تغيير) */
+
+/* ===== الذهبي — نهاري ===== */
+.app-container[data-accent="yellow"]:not(.night-mode) {
+  /* أسطح دافئة قليلاً كي تبدو التشكيلة مقصودة لا أخضرَ بأزرار صفراء */
+  --app-bg: #f8f6f0;
+  --app-surface: #fffdf8;
+  --app-surface-2: #faf8f2;
+  --app-surface-3: #f5f2e9;
+
+  --app-accent: #a8820a;
+  --app-accent-strong: #8f6f08;
+  --app-accent-contrast: #1a1400;
+  --app-accent-glow: rgba(168, 130, 10, 0.18);
+  --app-accent-shadow: rgba(120, 92, 0, 0.28);
+  --app-accent-border: rgba(168, 130, 10, 0.45);
+  /* النصّ المكتوب بلون التطبيق فوق سطح فاتح يلزمه تعتيم أكثر من لون التعبئة */
+  --app-accent-ink: #7a6000;
+  /* حلقة بيضاء حول الزرّ كما في الأخضر النهاري تماماً */
+  --app-icon-border: #ffffff;
+  --app-accent-deep: #7a6000;
+  --app-accent-deep-hover: #96770a;
+  --app-accent-deep-soft: rgba(122, 96, 0, 0.2);
+  --app-accent-deep-contrast: #ffffff;
+  --app-menu-grad-from: #b8860b;
+  --app-menu-grad-to: #7a6000;
+  /* أزرار الحفظ نصّها أبيض ثابت، فيلزم التدرّج أن يبقى داكناً بما يكفي */
+  --app-save-grad-from: #8a6d00;
+  --app-save-grad-to: #6b5400;
+}
+
+/* ===== الذهبي — ليلي ===== */
+.app-container[data-accent="yellow"].night-mode {
+  --app-accent: #ffd700;
+  --app-accent-strong: #e6be00;
+  --app-accent-contrast: #1a1400;
+  --app-accent-glow: rgba(255, 215, 0, 0.25);
+  --app-accent-shadow: rgba(255, 215, 0, 0.25);
+  --app-accent-border: rgba(255, 215, 0, 0.35);
+  /* على السطح الليلي الداكن يُقرأ الذهبي الفاتح مباشرةً بلا تعتيم */
+  --app-accent-ink: #ffd700;
+  --app-icon-border: #1b222c;
+  --app-accent-deep: #8a6d00;
+  --app-accent-deep-hover: #a88600;
+  --app-accent-deep-soft: rgba(255, 215, 0, 0.2);
+  --app-accent-deep-contrast: #ffffff;
+  --app-menu-grad-from: #d4af37;
+  --app-menu-grad-to: #8a6d00;
+  --app-save-grad-from: #8a6d00;
+  --app-save-grad-to: #6b5400;
+}
+
+/* خلفية الصفحة خلف الحاوية (منطقة السحب الزائد والحوافّ الآمنة).
+   القيمة نفسها تُضبط من App.jsx على <html> وعلى meta[theme-color]. */
+html:has(body[data-accent="yellow"]:not(.night-mode)),
+body[data-accent="yellow"]:not(.night-mode),
+body[data-accent="yellow"]:not(.night-mode) #root {
+  background-color: #f8f6f0;
+}

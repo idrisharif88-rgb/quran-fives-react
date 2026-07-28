@@ -60,6 +60,20 @@ body.night-mode #root {
   --app-accent-glow: rgba(34, 197, 94, 0.15);
   --app-accent-shadow: rgba(0, 100, 0, 0.2);
   --app-accent-border: rgba(34, 197, 94, 0.35);
+  /* درجة داكنة من لون التطبيق: تصلح خلفيةً تحتها نصّ فاتح وفواصلَ رفيعة،
+     وتبقى نفسها في الوضعين الليلي والنهاري (الأخضر الفاتح لا يُقرأ عليه الأبيض) */
+  /* لون التطبيق حين يُستعمل نصّاً أو إطاراً فوق سطح فاتح.
+     في الأخضر هو نفسه لون التطبيق، أمّا الذهبي فيلزمه تعتيم كي يُقرأ. */
+  --app-accent-ink: darkgreen;
+  --app-accent-deep: #006400;
+  --app-accent-deep-hover: #008000;
+  --app-accent-deep-soft: rgba(0, 100, 0, 0.2);
+  --app-accent-deep-contrast: #ffffff;
+  /* تدرّجات الأزرار */
+  --app-menu-grad-from: #0e6a58;
+  --app-menu-grad-to: #074a3d;
+  --app-save-grad-from: #22c55e;
+  --app-save-grad-to: #15803d;
   --app-danger: #d9534f;
   --app-warn: #f39c12;
   --app-popover: #ffffff;
@@ -110,6 +124,7 @@ body.night-mode #root {
   --app-accent: #2bd17c;
   --app-accent-strong: #20b36b;
   --app-accent-contrast: #0b1117;
+  --app-accent-ink: #2bd17c;
   --app-accent-glow: rgba(43, 209, 124, 0.25);
   --app-accent-shadow: rgba(43, 209, 124, 0.25);
   --app-accent-border: rgba(43, 209, 124, 0.35);
@@ -159,7 +174,7 @@ body.night-mode #root {
 
 .session-title {
   margin: 0 0 10px;
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-size: 30px;
   font-weight: 800;
 }
@@ -257,7 +272,7 @@ body.night-mode #root {
   border-radius: 50%;
   border: clamp(12px, 3vmin, 26px) solid var(--app-accent);
   background: var(--app-surface-3);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-size: clamp(40px, min(12vw, 8vh), 96px);
   font-weight: 800;
   display: flex;
@@ -282,7 +297,7 @@ body.night-mode #root {
   margin-bottom: 10px;
   font-size: 38px;
   font-weight: 900;
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   letter-spacing: 1.5px;
   text-align: center;
   text-shadow: none;
@@ -402,7 +417,7 @@ button.nc-khitma-circle {
 .expand-btn {
   background-color: var(--app-surface-3);
   border: 1px solid var(--app-border);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   border-radius: 50%;
   width: 34px;
   height: 34px;
@@ -451,7 +466,7 @@ button.nc-khitma-circle {
   margin-top: -25px;
   z-index: 20;
   background-color: transparent;
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   width: 50px;
   height: 50px;
   border: none;
@@ -672,7 +687,7 @@ button:focus-visible,
 }
 
 .night-counter-manager-card.active {
-  border-color: var(--app-accent);
+  border-color: var(--app-accent-ink);
   box-shadow: 0 0 0 1px var(--app-accent-border);
   background: var(--app-surface);
 }
@@ -694,7 +709,7 @@ button:focus-visible,
   border-radius: 999px;
   padding: 3px 8px;
   background: var(--app-accent-glow);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-size: 12px;
   font-weight: 800;
 }
@@ -736,7 +751,7 @@ button:focus-visible,
 }
 
 .night-counter-manager-btn.primary {
-  border-color: var(--app-accent);
+  border-color: var(--app-accent-ink);
   background: var(--app-accent);
   color: var(--app-accent-contrast);
 }
@@ -778,7 +793,7 @@ button:focus-visible,
 .night-counter-chip.active {
   background: var(--app-accent);
   color: var(--app-accent-contrast);
-  border-color: var(--app-accent);
+  border-color: var(--app-accent-ink);
 }
 
 .night-counter-chip.add {
@@ -845,7 +860,7 @@ button.nc-khitma-circle:active {
 .menu-main-btn {
   padding: 0;
   overflow: hidden;
-  background: linear-gradient(145deg, #0e6a58, #074a3d);
+  background: linear-gradient(145deg, var(--app-menu-grad-from), var(--app-menu-grad-to));
 }
 
 .menu-main-icon {
@@ -939,12 +954,12 @@ button.nc-khitma-circle:active {
 .starred-rectangle:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 10px var(--app-accent-shadow);
-  border-color: var(--app-accent);
+  border-color: var(--app-accent-ink);
 }
 
 .starred-title {
   font-weight: bold;
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-size: 18px;
   margin-bottom: 10px;
   border-bottom: 1px solid var(--app-border);
@@ -960,7 +975,7 @@ button.nc-khitma-circle:active {
 }
 
 .starred-verse-num {
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-weight: bold;
   margin: 0 5px;
   font-size: 20px;
@@ -1176,7 +1191,7 @@ button.nc-khitma-circle:active {
 
 .ayah-menu-item {
   border: none;
-  border-bottom: 1px solid darkgreen;
+  border-bottom: 1px solid var(--app-accent-deep);
   background: transparent;
   color: var(--app-popover-text);
   font-size: 18px;
@@ -1196,12 +1211,12 @@ button.nc-khitma-circle:active {
 
 .ayah-menu-item.active {
   background-color: var(--app-popover-hover);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
 }
 
 .ayah-menu-item:hover {
   background-color: var(--app-popover-hover);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
 }
 
 .ayah-menu-item:active {
@@ -1224,7 +1239,7 @@ button.nc-khitma-circle:active {
 .khmasiyat-quiz-title {
   margin: 0;
   text-align: center;
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-size: 30px;
   font-family: inherit;
   font-weight: 700;
@@ -1282,7 +1297,7 @@ button.nc-khitma-circle:active {
   transition: color 0.2s ease, transform 0.2s ease;
 }
 .quiz-stat-reset-btn:hover {
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   transform: rotate(-45deg);
 }
 
@@ -1323,7 +1338,7 @@ button.nc-khitma-circle:active {
 }
 
 .khmasiyat-quiz-input:focus {
-  border-color: var(--app-accent);
+  border-color: var(--app-accent-ink);
   box-shadow: 0 0 0 3px var(--app-accent-glow);
 }
 
@@ -1438,7 +1453,7 @@ button.nc-khitma-circle:active {
 .surah-count-mode-switch .khmasiyat-quiz-btn.active {
   background: var(--app-accent);
   color: var(--app-accent-contrast);
-  border-color: var(--app-accent);
+  border-color: var(--app-accent-ink);
 }
 
 @keyframes popoverFade {
@@ -1457,7 +1472,7 @@ button.nc-khitma-circle:active {
 .settings-popover.more-menu-settings .segmented-control,
 .settings-popover.more-menu-settings .colors-row {
   padding: 8px 10px;
-  border-bottom: 1px solid darkgreen;
+  border-bottom: 1px solid var(--app-accent-deep);
 }
 
 .settings-popover.more-menu-settings .settings-row:last-child,
@@ -1477,7 +1492,7 @@ button.nc-khitma-circle:active {
   border-radius: 8px;
   border: 1px solid var(--app-border);
   background: var(--app-surface-3);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-size: 20px;
   font-weight: bold;
   cursor: pointer;
@@ -1521,7 +1536,7 @@ button.nc-khitma-circle:active {
 }
 .segmented-control button.active {
   background: var(--app-surface);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-weight: bold;
   box-shadow: 0 2px 4px var(--app-shadow);
 }
@@ -1571,7 +1586,7 @@ button.nc-khitma-circle:active {
 }
 
 .input-inner-wrapper:focus-within {
-  border-color: var(--app-accent);
+  border-color: var(--app-accent-ink);
   box-shadow: 0 0 0 3px var(--app-accent-glow);
 }
 
@@ -2128,7 +2143,7 @@ button.nc-khitma-circle:active {
 
 .quranic-wonders-title {
   margin: 0;
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-size: 30px;
   font-family: inherit;
   font-weight: 700;
@@ -2213,7 +2228,7 @@ button.nc-khitma-circle:active {
 }
 
 .quranic-wonders-action-btn.edit-btn:hover {
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
 }
 
 .quranic-wonders-action-btn.delete-btn:hover {
@@ -2243,7 +2258,7 @@ button.nc-khitma-circle:active {
 }
 
 .quranic-wonders-textarea:focus {
-  border-color: var(--app-accent);
+  border-color: var(--app-accent-ink);
   box-shadow: 0 0 0 3px var(--app-accent-glow);
 }
 
@@ -2357,9 +2372,9 @@ button.nc-khitma-circle:active {
   gap: 11px;
   padding: 13px 32px;
   border-radius: 14px;
-  border: 2.5px solid #006400;
+  border: 2.5px solid var(--app-accent-deep);
   background: var(--app-surface-2);
-  color: #006400;
+  color: var(--app-accent-deep);
   font-size: 20px;
   font-weight: 900;
   font-family: inherit;
@@ -2367,8 +2382,8 @@ button.nc-khitma-circle:active {
   transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 .last-verse-btn:hover {
-  background: #006400;
-  color: #ffffff;
+  background: var(--app-accent-deep);
+  color: var(--app-accent-deep-contrast);
 }
 .last-verse-btn:active {
   transform: scale(0.97);
@@ -2379,12 +2394,12 @@ button.nc-khitma-circle:active {
 /* في الوضع الليلي نعكس اللونين: الأخضر الداكن خلفيةً والأبيض نصاً وأيقونة،
    لأن الأخضر الداكن على سطح شبه أسود لا يكاد يُرى (الأيقونة ترث اللون بـcurrentColor) */
 .app-container.night-mode .last-verse-btn {
-  background: #006400;
-  color: #ffffff;
+  background: var(--app-accent-deep);
+  color: var(--app-accent-deep-contrast);
 }
 .app-container.night-mode .last-verse-btn:hover {
-  background: #008000;
-  color: #ffffff;
+  background: var(--app-accent-deep-hover);
+  color: var(--app-accent-deep-contrast);
 }
 
 /* طبقة تحميل أثناء توليد صورة الختمة (PNG) قبل المشاركة */
@@ -2413,8 +2428,8 @@ button.nc-khitma-circle:active {
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  border: 4px solid rgba(0, 100, 0, 0.18);
-  border-top-color: #006400;
+  border: 4px solid var(--app-accent-deep-soft);
+  border-top-color: var(--app-accent-deep);
   animation: sharePrepSpin 0.8s linear infinite;
 }
 .share-prep-text {
@@ -2439,9 +2454,9 @@ button.nc-khitma-circle:active {
   gap: 9px;
   padding: 10px 20px;
   border-radius: 999px;
-  border: 2px solid #006400;
+  border: 2px solid var(--app-accent-deep);
   background: var(--app-surface-2);
-  color: #006400;
+  color: var(--app-accent-deep);
   font-size: 15px;
   font-weight: 800;
   font-family: inherit;
@@ -2465,7 +2480,7 @@ button.nc-khitma-circle:active {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 2.6px solid rgba(0, 100, 0, 0.2);
-  border-top-color: #006400;
+  border: 2.6px solid var(--app-accent-deep-soft);
+  border-top-color: var(--app-accent-deep);
   animation: sharePrepSpin 0.8s linear infinite;
 }

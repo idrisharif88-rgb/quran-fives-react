@@ -26,7 +26,7 @@
   font-weight: bold;
   margin-bottom: 20px;
   text-align: center;
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
 }
 
 .audio-setting-section {
