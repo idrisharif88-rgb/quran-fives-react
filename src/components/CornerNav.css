@@ -8,18 +8,24 @@
   pointer-events: auto;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  max-width: 46vw;
-  padding: 8px 16px;
+  gap: 9px;
+  max-width: 50vw;
+  padding: 9px 18px;
   border: 1.5px solid var(--app-accent);
   border-radius: 999px;
   background: var(--app-surface);
   color: var(--app-accent-ink);
   font-family: inherit;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
   line-height: 1;
   cursor: pointer;
+}
+
+/* الأيقونة أهدأ قليلاً من النصّ فلا تزاحم اسم السورة رغم كبر حجمها */
+.corner-nav-surah-icon {
+  flex: 0 0 auto;
+  opacity: 0.85;
 }
 
 .corner-nav-surah-name {
@@ -194,6 +200,6 @@
 
 @media (max-width: 600px) {
   .corner-nav-step-digit { font-size: 54px; }   /* يطابق رقم الآية على الجوال */
-  .corner-nav-surah-btn { font-size: 14.5px; padding: 7px 13px; max-width: 40vw; }
+  .corner-nav-surah-btn { font-size: 15.5px; padding: 8px 15px; max-width: 46vw; gap: 8px; }
   .corner-nav-step-caption { font-size: 11px; }
 }

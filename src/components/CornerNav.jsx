@@ -107,8 +107,23 @@ export default function CornerNav({ surahNumber, surahName, step, onSelectSurah,
         title="الانتقال إلى سورة"
         dir="rtl"
       >
-        <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
-          <path d="M4 4h6a3 3 0 0 1 2 .8A3 3 0 0 1 14 4h6a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-5.5a1.5 1.5 0 0 0-1.4 1 1 1 0 0 1-1.9 0 1.5 1.5 0 0 0-1.4-1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm7 3.4A1.6 1.6 0 0 0 9.6 6H5v11h4.6c.5 0 1 .1 1.4.4V7.4Zm2 10c.4-.3.9-.4 1.4-.4H19V6h-4.6A1.6 1.6 0 0 0 13 7.4v10Z" />
+        {/* مصحف مفتوح بخطّ مرسوم لا بمساحة مصمتة: أوضح عند الأحجام الصغيرة
+            ويتبع لون النصّ ووزنه بدل أن يظهر ككتلة داكنة */}
+        <svg
+          className="corner-nav-surah-icon"
+          viewBox="0 0 24 24"
+          width="21"
+          height="21"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 6.7C10.5 5.3 8.1 4.6 4.9 4.6c-.7 0-1.2.5-1.2 1.1v11c0 .6.5 1.1 1.2 1.1 3.2 0 5.6.7 7.1 2.1" />
+          <path d="M12 6.7c1.5-1.4 3.9-2.1 7.1-2.1.7 0 1.2.5 1.2 1.1v11c0 .6-.5 1.1-1.2 1.1-3.2 0-5.6.7-7.1 2.1" />
+          <path d="M12 6.7v13.2" />
         </svg>
         <span className="corner-nav-surah-name">{surahName}</span>
       </button>
