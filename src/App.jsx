@@ -49,6 +49,7 @@ import { pushLocal, authKhitma, getKhitma, putKhitma, forcePushLocal, forcePullR
 import { SYNC_ENABLED } from './utils/syncConfig';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
 import StartupSyncPrompt from './components/StartupSyncPrompt';
+import HomeButton from './components/HomeButton';
 import QuranFal from './components/QuranFal';
 import useAccentTheme from './hooks/useAccentTheme';
 import { ACCENT_THEMES, ACCENT_THEME_LABEL, getPageBg } from './constants/themes';
@@ -1790,6 +1791,32 @@ function App() {
 
   backHandlerRef.current = handleHardwareBack;
 
+  // ─── زرّ الرئيسية ───
+  // «الرئيسية» هي ما ينتهي إليه زرّ الرجوع بعد استنفاد أولويّاته الثلاث:
+  // وضع القراءة، بلا اختبار ولا دليل ولا شاشة فرعية.
+  const isHomeScreen = (
+    viewMode === 'khmasiyat'
+    && !activeAyahTest
+    && !activePageStartsTest
+    && !activeSurahNamesQuiz
+    && !isUserManualOpen
+  );
+
+  // ضغطة واحدة تقابل ٢-٤ ضغطات رجوع. تُغلق القوائم والنوافذ أيضاً كي لا تبقى
+  // مفتوحة فوق الشاشة الرئيسية بعد الوصول إليها.
+  const goHome = () => {
+    mainKeyboard.closeKeyboard();
+    setIsMoreMenuOpen(false);
+    setIsFontMenuOpen(false);
+    setIsPageStartsMenuOpen(false);
+    setIsAyahMenuOpen(false);
+    setActiveAyahTest(null);
+    setActivePageStartsTest(null);
+    setActiveSurahNamesQuiz(false);
+    setIsUserManualOpen(false);
+    setViewMode('khmasiyat');
+  };
+
   // ─── قفل الختمات: الدخول وتحميل/مزامنة القائمة من الخادم ───
   const KHITMA_CREDS_KEY = 'quran-fives-khitma-creds-v1';
   const KHITMA_CACHE_KEY = 'quran-fives-khitma-cache-v1';
@@ -2245,7 +2272,7 @@ function App() {
   }, []);
 
   return (
-    <div className={`app-container ${isNightMode ? 'night-mode' : ''}`} data-accent={accentTheme} style={{
+    <div className={`app-container ${isNightMode ? 'night-mode' : ''}${isHomeScreen ? '' : ' has-home-btn'}`} data-accent={accentTheme} style={{
       '--app-font-size': `${fontSize}px`,
       '--app-font-family': fontFamily,
       '--app-font-weight': fontWeight,
@@ -4001,6 +4028,8 @@ function App() {
           هل تريد الخروج من التطبيق؟ اضغط مرة أخرى للتأكيد
         </div>
       )}
+
+      {!isHomeScreen && <HomeButton onClick={goHome} />}
 
       {startupSyncChoice && (
         <StartupSyncPrompt
