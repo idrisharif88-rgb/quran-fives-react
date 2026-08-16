@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Scheherazade+New:wght@400;700&family=Tajawal:wght@400;500;700;800;900&display=swap');
+/* الخطوط في src/styles/fonts.css، تُستورد قبل هذا الملفّ في App.jsx.
+   كان هنا @import من fonts.googleapis.com فتختفي الخطوط كلّها بلا إنترنت. */
 
 *, *::before, *::after {
   box-sizing: border-box;

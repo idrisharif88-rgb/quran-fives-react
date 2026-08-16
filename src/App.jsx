@@ -52,6 +52,8 @@ import StartupSyncPrompt from './components/StartupSyncPrompt';
 import QuranFal from './components/QuranFal';
 import useAccentTheme from './hooks/useAccentTheme';
 import { ACCENT_THEMES, ACCENT_THEME_LABEL, getPageBg } from './constants/themes';
+// الخطوط أوّلاً: ملفّات محلية داخل الحزمة، فلا شيء يُطلب من الشبكة
+import './styles/fonts.css';
 import './App.css';
 // بعد App.css كي تعلو تشكيلة الذهبي على تعريفات الأخضر الافتراضية
 import './styles/themes.css';

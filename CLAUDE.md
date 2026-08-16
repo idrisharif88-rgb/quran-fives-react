@@ -51,6 +51,14 @@ Colour is a token system on `.app-container`. Two independent switches — accen
 - **Watch for hardcoded text colours.** The khatma save buttons set `color: '#fff'` inline, so `--app-save-grad-*` must stay dark enough for white text regardless of theme.
 - **New palettes go in `src/styles/themes.css`,** imported after `App.css` so they win the cascade. Green remains the default, defined in `App.css`.
 
+# Offline Rules
+
+The APK must work with no network. Only recitation audio may hit the internet.
+
+- **No CDN references in CSS or `index.html`.** `src/App.css` opened with an `@import` from `fonts.googleapis.com`; offline it silently failed and every font — Tajawal, Amiri, Amiri Quran, Noto Naskh, Scheherazade — fell back to the system font. Fonts are now self-hosted in `src/assets/fonts/` with `@font-face` rules in `src/styles/fonts.css`.
+- **`src/styles/fonts.css` is generated — don't hand-edit it.** Re-run `scripts/fetch-fonts.sh src/assets/fonts src/styles/fonts.css` to add a family or weight. It keeps the `arabic` + `latin` subsets only and drops the rest.
+- **A failing network request must never look like a styling bug.** Test any new asset with the device in airplane mode before shipping.
+
 # Debugging
 
 - When the user reports a precise symptom ("it syncs only when I disable it"), trace that literal code path FIRST — before theorizing about networks, caches, or infrastructure. The symptom described the bug exactly.
