@@ -45,9 +45,10 @@ import {
   removeStoredState,
   saveStoredState
 } from './utils/persistence';
-import { pullRemoteIfChanged, pushLocal, authKhitma, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, getSyncMeta } from './utils/cloudSync';
+import { pushLocal, authKhitma, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, getSyncMeta } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
+import StartupSyncPrompt from './components/StartupSyncPrompt';
 import QuranFal from './components/QuranFal';
 import useAccentTheme from './hooks/useAccentTheme';
 import { ACCENT_THEMES, ACCENT_THEME_LABEL, getPageBg } from './constants/themes';
@@ -338,6 +339,10 @@ function App() {
   const [manualSyncConfirm, setManualSyncConfirm] = useState(null); // 'push' | 'pull' | null
   const [manualSyncResult, setManualSyncResult] = useState(null);   // { ok, text }
   const [remoteSyncInfo, setRemoteSyncInfo] = useState(null);       // معلومات الخادم للعرض
+  // قرار المزامنة عند الفتح: يُعرض عند اختلاف نسخة السحابة، ولا شيء يُطبَّق قبله
+  const [startupSyncChoice, setStartupSyncChoice] = useState(null); // { remoteUpdatedAt, localUpdatedAt }
+  const [startupSyncBusy, setStartupSyncBusy] = useState(null);     // 'push' | 'pull' | null
+  const [startupSyncError, setStartupSyncError] = useState('');
   const [syncPasswordInput, setSyncPasswordInput] = useState('');
   const [syncPasswordError, setSyncPasswordError] = useState(false);
   const [counterConfirm, setCounterConfirm] = useState({ type: null, id: null });
@@ -504,33 +509,91 @@ function App() {
     );
   }, [activeNightCounterId, activeNightCounter]);
 
-  // عند فتح التطبيق: اسحب الحالة من الخادم، وإن كانت أحدث طبّقها بإعادة تحميل سريعة.
-  // لا يبدأ الرفع التلقائي إلا بعد اكتمال هذه المحاولة (عبر cloudSyncReadyRef).
+  // عند فتح التطبيق: نفحص الخادم فحصاً للقراءة فقط (fetchRemoteInfo) ولا نطبّق
+  // شيئاً. إن اختلفت نسخة السحابة عمّا يعرفه هذا الجهاز عُرض القرار على المستخدم
+  // في StartupSyncPrompt — قبلها كان pullRemoteIfChanged يكتب فوق الحالة المحلية
+  // ويعيد التحميل تلقائياً بمجرّد رجوع الطلب، فتتبدّل حالة الجهاز بلا سؤال.
+  // لا يبدأ الرفع التلقائي إلا بعد أن يصير cloudSyncReadyRef صحيحاً: إمّا لأن
+  // النسختين متطابقتان، أو لأن المستخدم اختار صراحةً.
   useEffect(() => {
     // المزامنة معطّلة افتراضياً، ولا تعمل إلا بعد تفعيلها بكلمة السر (syncUnlocked)
     if (!SYNC_ENABLED || !syncUnlocked) {
       cloudSyncReadyRef.current = false;
+      setStartupSyncChoice(null);
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        const applied = await pullRemoteIfChanged();
+        const info = await fetchRemoteInfo();
         if (cancelled) return;
-        if (applied) {
-          window.location.reload();
+        // السحابة فارغة أو مطابقة لآخر نسخة رآها الجهاز: لا قرار مطلوب
+        if (!info.hasState || info.inSync) {
+          cloudSyncReadyRef.current = true;
+          setSyncFailed(false);
           return;
         }
-        cloudSyncReadyRef.current = true;
-        setSyncFailed(false);
+        setStartupSyncChoice({
+          remoteUpdatedAt: info.updatedAt,
+          localUpdatedAt: getSyncMeta().updatedAt,
+        });
       } catch {
-        // فشل السحب: لا نُفعّل الرفع إطلاقاً. الجهاز لم يعرف حالة الخادم بعد،
+        // فشل الفحص: لا نُفعّل الرفع إطلاقاً. الجهاز لم يعرف حالة الخادم بعد،
         // ورفع حالته المحلية هنا يكتب نسخة قديمة فوق الأحدث من جهاز آخر.
         if (!cancelled) setSyncFailed(true);
       }
     })();
     return () => { cancelled = true; };
   }, [syncUnlocked]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── تنفيذ قرار المزامنة عند الفتح ───
+
+  const handleStartupPull = async () => {
+    if (startupSyncBusy) return;
+    setStartupSyncBusy('pull');
+    setStartupSyncError('');
+    try {
+      const applied = await forcePullRemote();
+      if (!applied) {   // اختفت نسخة السحابة بين الفحص والقرار
+        setStartupSyncError('لا توجد نسخة على السحابة');
+        setStartupSyncBusy(null);
+        return;
+      }
+      window.location.reload();   // إعادة التحميل تطبّق الحالة المنزّلة
+    } catch (e) {
+      setStartupSyncError(e?.status === 401 ? 'رمز المزامنة غير مقبول' : 'تعذّر التنزيل — تحقّق من الاتصال');
+      setStartupSyncBusy(null);
+    }
+  };
+
+  const handleStartupPush = async () => {
+    if (startupSyncBusy) return;
+    if (!lastSnapshotRef.current) {   // لا نرفع حالة فارغة فوق السحابة
+      setStartupSyncError('لا توجد حالة جاهزة للرفع بعد — أعد المحاولة بعد لحظة');
+      return;
+    }
+    setStartupSyncBusy('push');
+    setStartupSyncError('');
+    try {
+      const updatedAt = await forcePushLocal(lastSnapshotRef.current);
+      cloudSyncReadyRef.current = true;   // الجهاز والخادم متطابقان الآن
+      setSyncFailed(false);
+      setRemoteSyncInfo({ updatedAt, hasState: true, inSync: true });
+      setStartupSyncChoice(null);
+    } catch (e) {
+      setStartupSyncError(e?.status === 401 ? 'رمز المزامنة غير مقبول' : 'تعذّر الرفع — تحقّق من الاتصال');
+    } finally {
+      setStartupSyncBusy(null);
+    }
+  };
+
+  // «لاحقاً»: نغلق النافذة ويبقى cloudSyncReadyRef معطّلاً، فلا يُرفع شيء ولا
+  // يُكتب فوق شيء. المؤشّر يظهر متعثّراً وزرّه يعيد فتح القرار.
+  const handleStartupLater = () => {
+    setStartupSyncChoice(null);
+    setStartupSyncError('');
+    setSyncFailed(true);
+  };
 
   // رفع موحّد للسحابة مع حارس تسلسل: آخر عملية رفع فقط هي التي تتحكّم بحالة الواجهة،
   // فلا يكتب رفعٌ قديم فاشل فوق نجاح رفعٍ أحدث (يمنع رسالة «لم تتم» الكاذبة).
@@ -560,16 +623,20 @@ function App() {
       });
   };
 
-  // إعادة المحاولة يدوياً: إن لم يكتمل السحب الأوّلي (أو حدث تعارض) نسحب أوّلاً،
-  // فلا يُرفع شيء قبل أن يعرف الجهاز حالة الخادم.
+  // إعادة المحاولة يدوياً: إن لم يكتمل الفحص الأوّلي (أو حدث تعارض) نفحص أوّلاً،
+  // فلا يُرفع شيء قبل أن يعرف الجهاز حالة الخادم. وإن كانت السحابة مختلفة أعدنا
+  // عرض القرار بدل السحب فوق الحالة المحلية.
   const handleSyncRetry = async () => {
-    if (isSyncing) return;
+    if (isSyncing || startupSyncBusy) return;
     if (!cloudSyncReadyRef.current) {
       setIsSyncing(true);
       try {
-        const applied = await pullRemoteIfChanged();
-        if (applied) {
-          window.location.reload();
+        const info = await fetchRemoteInfo();
+        if (info.hasState && !info.inSync) {
+          setStartupSyncChoice({
+            remoteUpdatedAt: info.updatedAt,
+            localUpdatedAt: getSyncMeta().updatedAt,
+          });
           return;
         }
         cloudSyncReadyRef.current = true;
@@ -3931,6 +3998,19 @@ function App() {
         <div className="exit-toast">
           هل تريد الخروج من التطبيق؟ اضغط مرة أخرى للتأكيد
         </div>
+      )}
+
+      {startupSyncChoice && (
+        <StartupSyncPrompt
+          remoteUpdatedAt={startupSyncChoice.remoteUpdatedAt}
+          localUpdatedAt={startupSyncChoice.localUpdatedAt}
+          busy={startupSyncBusy}
+          error={startupSyncError}
+          formatTime={formatHijriTimestamp}
+          onPull={handleStartupPull}
+          onPush={handleStartupPush}
+          onLater={handleStartupLater}
+        />
       )}
     </div>
   );

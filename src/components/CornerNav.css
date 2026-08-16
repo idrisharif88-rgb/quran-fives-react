@@ -71,41 +71,8 @@
 }
 
 /* ── الألواح المنبثقة ──
-   ثابتة على الشاشة لا داخل البطاقة: .verse-card تقصّ ما يتجاوزها
-   (overflow: hidden) فكانت القائمة تُقتطع ويظهر نصفها. */
-.corner-nav-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 12000;
-  background: rgba(0, 0, 0, 0.45);
-}
-
-.corner-nav-sheet {
-  position: fixed;
-  z-index: 12001;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
-  width: min(420px, 92vw);
-  max-height: min(72vh, 620px);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px;
-  box-sizing: border-box;
-  background: var(--app-surface);
-  border: 1.5px solid var(--app-accent-border);
-  border-radius: 18px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
-}
-
-.corner-nav-sheet-title {
-  font-size: 15px;
-  font-weight: 900;
-  color: var(--app-text);
-  text-align: center;
-  padding-bottom: 2px;
-}
+   الهيكل والحاجب والحبس في ModalDialog؛ هنا محتوى اللوحين فقط. */
+.modal-dialog.corner-nav-modal { max-height: min(78vh, 660px); }
 
 /* ── اختيار الخطوة ── */
 .corner-nav-steps { display: flex; flex-direction: column; gap: 6px; }

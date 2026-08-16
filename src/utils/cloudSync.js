@@ -45,21 +45,11 @@ async function api(path, options = {}, timeoutMs = 12000) {
   }
 }
 
-// يسحب الحالة من الخادم؛ إن اختلف طابعها عن آخر نسخة رآها هذا الجهاز يكتبها
-// في localStorage ويعيد true ليطلب المستدعي إعادة التحميل لتطبيقها.
+// حُذفت pullRemoteIfChanged عمداً: كانت تكتب نسخة الخادم فوق الحالة المحلية
+// تلقائياً بمجرّد اختلاف الطابع الزمني، فتتبدّل حالة الجهاز بلا سؤال. صار الفحص
+// بـfetchRemoteInfo (قراءة فقط) والتطبيق بـforcePullRemote بعد قرار المستخدم.
 // المقارنة بعدم التساوي لا بالأكبر: الطابع يصدر عن ساعة الخادم وحدها، وأي
 // اختلاف يعني أن جهازاً آخر كتب بعدنا (ويُصلح أيضاً الطوابع القديمة المشوّهة).
-export async function pullRemoteIfChanged() {
-  if (!SYNC_ENABLED) return false;
-  const remote = await api('/api/state', { method: 'GET' });
-  const localMeta = getSyncMeta();
-  if (remote && remote.state && remote.updatedAt !== localMeta.updatedAt) {
-    localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(remote.state));
-    setSyncMeta({ updatedAt: remote.updatedAt });
-    return true;
-  }
-  return false;
-}
 
 // معرّف كتابة فريد يتكرّر عبر محاولات الرفع نفسها: لو وصلت الكتابة وضاع ردّها،
 // يتعرّف الخادم على إعادة الإرسال ويردّ نجاحاً بدل 409 يعطّل المزامنة.

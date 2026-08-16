@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useMemo, useState } from 'react';
 import { SURAH_METADATA } from '../data/quranConstants';
 import { STEP_SIZES, STEP_LABELS, groupCountOfSurah } from '../utils/stepNavigation';
+import ModalDialog from './ModalDialog';
 import './CornerNav.css';
 
 // تجريد التشكيل وهمزات الوصل/القطع كي يطابق البحث «الاعراف» و«الأعراف»
@@ -18,11 +18,9 @@ const normalizeArabic = (text) => text
  *   وسط  : زرّ اختيار السورة
  *   يمين : رقم خطوة التنقّل، بحجم رقم الآية نفسه
  *
- * تُعاد كـ Fragment لتصير أبناءً مباشرين لشبكة الصفّ. أمّا القوائم فتُعرض عبر
- * portal إلى <body>: البطاقة .verse-card تجمع overflow: hidden مع حركة fadeIn
- * التي تحرّك transform، وعنصرُ transform يصير كتلةً حاويةً حتى للعناصر الثابتة
- * (position: fixed) فيقصّها — وهو سبب ظهور القائمة نصفها. الـportal يخرجها من
- * الشجرة كلّها فلا يقصّها شيء.
+ * تُعاد كـ Fragment لتصير أبناءً مباشرين لشبكة الصفّ. أمّا القوائم فتُعرض في
+ * ModalDialog: نافذة حاجبة تمنع التفاعل مع بقيّة التطبيق حتى يختار المستخدم،
+ * وتَعرض عبر portal إلى <body> لأن .verse-card تقصّ ما يتجاوزها.
  */
 export default function CornerNav({ surahNumber, surahName, step, onSelectSurah, onSelectStep }) {
   const [openPanel, setOpenPanel] = useState(null); // 'surah' | 'step' | null
@@ -41,21 +39,13 @@ export default function CornerNav({ surahNumber, surahName, step, onSelectSurah,
 
   const close = () => setOpenPanel(null);
 
-  useEffect(() => {
-    if (!openPanel) return;
-    const onKey = (e) => { if (e.key === 'Escape') setOpenPanel(null); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [openPanel]);
-
   const togglePanel = (panel) => {
     setOpenPanel(prev => (prev === panel ? null : panel));
     setQuery('');
   };
 
   const stepSheet = (
-    <div className="corner-nav-sheet corner-nav-sheet--step" dir="rtl" role="dialog" aria-label="خطوة التنقّل">
-      <div className="corner-nav-sheet-title">خطوة التنقّل</div>
+    <ModalDialog title="خطوة التنقّل" onClose={close} size="sm" className="corner-nav-modal">
       <div className="corner-nav-steps">
         {STEP_SIZES.map(size => (
           <button
@@ -71,12 +61,11 @@ export default function CornerNav({ surahNumber, surahName, step, onSelectSurah,
           </button>
         ))}
       </div>
-    </div>
+    </ModalDialog>
   );
 
   const surahSheet = (
-    <div className="corner-nav-sheet corner-nav-sheet--surah" dir="rtl" role="dialog" aria-label="فهرس السور">
-      <div className="corner-nav-sheet-title">الانتقال إلى سورة</div>
+    <ModalDialog title="الانتقال إلى سورة" onClose={close} className="corner-nav-modal">
       <input
         type="text"
         className="corner-nav-search"
@@ -104,7 +93,7 @@ export default function CornerNav({ surahNumber, surahName, step, onSelectSurah,
           </button>
         ))}
       </div>
-    </div>
+    </ModalDialog>
   );
 
   return (
@@ -136,13 +125,8 @@ export default function CornerNav({ surahNumber, surahName, step, onSelectSurah,
         <span className="corner-nav-step-caption">خطوة</span>
       </button>
 
-      {openPanel && createPortal(
-        <>
-          <div className="corner-nav-backdrop" onClick={close} aria-hidden="true" />
-          {openPanel === 'step' ? stepSheet : surahSheet}
-        </>,
-        document.body,
-      )}
+      {openPanel === 'step' && stepSheet}
+      {openPanel === 'surah' && surahSheet}
     </>
   );
 }
