@@ -10,111 +10,85 @@ const BAQARA_2_255 = { s: 2, a: 255, t: 'آيَةُ الْكُرْسِيِّ' };
 // ─── evaluateRandomAyahAnswer ─────────────────────────────────────────────────
 
 describe('evaluateRandomAyahAnswer — validation', () => {
-  it('both fields empty → validation error, shake both', () => {
-    const r = evaluateRandomAyahAnswer('', '', FATIHA_1_1);
+  it('empty verse → validation error, shake verse', () => {
+    const r = evaluateRandomAyahAnswer('', FATIHA_1_1);
     expect(r.valid).toBe(false);
-    expect(r.message).toBe('يرجى إدخال رقم السورة ورقم الآية.');
-    expect(r.shakeSurah).toBe(true);
+    expect(r.message).toBe('يرجى إدخال رقم الآية.');
     expect(r.shakeVerse).toBe(true);
-  });
-
-  it('surah empty, verse filled → shake surah only', () => {
-    const r = evaluateRandomAyahAnswer('', '1', FATIHA_1_1);
-    expect(r.valid).toBe(false);
-    expect(r.shakeSurah).toBe(true);
-    expect(r.shakeVerse).toBe(false);
-  });
-
-  it('surah filled, verse empty → shake verse only', () => {
-    const r = evaluateRandomAyahAnswer('1', '', FATIHA_1_1);
-    expect(r.valid).toBe(false);
-    expect(r.shakeSurah).toBe(false);
-    expect(r.shakeVerse).toBe(true);
-  });
-
-  it('non-numeric surah → validation error, shake surah', () => {
-    const r = evaluateRandomAyahAnswer('abc', '1', FATIHA_1_1);
-    expect(r.valid).toBe(false);
-    expect(r.shakeSurah).toBe(true);
-    expect(r.shakeVerse).toBe(false);
   });
 
   it('non-numeric verse → validation error, shake verse', () => {
-    const r = evaluateRandomAyahAnswer('1', 'xyz', FATIHA_1_1);
+    const r = evaluateRandomAyahAnswer('xyz', FATIHA_1_1);
     expect(r.valid).toBe(false);
-    expect(r.shakeSurah).toBe(false);
+    expect(r.message).toBe('يرجى إدخال رقم الآية.');
     expect(r.shakeVerse).toBe(true);
   });
 
-  it('both non-numeric → validation error, shake both', () => {
-    const r = evaluateRandomAyahAnswer('??', '!!', FATIHA_1_1);
+  it('punctuation-only input → validation error', () => {
+    const r = evaluateRandomAyahAnswer('!!', FATIHA_1_1);
     expect(r.valid).toBe(false);
-    expect(r.shakeSurah).toBe(true);
     expect(r.shakeVerse).toBe(true);
   });
 });
 
 describe('evaluateRandomAyahAnswer — correct answer', () => {
-  it('exact match → correct, "إجابة صحيحة", no shakes', () => {
-    const r = evaluateRandomAyahAnswer('1', '1', FATIHA_1_1);
+  it('exact match → correct, "إجابة صحيحة", no shake', () => {
+    const r = evaluateRandomAyahAnswer('1', FATIHA_1_1);
     expect(r.valid).toBe(true);
     expect(r.correct).toBe(true);
     expect(r.message).toBe('إجابة صحيحة');
-    expect(r.shakeSurah).toBe(false);
     expect(r.shakeVerse).toBe(false);
   });
 
-  it('correct answer for Ayat Al-Kursi (2:255)', () => {
-    const r = evaluateRandomAyahAnswer('2', '255', BAQARA_2_255);
+  it('correct answer for Ayat Al-Kursi (2:255) — verse number only', () => {
+    const r = evaluateRandomAyahAnswer('255', BAQARA_2_255);
     expect(r.correct).toBe(true);
     expect(r.message).toBe('إجابة صحيحة');
+  });
+
+  // جوهر التغيير: رقم السورة لم يعد جزءاً من الإجابة، فإصابة رقم الآية تكفي
+  it('a verse number from a different surah still counts when the number matches', () => {
+    const r = evaluateRandomAyahAnswer('255', BAQARA_2_255);
+    expect(r.correct).toBe(true);
   });
 });
 
 describe('evaluateRandomAyahAnswer — wrong answer', () => {
-  it('wrong surah, correct verse → shake surah only, message shows correct values', () => {
-    const r = evaluateRandomAyahAnswer('99', '1', FATIHA_1_1);
+  it('wrong verse → shake verse, message shows the correct verse number', () => {
+    const r = evaluateRandomAyahAnswer('99', FATIHA_1_1);
     expect(r.valid).toBe(true);
     expect(r.correct).toBe(false);
-    expect(r.message).toBe('غير صحيح. السورة: 1 | الآية: 1');
-    expect(r.shakeSurah).toBe(true);
-    expect(r.shakeVerse).toBe(false);
-  });
-
-  it('correct surah, wrong verse → shake verse only, message shows correct values', () => {
-    const r = evaluateRandomAyahAnswer('1', '99', FATIHA_1_1);
-    expect(r.valid).toBe(true);
-    expect(r.correct).toBe(false);
-    expect(r.message).toBe('غير صحيح. السورة: 1 | الآية: 1');
-    expect(r.shakeSurah).toBe(false);
+    expect(r.message).toBe('غير صحيح. رقم الآية: 1');
     expect(r.shakeVerse).toBe(true);
   });
 
-  it('both wrong → shake both, message shows correct values', () => {
-    const r = evaluateRandomAyahAnswer('5', '10', FATIHA_1_1);
-    expect(r.correct).toBe(false);
-    expect(r.message).toBe('غير صحيح. السورة: 1 | الآية: 1');
-    expect(r.shakeSurah).toBe(true);
-    expect(r.shakeVerse).toBe(true);
+  it('message embeds the actual correct verse number', () => {
+    const r = evaluateRandomAyahAnswer('1', BAQARA_2_255);
+    expect(r.message).toBe('غير صحيح. رقم الآية: 255');
   });
 
-  it('message always embeds the actual correct surah and verse', () => {
-    const r = evaluateRandomAyahAnswer('1', '1', BAQARA_2_255);
-    expect(r.message).toBe('غير صحيح. السورة: 2 | الآية: 255');
+  it('no surah number appears in the message', () => {
+    const r = evaluateRandomAyahAnswer('1', BAQARA_2_255);
+    expect(r.message).not.toContain('السورة');
   });
 });
 
 describe('evaluateRandomAyahAnswer — edge cases', () => {
-  it('verseData is null → valid:true, correct:false (treats s=0, a=0 as correct)', () => {
-    const r = evaluateRandomAyahAnswer('1', '1', null);
+  it('verseData is null → valid:true, correct:false (falls back to a=0)', () => {
+    const r = evaluateRandomAyahAnswer('1', null);
     expect(r.valid).toBe(true);
     expect(r.correct).toBe(false);
   });
 
   it('verseData is undefined → same safe fallback', () => {
-    const r = evaluateRandomAyahAnswer('1', '1', undefined);
+    const r = evaluateRandomAyahAnswer('1', undefined);
     expect(r.valid).toBe(true);
     expect(r.correct).toBe(false);
+  });
+
+  it('shakeSurah is no longer part of the contract', () => {
+    const r = evaluateRandomAyahAnswer('99', FATIHA_1_1);
+    expect(r.shakeSurah).toBeUndefined();
   });
 });
 

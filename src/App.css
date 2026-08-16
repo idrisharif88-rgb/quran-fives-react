@@ -1309,6 +1309,13 @@ button.nc-khitma-circle:active {
   width: 100%;
 }
 
+/* بعد حذف حقل رقم السورة بقي حقل واحد: عمود واحد في الوسط بعرض محدود،
+   وإلّا امتدّ على نصف الشبكة فبدا معلّقاً في جهة. */
+.khmasiyat-quiz-inputs.khmasiyat-quiz-guess-row--single {
+  grid-template-columns: minmax(0, 280px);
+  justify-content: center;
+}
+
 .khmasiyat-quiz-field {
   display: flex;
   flex-direction: column;
@@ -2085,6 +2092,9 @@ button.nc-khitma-circle:active {
   .khmasiyat-quiz-inputs.khmasiyat-quiz-guess-row {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
+  }
+  .khmasiyat-quiz-inputs.khmasiyat-quiz-guess-row--single {
+    grid-template-columns: minmax(0, 1fr);
   }
   .khmasiyat-quiz-inputs.khmasiyat-quiz-guess-row .khmasiyat-quiz-label {
     font-size: 13px;

@@ -1,49 +1,31 @@
 /**
  * Pure evaluation function for RandomAyahQuiz answers.
  * Returns a result object so the component stays free of decision logic.
+ *
+ * رقم الآية وحده هو المطلوب. كان الاختبار يطلب رقم السورة أيضاً، فيُحسب
+ * السؤال خطأً لمجرّد الخطأ في السورة وإن أصاب المستخدم رقم الآية.
  */
-export function evaluateRandomAyahAnswer(surahGuessStr, verseGuessStr, verseData) {
-  const surahEmpty = surahGuessStr === '';
-  const verseEmpty = verseGuessStr === '';
-
-  if (surahEmpty || verseEmpty) {
-    return {
-      valid: false,
-      message: 'يرجى إدخال رقم السورة ورقم الآية.',
-      shakeSurah: surahEmpty,
-      shakeVerse: verseEmpty,
-    };
+export function evaluateRandomAyahAnswer(verseGuessStr, verseData) {
+  if (verseGuessStr === '') {
+    return { valid: false, message: 'يرجى إدخال رقم الآية.', shakeVerse: true };
   }
 
-  const guessedSurah = Number(surahGuessStr);
   const guessedVerse = Number(verseGuessStr);
-  const surahInvalid = !Number.isInteger(guessedSurah);
-  const verseInvalid = !Number.isInteger(guessedVerse);
-
-  if (surahInvalid || verseInvalid) {
-    return {
-      valid: false,
-      message: 'يرجى إدخال رقم السورة ورقم الآية.',
-      shakeSurah: surahInvalid,
-      shakeVerse: verseInvalid,
-    };
+  if (!Number.isInteger(guessedVerse)) {
+    return { valid: false, message: 'يرجى إدخال رقم الآية.', shakeVerse: true };
   }
 
-  const correctSurah = verseData?.s ?? 0;
   const correctVerse = verseData?.a ?? 0;
-  const surahCorrect = guessedSurah === correctSurah;
-  const verseCorrect = guessedVerse === correctVerse;
 
-  if (surahCorrect && verseCorrect) {
-    return { valid: true, correct: true, message: 'إجابة صحيحة', shakeSurah: false, shakeVerse: false };
+  if (guessedVerse === correctVerse) {
+    return { valid: true, correct: true, message: 'إجابة صحيحة', shakeVerse: false };
   }
 
   return {
     valid: true,
     correct: false,
-    message: `غير صحيح. السورة: ${correctSurah} | الآية: ${correctVerse}`,
-    shakeSurah: !surahCorrect,
-    shakeVerse: !verseCorrect,
+    message: `غير صحيح. رقم الآية: ${correctVerse}`,
+    shakeVerse: true,
   };
 }
 

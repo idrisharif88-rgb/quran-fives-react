@@ -14,10 +14,6 @@ export default function KhmasiyatQuiz({ onClose }) {
   const [quizFiveInSurahGuess, setQuizFiveInSurahGuess] = useState(() => (
     typeof persistedQuizState.quizFiveInSurahGuess === 'string' ? persistedQuizState.quizFiveInSurahGuess : ''
   ));
-  const [quizSurahGuess, setQuizSurahGuess] = useState(() => (
-    typeof persistedQuizState.quizSurahGuess === 'string' ? persistedQuizState.quizSurahGuess : ''
-  ));
-  const [isSurahShaking, setIsSurahShaking] = useState(false);
   const [isFiveShaking, setIsFiveShaking] = useState(false);
   const [quizRangeStart, setQuizRangeStart] = useState(() => (
     typeof persistedQuizState.quizRangeStart === 'string' ? persistedQuizState.quizRangeStart : '1'
@@ -76,8 +72,6 @@ export default function KhmasiyatQuiz({ onClose }) {
     }
 
     setQuizFiveInSurahGuess('');
-    setQuizSurahGuess('');
-    setIsSurahShaking(false);
     setIsFiveShaking(false);
     setQuizResult('');
   };
@@ -93,7 +87,6 @@ export default function KhmasiyatQuiz({ onClose }) {
     saveStoredState(KHMASIYAT_QUIZ_STORAGE_KEY, {
       quizKhmasiyaIndex,
       quizFiveInSurahGuess,
-      quizSurahGuess,
       quizRangeStart,
       quizRangeEnd,
       quizOrder,
@@ -112,7 +105,6 @@ export default function KhmasiyatQuiz({ onClose }) {
     quizRangeEnd,
     quizRangeStart,
     quizResult,
-    quizSurahGuess,
     correctCount,
     incorrectCount,
   ]);
@@ -160,22 +152,19 @@ export default function KhmasiyatQuiz({ onClose }) {
       setQuizResult('لا يوجد سؤال حالي. اختر المدى ثم اضغط "تطبيق المدى".');
       return;
     }
+    // رقم الآية وحده هو المطلوب. رقم السورة كان حقلاً ثانياً يجب أن يصيبه
+    // المستخدم أيضاً، فيُحسب السؤال كلّه خطأً لمجرّد الخطأ في السورة.
     const guessedFiveInSurah = Number(quizFiveInSurahGuess);
-    const guessedSurah = Number(quizSurahGuess);
-    const fiveInvalid = !Number.isInteger(guessedFiveInSurah);
-    const surahInvalid = !Number.isInteger(guessedSurah);
-    if (fiveInvalid || surahInvalid) {
-      setQuizResult('يرجى إدخال رقم الخماسية داخل السورة ورقم السورة.');
-      if (surahInvalid) triggerShake(setIsSurahShaking);
-      if (fiveInvalid) triggerShake(setIsFiveShaking);
+    if (!Number.isInteger(guessedFiveInSurah)) {
+      setQuizResult('يرجى إدخال رقم الآية.');
+      triggerShake(setIsFiveShaking);
       return;
     }
-    
+
     const quizKhmasiyaData = getSurahAndRange(quizKhmasiyaIndex);
     const correctFiveInSurah = quizKhmasiyaData?.end ?? 0;
-    const correctSurah = quizKhmasiyaData.surah;
-    
-    if (guessedFiveInSurah === correctFiveInSurah && guessedSurah === correctSurah) {
+
+    if (guessedFiveInSurah === correctFiveInSurah) {
       setQuizResult('إجابة صحيحة');
       setCorrectCount(c => c + 1);
       playCorrectSound();
@@ -183,10 +172,9 @@ export default function KhmasiyatQuiz({ onClose }) {
         createKhmasiyatQuestion();
       }, 200);
     } else {
-      setQuizResult(`غير صحيح. الخماسية داخل السورة: ${correctFiveInSurah} | السورة: ${correctSurah}`);
+      setQuizResult(`غير صحيح. رقم الآية: ${correctFiveInSurah}`);
       setIncorrectCount(c => c + 1);
-      if (guessedSurah !== correctSurah) triggerShake(setIsSurahShaking);
-      if (guessedFiveInSurah !== correctFiveInSurah) triggerShake(setIsFiveShaking);
+      triggerShake(setIsFiveShaking);
     }
   };
 
@@ -221,14 +209,6 @@ export default function KhmasiyatQuiz({ onClose }) {
       label: 'نهاية مدى الخماسيات',
       submitLabel: 'تطبيق',
       onSubmit: () => createKhmasiyatQuestion(true),
-    },
-    surahGuess: {
-      value: quizSurahGuess,
-      setValue: setQuizSurahGuess,
-      maxLength: 3,
-      label: 'رقم السورة',
-      submitLabel: 'تحقق',
-      onSubmit: checkKhmasiyatAnswer,
     },
     fiveGuess: {
       value: quizFiveInSurahGuess,
@@ -283,18 +263,7 @@ export default function KhmasiyatQuiz({ onClose }) {
       ) : (
         <div className="verse-container">اختر مدى صحيحًا ثم اضغط "تطبيق المدى" لعرض سؤال عشوائي.</div>
       )}
-      <div className="khmasiyat-quiz-inputs khmasiyat-quiz-guess-row">
-        <div className="khmasiyat-quiz-field">
-          <label className="khmasiyat-quiz-label">رقم السورة</label>
-          <input
-            type="text"
-            value={quizSurahGuess}
-            placeholder="من 1 إلى 114"
-            min="1"
-            max="114"
-            {...keyboard.getInputProps('surahGuess', { className: `khmasiyat-quiz-input ${isSurahShaking ? 'shake border-error' : ''}` })}
-          />
-        </div>
+      <div className="khmasiyat-quiz-inputs khmasiyat-quiz-guess-row khmasiyat-quiz-guess-row--single">
         <div className="khmasiyat-quiz-field">
           <label className="khmasiyat-quiz-label">رقم الآية</label>
           <input

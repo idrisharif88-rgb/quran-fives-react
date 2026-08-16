@@ -9,9 +9,6 @@ export default function RandomAyahQuiz({ onClose }) {
   const [randomAyahIndex, setRandomAyahIndex] = useState(() => (
     Number.isInteger(persistedQuizState.randomAyahIndex) ? persistedQuizState.randomAyahIndex : null
   ));
-  const [randomAyahSurahGuess, setRandomAyahSurahGuess] = useState(() => (
-    typeof persistedQuizState.randomAyahSurahGuess === 'string' ? persistedQuizState.randomAyahSurahGuess : ''
-  ));
   const [randomAyahVerseGuess, setRandomAyahVerseGuess] = useState(() => (
     typeof persistedQuizState.randomAyahVerseGuess === 'string' ? persistedQuizState.randomAyahVerseGuess : ''
   ));
@@ -43,7 +40,6 @@ export default function RandomAyahQuiz({ onClose }) {
   const [incorrectCount, setIncorrectCount] = useState(() => (
     Number.isInteger(persistedQuizState.incorrectCount) ? persistedQuizState.incorrectCount : 0
   ));
-  const [isSurahShaking, setIsSurahShaking] = useState(false);
   const [isVerseShaking, setIsVerseShaking] = useState(false);
   const audioCtxRef = useRef(null);
 
@@ -74,10 +70,8 @@ export default function RandomAyahQuiz({ onClose }) {
       setRandomAyahNextPointer(prev => prev + 1);
     }
 
-    setRandomAyahSurahGuess('');
     setRandomAyahVerseGuess('');
     setRandomAyahResult('');
-    setIsSurahShaking(false);
     setIsVerseShaking(false);
   };
 
@@ -90,7 +84,6 @@ export default function RandomAyahQuiz({ onClose }) {
   useEffect(() => {
     saveStoredState(RANDOM_AYAH_QUIZ_STORAGE_KEY, {
       randomAyahIndex,
-      randomAyahSurahGuess,
       randomAyahVerseGuess,
       randomAyahRangeStart,
       randomAyahRangeEnd,
@@ -109,7 +102,6 @@ export default function RandomAyahQuiz({ onClose }) {
     randomAyahRangeEnd,
     randomAyahRangeStart,
     randomAyahResult,
-    randomAyahSurahGuess,
     randomAyahVerseGuess,
     correctCount,
     incorrectCount,
@@ -160,13 +152,11 @@ export default function RandomAyahQuiz({ onClose }) {
     }
 
     const result = evaluateRandomAyahAnswer(
-      randomAyahSurahGuess,
       randomAyahVerseGuess,
       QURAN_VERSES[randomAyahIndex],
     );
 
     setRandomAyahResult(result.message);
-    if (result.shakeSurah) triggerShake(setIsSurahShaking);
     if (result.shakeVerse) triggerShake(setIsVerseShaking);
 
     if (result.correct) {
@@ -196,14 +186,6 @@ export default function RandomAyahQuiz({ onClose }) {
       label: 'نهاية مدى الآيات',
       submitLabel: 'تطبيق',
       onSubmit: () => createRandomAyahQuestion(true),
-    },
-    surahGuess: {
-      value: randomAyahSurahGuess,
-      setValue: setRandomAyahSurahGuess,
-      maxLength: 3,
-      label: 'رقم السورة',
-      submitLabel: 'تحقق',
-      onSubmit: checkRandomAyahAnswer,
     },
     verseGuess: {
       value: randomAyahVerseGuess,
@@ -252,18 +234,7 @@ export default function RandomAyahQuiz({ onClose }) {
         </button>
       </div>
       <div className="khmasiyat-quiz-verse">{randomAyahData?.t || 'اختر مدى صحيحًا ثم اضغط "تطبيق" لعرض سؤال عشوائي.'}</div>
-      <div className="khmasiyat-quiz-inputs khmasiyat-quiz-guess-row">
-        <div className="khmasiyat-quiz-field">
-          <label className="khmasiyat-quiz-label">رقم السورة</label>
-          <input
-            type="text"
-            value={randomAyahSurahGuess}
-            placeholder="من 1 إلى 114"
-            min="1"
-            max="114"
-            {...keyboard.getInputProps('surahGuess', { className: `khmasiyat-quiz-input ${isSurahShaking ? 'shake border-error' : ''}` })}
-          />
-        </div>
+      <div className="khmasiyat-quiz-inputs khmasiyat-quiz-guess-row khmasiyat-quiz-guess-row--single">
         <div className="khmasiyat-quiz-field">
           <label className="khmasiyat-quiz-label">رقم الآية</label>
           <input
