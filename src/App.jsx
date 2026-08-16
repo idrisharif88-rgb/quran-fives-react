@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getSurahAndRange } from './utils/quranLogic';
+import {
+  DEFAULT_STEP,
+  STEP_LABELS,
+  firstIndexOfSurah,
+  indexForSurahAyah,
+  normalizeStep,
+  totalGroups,
+} from './utils/stepNavigation';
 import TextDisplay from './components/TextDisplay';
+import CornerNav from './components/CornerNav';
 import { QURAN_VERSES } from './data/quranVerses';
 import { SURAH_METADATA } from './data/quranConstants';
 import { SURAH_PAGE_COUNTS } from './data/surahPageCounts';
@@ -36,7 +45,7 @@ import {
   removeStoredState,
   saveStoredState
 } from './utils/persistence';
-import { pullRemoteIfChanged, pushLocal, authKhitma, getKhitma, putKhitma } from './utils/cloudSync';
+import { pullRemoteIfChanged, pushLocal, authKhitma, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, getSyncMeta } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
 import QuranFal from './components/QuranFal';
@@ -58,6 +67,9 @@ const SURAH_NAMES ="الفاتحة,البقرة,آل عمران,النساء,ا�
 
 // خماسيات السور: 1 (الفاتحة) ثم 5، 10، 15... حتى 110
 const SURAH_FIVES_ORDER = [1, ...Array.from({ length: Math.floor(114 / 5) }, (_, i) => (i + 1) * 5)];
+
+// مرجع ثابت لمجموعة فارغة: يمنع إنشاء Set جديدة في كل عرض لخطوة بلا مثبّتات
+const EMPTY_STARRED = new Set();
 
 const getPageNumberForVerse = (surah, ayah) => {
   if (!PAGE_STARTS || PAGE_STARTS.length === 0) {
@@ -167,9 +179,24 @@ function App() {
     const saved = persistedAppState.sharedGroupIndex;
     return Number.isInteger(saved) && saved >= 0 && saved < SHARED_VERSE_GROUPS.length ? saved : 0;
   });
-  const [starredIndices, setStarredIndices] = useState(() => (
-    new Set(Array.isArray(persistedAppState.starredIndices) ? persistedAppState.starredIndices : [])
-  ));
+  // خطوة التنقّل: 1 آية بعد آية، 2 كل آيتين، 3، 5 (الخماسيات، الافتراض)، 7
+  const [stepSize, setStepSize] = useState(() => normalizeStep(persistedAppState.stepSize));
+  // المثبّتات لكل خطوة على حدة: المثبّت رقم ٧ في الخماسيات ليس آية المثبّت رقم ٧
+  // في السباعيات. المفتاح رقم الخطوة، والقيمة مصفوفة فهارس.
+  // ترحيل: starredIndices القديمة (خماسيات دائماً) تصير المفتاح 5.
+  const [starredByStep, setStarredByStep] = useState(() => {
+    const saved = persistedAppState.starredByStep;
+    const migrated = { [DEFAULT_STEP]: new Set(Array.isArray(persistedAppState.starredIndices) ? persistedAppState.starredIndices : []) };
+    if (saved && typeof saved === 'object') {
+      Object.keys(saved).forEach((key) => {
+        const step = normalizeStep(Number(key));
+        const existing = migrated[step] || new Set();
+        (Array.isArray(saved[key]) ? saved[key] : []).forEach(i => existing.add(i));
+        migrated[step] = existing;
+      });
+    }
+    return migrated;
+  });
   const [activeTooltip, setActiveTooltip] = useState(null);
   const [blinkIndex, setBlinkIndex] = useState(0);
   const [jumpInput, setJumpInput] = useState(() => (
@@ -229,6 +256,8 @@ function App() {
   const khitmaCredsRef = useRef(null);      // بيانات الدخول المعتمدة للجلسة
   const khitmaSyncReadyRef = useRef(false);  // لتفادي رفع القائمة فور تحميلها
   const khitmaBaseRef = useRef(0);           // طابع آخر نسخة سحبها الجهاز (أساس الرفع)
+  const khitmaBaseVerifiedRef = useRef(false); // هل تمّ سحب ناجح؟ لا رفع قبله
+  const khitmaPendingRef = useRef([]);       // تعديلات محلية بانتظار أوّل سحب ناجح
   const [showKhatmaInput, setShowKhatmaInput] = useState(false);
   const [khatmaIntentionInput, setKhatmaIntentionInput] = useState('');
   const [pendingKhatmaTime, setPendingKhatmaTime] = useState(null);
@@ -304,6 +333,11 @@ function App() {
     try { return localStorage.getItem(SYNC_UNLOCK_KEY) === '1'; } catch { return false; }
   });
   const [isSyncPanelOpen, setIsSyncPanelOpen] = useState(false);
+  // المزامنة اليدوية بخطوتين: تأكيد قبل التنفيذ، ونتيجة صريحة بعده
+  const [manualSyncBusy, setManualSyncBusy] = useState(null);      // 'push' | 'pull' | null
+  const [manualSyncConfirm, setManualSyncConfirm] = useState(null); // 'push' | 'pull' | null
+  const [manualSyncResult, setManualSyncResult] = useState(null);   // { ok, text }
+  const [remoteSyncInfo, setRemoteSyncInfo] = useState(null);       // معلومات الخادم للعرض
   const [syncPasswordInput, setSyncPasswordInput] = useState('');
   const [syncPasswordError, setSyncPasswordError] = useState(false);
   const [counterConfirm, setCounterConfirm] = useState({ type: null, id: null });
@@ -335,6 +369,42 @@ function App() {
   const cloudPushBusyRef = useRef(false);   // رفعة جارية — لا نطلق ثانية بالتوازي
   const cloudPushPendingRef = useRef(null); // آخر لقطة وصلت أثناء الانشغال، تُرفع بعده
   const lastSnapshotRef = useRef(null);
+
+  // ─── الخطوة الحالية: العدد الكلّي للمجموعات ومثبّتات هذه الخطوة ───
+  const TOTAL_GROUPS = totalGroups(stepSize);
+  const stepName = STEP_LABELS[stepSize];
+  const starredIndices = starredByStep[stepSize] || EMPTY_STARRED;
+
+  // واجهة setStarredIndices القديمة نفسها (تقبل دالّة أو Set)، لكنّها تكتب
+  // في خانة الخطوة النشطة فقط — فتبقى بقيّة الشيفرة كما هي بلا تعديل.
+  const setStarredIndices = (updater) => {
+    setStarredByStep(prev => {
+      const current = prev[stepSize] || EMPTY_STARRED;
+      const next = typeof updater === 'function' ? updater(current) : updater;
+      return { ...prev, [stepSize]: next };
+    });
+  };
+
+  // تبديل الخطوة مع الحفاظ على موضع القراءة: نحوّل (سورة + آية) الحالية
+  // إلى أقرب مجموعة تقابلها في الخطوة الجديدة بدل القفز لفهرس عشوائي.
+  const handleStepChange = (nextStepRaw) => {
+    const nextStep = normalizeStep(nextStepRaw);
+    if (nextStep === stepSize) return;
+    const here = getSurahAndRange(currentIndex, stepSize);
+    setCurrentIndex(here.surah ? indexForSurahAyah(here.surah, here.end, nextStep) : 0);
+    setStepSize(nextStep);
+    setReviewAnchor(null);   // المرساة محسوبة بفهارس الخطوة السابقة
+    setJumpInput('');
+    setJumpError('');
+  };
+
+  // الانتقال إلى أوّل مجموعة في سورة (أوّل خماسية عند الخطوة 5)
+  const handleSurahJump = (surahNumber) => {
+    const target = firstIndexOfSurah(surahNumber, stepSize);
+    if (target === null) return;
+    setCurrentIndex(target);
+    setViewMode('khmasiyat');
+  };
 
   const starredArray = Array.from(starredIndices).sort((a, b) => a - b);
   const starredPagesArray = Array.from(starredPages).sort((a, b) => a - b);
@@ -539,7 +609,66 @@ function App() {
     setIsSyncPanelOpen(false);
     setSyncPasswordInput('');
     setSyncPasswordError(false);
+    setManualSyncConfirm(null);
+    setManualSyncResult(null);
   };
+
+  // ─── المزامنة اليدوية: الرفع والتنزيل خطوتان منفصلتان ───
+
+  // خطوة الرفع: نسخة هذا الجهاز تحلّ محلّ نسخة السحابة
+  const handleManualPush = async () => {
+    if (manualSyncBusy) return;
+    if (!lastSnapshotRef.current) {   // لم تُلتقط لقطة بعد: لا نرفع حالة فارغة فوق السحابة
+      setManualSyncResult({ ok: false, text: 'لا توجد حالة جاهزة للرفع بعد' });
+      return;
+    }
+    setManualSyncConfirm(null);
+    setManualSyncBusy('push');
+    setManualSyncResult(null);
+    try {
+      const updatedAt = await forcePushLocal(lastSnapshotRef.current);
+      cloudSyncReadyRef.current = true;   // الجهاز والخادم متطابقان الآن
+      setSyncFailed(false);
+      setRemoteSyncInfo({ updatedAt, hasState: true, inSync: true });
+      setManualSyncResult({ ok: true, text: `تمّ الرفع • ${formatHijriTimestamp(updatedAt)}` });
+    } catch (e) {
+      setManualSyncResult({ ok: false, text: e?.status === 401 ? 'رمز المزامنة غير مقبول' : 'تعذّر الرفع — تحقّق من الاتصال' });
+    } finally {
+      setManualSyncBusy(null);
+    }
+  };
+
+  // خطوة التنزيل: نسخة السحابة تحلّ محلّ نسخة هذا الجهاز، ثمّ إعادة تحميل لتطبيقها
+  const handleManualPull = async () => {
+    if (manualSyncBusy) return;
+    setManualSyncConfirm(null);
+    setManualSyncBusy('pull');
+    setManualSyncResult(null);
+    try {
+      const applied = await forcePullRemote();
+      if (!applied) {
+        setManualSyncResult({ ok: false, text: 'لا توجد نسخة على السحابة بعد' });
+        setManualSyncBusy(null);
+        return;
+      }
+      setManualSyncResult({ ok: true, text: 'تمّ التنزيل — جارٍ إعادة التحميل…' });
+      window.location.reload();
+    } catch (e) {
+      setManualSyncResult({ ok: false, text: e?.status === 401 ? 'رمز المزامنة غير مقبول' : 'تعذّر التنزيل — تحقّق من الاتصال' });
+      setManualSyncBusy(null);
+    }
+  };
+
+  // معلومات الخادم عند فتح اللوحة: متى آخر تحديث، وهل يطابق هذا الجهاز
+  useEffect(() => {
+    if (!isSyncPanelOpen || !SYNC_ENABLED || !syncUnlocked) return;
+    let cancelled = false;
+    setRemoteSyncInfo(null);
+    fetchRemoteInfo()
+      .then(info => { if (!cancelled) setRemoteSyncInfo(info); })
+      .catch(() => { if (!cancelled) setRemoteSyncInfo({ error: true }); });
+    return () => { cancelled = true; };
+  }, [isSyncPanelOpen, syncUnlocked]);
 
   // لا إعادة محاولة تلقائية عند الفشل — إعادة المحاولة يدوية فقط بالضغط على زر المؤشّر
 
@@ -550,7 +679,13 @@ function App() {
       viewMode,
       surahFivesIndex,
       sharedGroupIndex,
-      starredIndices: Array.from(starredIndices),
+      stepSize,
+      // مثبّتات كل خطوة على حدة. starredIndices تبقى محفوظة للتوافق مع النسخ
+      // الأقدم من التطبيق التي تقرأ الخماسيات من هذا المفتاح.
+      starredByStep: Object.fromEntries(
+        Object.entries(starredByStep).map(([step, set]) => [step, Array.from(set)])
+      ),
+      starredIndices: Array.from(starredByStep[DEFAULT_STEP] || EMPTY_STARRED),
       jumpInput,
       pageJumpInput,
       nightCounters,
@@ -595,9 +730,10 @@ function App() {
     isNightTimerRunning,
     sharedGroupIndex,
     quranicWondersNotes, // إضافة الملاحظات إلى مصفوفة التبعيات
-    starredIndices,
+    starredByStep,
     starredPages,
     starredPageEnds,
+    stepSize,
     surahFivesIndex,
     viewMode,
   ]);
@@ -630,9 +766,10 @@ function App() {
     isNightTimerRunning,
     sharedGroupIndex,
     quranicWondersNotes,
-    starredIndices,
+    starredByStep,
     starredPages,
     starredPageEnds,
+    stepSize,
     surahFivesIndex,
     viewMode,
   ]);
@@ -671,14 +808,15 @@ function App() {
       document.removeEventListener('contextmenu', blockContextMenu);
     };
   }, []);
-  const currentKhmasiyat = getSurahAndRange(currentIndex);
+  const currentKhmasiyat = getSurahAndRange(currentIndex, stepSize);
   const lastVerseIndex = currentKhmasiyat.absoluteEndIndex - 1;
   
   let khmasiyatVersesText = [];
   if (QURAN_VERSES[lastVerseIndex]) {
     khmasiyatVersesText.push(QURAN_VERSES[lastVerseIndex]);
+    // قائمة محسوبة لفهارس الخماسيات وحدها، فلا معنى لها عند خطوة أخرى
     const similarKhmasiyatIndices = [962, 963, 965, 966, 968, 970, 972, 1095, 1100, 1101];
-    if (similarKhmasiyatIndices.includes(currentIndex) && QURAN_VERSES[lastVerseIndex + 1]) {
+    if (stepSize === DEFAULT_STEP && similarKhmasiyatIndices.includes(currentIndex) && QURAN_VERSES[lastVerseIndex + 1]) {
       khmasiyatVersesText.push(QURAN_VERSES[lastVerseIndex + 1]);
     }
   }
@@ -957,6 +1095,12 @@ function App() {
     lastKhmasiyatIndexRef.current = currentIndex;
   }, [currentIndex, viewMode]);
 
+  // أمان: فهرس مستعاد (سحابة/رمز QR/حالة قديمة) قد يتجاوز مدى الخطوة النشطة
+  useEffect(() => {
+    if (currentIndex > TOTAL_GROUPS - 1) setCurrentIndex(TOTAL_GROUPS - 1);
+    else if (currentIndex < 0) setCurrentIndex(0);
+  }, [currentIndex, TOTAL_GROUPS]);
+
   useEffect(() => { setIsKhRevealed(false); }, [currentIndex]);
   useEffect(() => { setIsPageRevealed(false); }, [currentPageIndex]);
   useEffect(() => { setIsPageEndRevealed(false); }, [currentPageEndIndex]);
@@ -1170,7 +1314,7 @@ function App() {
 
   const handleSwipeNav = (direction) => {
     if (viewMode === 'khmasiyat') {
-      if (direction === 'next') setCurrentIndex(prev => Math.min(1201, prev + 1));
+      if (direction === 'next') setCurrentIndex(prev => Math.min(TOTAL_GROUPS - 1, prev + 1));
       if (direction === 'prev') setCurrentIndex(prev => Math.max(0, prev - 1));
       return;
     }
@@ -1236,7 +1380,8 @@ function App() {
     setViewMode('khmasiyat');
     setSurahFivesIndex(0);
     setSharedGroupIndex(0);
-    setStarredIndices(new Set());
+    setStepSize(DEFAULT_STEP);
+    setStarredByStep({});
     setActiveTooltip(null);
     setJumpInput('');
     setJumpError('');
@@ -1354,8 +1499,8 @@ function App() {
         setJumpError('الرجاء إدخال أرقام صحيحة');
         return;
       }
-      if (khmasiyatNum < 1 || khmasiyatNum > 1202) {
-        setJumpError('رقم الخماسية يجب أن يكون بين 1 و 1202');
+      if (khmasiyatNum < 1 || khmasiyatNum > TOTAL_GROUPS) {
+        setJumpError(`رقم ال${stepName} يجب أن يكون بين 1 و ${TOTAL_GROUPS}`);
         return;
       }
       setCurrentIndex(khmasiyatNum - 1);
@@ -1382,25 +1527,24 @@ function App() {
       return;
     }
 
-    if (verseNum % 5 !== 0 || verseNum <= 0) {
-      setJumpError('رجاء ادخل عدد مناسب');
+    // رقم الآية لا بدّ أن يكون على حدّ الخطوة الحالية (5، 10، 15... عند الخماسيات)
+    if (verseNum % stepSize !== 0 || verseNum <= 0) {
+      setJumpError(`رجاء أدخل رقم آية من مضاعفات ${stepSize}`);
       return;
     }
 
     const surahMeta = SURAH_METADATA[surahNum - 1];
-    const lastValidEndVerse = Math.floor(surahMeta.verseCount / 5) * 5;
+    const lastValidEndVerse = Math.floor(surahMeta.verseCount / stepSize) * stepSize;
+    if (lastValidEndVerse === 0) {
+      setJumpError(`سورة ${surahMeta.name} أقصر من ${stepSize} آيات`);
+      return;
+    }
     if (verseNum > lastValidEndVerse) {
-      setJumpError(`آخر خماسية في سورة ${surahMeta.name} تنتهي عند الآية ${lastValidEndVerse}`);
+      setJumpError(`آخر ${stepName} في سورة ${surahMeta.name} تنتهي عند الآية ${lastValidEndVerse}`);
       return;
     }
 
-    let chunksBefore = 0;
-    for (let i = 0; i < surahNum - 1; i++) {
-      chunksBefore += Math.floor(SURAH_METADATA[i].verseCount / 5);
-    }
-
-    const chunksInSurah = verseNum / 5;
-    const newIndex = chunksBefore + chunksInSurah - 1;
+    const newIndex = firstIndexOfSurah(surahNum, stepSize) + (verseNum / stepSize) - 1;
 
     setCurrentIndex(newIndex);
     setViewMode('khmasiyat');
@@ -1579,26 +1723,68 @@ function App() {
 
   // ─── قفل الختمات: الدخول وتحميل/مزامنة القائمة من الخادم ───
   const KHITMA_CREDS_KEY = 'quran-fives-khitma-creds-v1';
+  const KHITMA_CACHE_KEY = 'quran-fives-khitma-cache-v1';
 
-  const loadKhitmaWithCreds = useCallback(async (creds) => {
-    setKhitmaLoading(true);
+  const readSavedKhitmaCreds = () => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(KHITMA_CREDS_KEY));
+      return saved?.user && saved?.code ? saved : null;
+    } catch { return null; }
+  };
+
+  // نسخة محلية من السجلّ: تفتح القفل فوراً عند بدء التطبيق فيظهر عدّاد «ختماتي»
+  // وقائمة الختمات بلا انتظار الشبكة، ثمّ تُحدَّث من الخادم في الخلفية.
+  const readKhitmaCache = () => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(KHITMA_CACHE_KEY));
+      return Array.isArray(cached?.list) ? cached.list : null;
+    } catch { return null; }
+  };
+
+  const writeKhitmaCache = (list) => {
+    try { localStorage.setItem(KHITMA_CACHE_KEY, JSON.stringify({ list })); } catch { /* تجاهل */ }
+  };
+
+  const loadKhitmaWithCreds = useCallback(async (creds, { silent = false } = {}) => {
+    if (!silent) setKhitmaLoading(true);
     setKhitmaAuthError('');
     try {
       const { list, updatedAt } = await getKhitma(creds); // يرمي 401 إن كانت البيانات خاطئة
       khitmaCredsRef.current = creds;
       khitmaBaseRef.current = updatedAt;             // أساس الرفع = ما سحبناه للتو
       khitmaSyncReadyRef.current = false;            // أول setState تحميل لا رفع
-      setKhatmaList(list);
+
+      // دمج ما أُضيف على هذا الجهاز أثناء انقطاع الشبكة (لم يُرفع بعد) مع نسخة
+      // الخادم بالاتحاد على المعرّف، فلا تضيع ختمة سُجّلت بلا اتّصال.
+      const pending = khitmaPendingRef.current;
+      const serverIds = new Set(list.map(k => k.id));
+      const merged = pending.length
+        ? [...list, ...pending.filter(k => !serverIds.has(k.id))].sort((a, b) => a.timestamp - b.timestamp)
+        : list;
+      khitmaPendingRef.current = [];
+      const hadPending = merged.length !== list.length;
+
+      khitmaBaseVerifiedRef.current = true;          // عرفنا حالة الخادم: الرفع مسموح
+      setKhatmaList(merged);
+      writeKhitmaCache(merged);
       setKhitmaUnlocked(true);
       try { localStorage.setItem(KHITMA_CREDS_KEY, JSON.stringify(creds)); } catch { /* تجاهل */ }
+      if (hadPending) khitmaSyncReadyRef.current = true;   // ادفع المدموج للخادم فوراً
       return true;
     } catch (e) {
       const msg = String(e?.message || '');
-      setKhitmaAuthError(msg.includes('401') ? 'بيانات الدخول غير صحيحة' : 'تعذّر الاتصال بالخادم');
-      try { localStorage.removeItem(KHITMA_CREDS_KEY); } catch { /* تجاهل */ }
+      const isAuthFailure = msg.includes('401');
+      // بيانات الدخول تُمسح عند رفض الخادم لها وحده. مسحها عند انقطاع الشبكة
+      // كان يُخرِج المستخدم ويطلب الدخول من جديد في كل مرّة.
+      if (isAuthFailure) {
+        try { localStorage.removeItem(KHITMA_CREDS_KEY); } catch { /* تجاهل */ }
+        khitmaCredsRef.current = null;
+        setKhitmaUnlocked(false);
+      }
+      if (!silent) setKhitmaAuthError(isAuthFailure ? 'بيانات الدخول غير صحيحة' : 'تعذّر الاتصال بالخادم');
       return false;
     } finally {
-      setKhitmaLoading(false);
+      if (!silent) setKhitmaLoading(false);
     }
   }, []);
 
@@ -1609,18 +1795,41 @@ function App() {
     loadKhitmaWithCreds({ user, code });
   };
 
-  // عند فتح قسم الختمات: حاول الدخول تلقائياً ببيانات محفوظة على هذا الجهاز
+  // دخول واحد يكفي: عند بدء التطبيق، إن وُجدت بيانات محفوظة نفتح القفل فوراً من
+  // النسخة المحلية (بلا شبكة)، ثمّ نحدّث من الخادم بصمت. لا تظهر شاشة الدخول
+  // إلّا إن لم تكن هناك بيانات محفوظة أصلاً أو رفضها الخادم بـ401.
+  useEffect(() => {
+    const saved = readSavedKhitmaCreds();
+    if (!saved) return;
+    khitmaCredsRef.current = saved;
+    const cached = readKhitmaCache();
+    if (cached) {
+      khitmaSyncReadyRef.current = false;
+      setKhatmaList(cached);
+      setKhitmaUnlocked(true);
+    }
+    loadKhitmaWithCreds(saved, { silent: true });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // فتح قسم الختمات دون قفل مفتوح: محاولة دخول أخيرة ببيانات محفوظة (شبكة عادت)
   useEffect(() => {
     if (!isKhatmaListOpen || khitmaUnlocked) return;
-    let saved = null;
-    try { saved = JSON.parse(localStorage.getItem(KHITMA_CREDS_KEY)); } catch { /* تجاهل */ }
-    if (saved?.user && saved?.code) loadKhitmaWithCreds(saved);
+    const saved = readSavedKhitmaCreds();
+    if (saved) loadKhitmaWithCreds(saved);
   }, [isKhatmaListOpen, khitmaUnlocked, loadKhitmaWithCreds]);
 
   // رفع أي تغيير على القائمة للخادم (بعد التحميل الأولي) — تأخير بسيط لتجميع التعديلات
   useEffect(() => {
     if (!khitmaUnlocked || !khitmaCredsRef.current) return;
     if (!khitmaSyncReadyRef.current) { khitmaSyncReadyRef.current = true; return; }
+    writeKhitmaCache(khatmaList);
+    // قفل مفتوح من النسخة المحلية دون سحب ناجح: أساس الرفع (khitmaBaseRef) غير
+    // موثوق، والكتابة به تُخاطر بمسح ما على الخادم. نحتفظ بالتعديل معلّقاً حتى
+    // أوّل سحب ناجح ثمّ يُدمج ويُرفع هناك.
+    if (!khitmaBaseVerifiedRef.current) {
+      khitmaPendingRef.current = khatmaList;
+      return;
+    }
     const t = setTimeout(() => {
       const creds = khitmaCredsRef.current;
       putKhitma(creds, khatmaList, khitmaBaseRef.current)
@@ -1634,6 +1843,7 @@ function App() {
             khitmaBaseRef.current = updatedAt;
             khitmaSyncReadyRef.current = false; // التحميل لا يُطلق رفعاً جديداً
             setKhatmaList(list);
+            writeKhitmaCache(list);
           } catch { /* تجاهل: سيُعاد المحاولة عند فتح السجلّ لاحقاً */ }
         });
     }, 1500);
@@ -2354,7 +2564,7 @@ function App() {
               <div className="empty-starred">لا توجد خماسيات مثبتة بعد</div>
             ) : (
               starredArray.map(index => {
-                const kh = getSurahAndRange(index);
+                const kh = getSurahAndRange(index, stepSize);
                 const lastVerseIdx = kh.absoluteEndIndex - 1;
                 const verse = QURAN_VERSES[lastVerseIdx];
                 return (
@@ -2710,6 +2920,17 @@ function App() {
             const cornerNumber = viewMode === 'khmasiyat'
               ? currentVersesText[0]?.a
               : undefined;
+            // أدوات الزاوية (الانتقال لسورة + خطوة التنقّل) في وضع الخماسيات وحده،
+            // ولا تظهر تحت الطمس كي لا تكشف السورة قبل الضغط على «كشف»
+            const cornerAction = (viewMode === 'khmasiyat' && !showKhBlur) ? (
+              <CornerNav
+                surahNumber={currentKhmasiyat.surah}
+                surahName={currentKhmasiyat.name}
+                step={stepSize}
+                onSelectSurah={handleSurahJump}
+                onSelectStep={handleStepChange}
+              />
+            ) : undefined;
             const cardClass = (viewMode === 'page-starts' || viewMode === 'page-ends' || viewMode === 'khmasiyat') ? 'page-card-style' : '';
             if (showKhBlur || showPageBlur || showPageEndBlur) {
               return (
@@ -2733,7 +2954,7 @@ function App() {
                 </div>
               );
             }
-            return <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} cardClassName={cardClass} />;
+            return <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} cornerAction={cornerAction} cardClassName={cardClass} />;
           })()}
           {/* The main content area (TextDisplay, shared-verses, surah-fives)
               needs to be scrollable if its content overflows.
@@ -2744,7 +2965,7 @@ function App() {
             <button
               onClick={() => {
                 if (viewMode === 'khmasiyat') {
-                  setCurrentIndex(prev => Math.min(1201, prev + 1));
+                  setCurrentIndex(prev => Math.min(TOTAL_GROUPS - 1, prev + 1));
                 } else if (viewMode === 'shared-verses') {
                   setSharedGroupIndex(prev => Math.min(SHARED_VERSE_GROUPS.length - 1, prev + 1));
                 } else if (viewMode === 'page-starts') {
@@ -2756,7 +2977,7 @@ function App() {
                 }
               }}
               className="nav-arrow next-arrow"
-              disabled={(viewMode === 'khmasiyat' && currentIndex === 1201) || 
+              disabled={(viewMode === 'khmasiyat' && currentIndex >= TOTAL_GROUPS - 1) || 
                         (viewMode === 'shared-verses' && sharedGroupIndex === SHARED_VERSE_GROUPS.length - 1) ||
                         (viewMode === 'page-starts' && currentPageIndex === pageStartsData.length - 1) ||
                         (viewMode === 'page-ends' && currentPageEndIndex === pageEndsData.length - 1) ||
@@ -2863,7 +3084,7 @@ function App() {
               <div className={`input-inner-wrapper ${jumpError ? 'shake border-error' : ''}`}>
                 {!jumpInput && !jumpError && (
                   <div className="marquee-text">
-                    أدخل رقم السورة + : + رقم الخماسية، مثلاً 55 : 5 أو أدخل رقم الخماسية مثلاً 120 
+                    أدخل رقم السورة + : + رقم الآية، مثلاً 55 : {stepSize} أو أدخل رقم ال{stepName} مثلاً 120
                   </div>
                 )}
                 <input
@@ -2882,10 +3103,10 @@ function App() {
           {renderReturnToAnchor()}
           <div className="progress-wrapper big-progress">
             <div className="progress-container">
-              <div className="progress-bar" style={{ width: `${Math.min(((currentIndex + 1) / 1202) * 100, 100)}%` }}></div>
+              <div className="progress-bar" style={{ width: `${Math.min(((currentIndex + 1) / TOTAL_GROUPS) * 100, 100)}%` }}></div>
             </div>
             <div className="progress-text">
-              {currentIndex + 1} / 1202
+              {currentIndex + 1} / {TOTAL_GROUPS}
             </div>
           </div>
         </>
@@ -3107,6 +3328,7 @@ function App() {
           appState={{
             currentIndex,
             currentPageIndex,
+            stepSize,
             starredIndices,
             starredPages,
             starredPageEnds,
@@ -3115,9 +3337,15 @@ function App() {
             khatmaList
           }}
           onRestore={(data) => {
+            // الخطوة أوّلاً: الفهرس والمثبّتات في الرمز محسوبة بها
+            // (الرموز القديمة بلا حقل خطوة = خماسيات)
+            const restoredStep = normalizeStep(data.st ?? DEFAULT_STEP);
+            setStepSize(restoredStep);
             if (data.c !== undefined) setCurrentIndex(data.c);
             if (data.p !== undefined) setCurrentPageIndex(data.p);
-            if (data.s !== undefined) setStarredIndices(new Set(data.s));
+            if (data.s !== undefined) {
+              setStarredByStep(prev => ({ ...prev, [restoredStep]: new Set(data.s) }));
+            }
             if (data.sp !== undefined) setStarredPages(new Set(data.sp));
             if (Array.isArray(data.spe)) setStarredPageEnds(new Set(data.spe));
             if (data.n !== undefined) setNightCounters(data.n);
@@ -3195,9 +3423,89 @@ function App() {
                 <p style={{ fontSize: '15px', color: 'var(--app-accent)', fontWeight: 800, margin: '0 0 6px' }}>
                   المزامنة مفعّلة ✓
                 </p>
-                <p style={{ fontSize: '13px', color: 'var(--app-muted)', margin: '0 0 18px', lineHeight: 1.7 }}>
-                  بياناتك تُرفع وتُسحب تلقائياً مع خادمك. هذه الميزة للاستخدام الشخصي فقط.
+                <p style={{ fontSize: '13px', color: 'var(--app-muted)', margin: '0 0 16px', lineHeight: 1.7 }}>
+                  بياناتك تُرفع وتُسحب تلقائياً مع خادمك. وبالأسفل خطوتان يدويّتان تحسمان أيّ اختلاف.
                 </p>
+
+                {/* ─── المزامنة اليدوية: خطوة رفع وخطوة تنزيل ─── */}
+                <div className="manual-sync">
+                  <div className="manual-sync-status" dir="rtl">
+                    <div>
+                      <span className="manual-sync-status-label">هذا الجهاز</span>
+                      <span className="manual-sync-status-value">
+                        {getSyncMeta().updatedAt ? formatHijriTimestamp(getSyncMeta().updatedAt) : 'لم يزامن بعد'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="manual-sync-status-label">السحابة</span>
+                      <span className="manual-sync-status-value">
+                        {remoteSyncInfo === null ? 'جارٍ القراءة…'
+                          : remoteSyncInfo.error ? 'تعذّر الوصول للخادم'
+                          : !remoteSyncInfo.hasState ? 'لا توجد نسخة بعد'
+                          : formatHijriTimestamp(remoteSyncInfo.updatedAt)}
+                      </span>
+                    </div>
+                    {remoteSyncInfo && !remoteSyncInfo.error && remoteSyncInfo.hasState && (
+                      <div className={`manual-sync-badge${remoteSyncInfo.inSync ? ' is-ok' : ''}`}>
+                        {remoteSyncInfo.inSync ? 'النسختان متطابقتان ✓' : 'النسختان مختلفتان — اختر خطوة'}
+                      </div>
+                    )}
+                  </div>
+
+                  {manualSyncConfirm === null ? (
+                    <div className="manual-sync-actions">
+                      <button
+                        type="button"
+                        className="manual-sync-btn manual-sync-btn--push"
+                        disabled={Boolean(manualSyncBusy)}
+                        onClick={() => { setManualSyncResult(null); setManualSyncConfirm('push'); }}
+                      >
+                        <span className="manual-sync-btn-icon" aria-hidden="true">↑</span>
+                        <span>
+                          <span className="manual-sync-btn-title">{manualSyncBusy === 'push' ? 'جارٍ الرفع…' : 'رفع إلى السحابة'}</span>
+                          <span className="manual-sync-btn-sub">نسخة هذا الجهاز تحلّ محلّ نسخة السحابة</span>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className="manual-sync-btn manual-sync-btn--pull"
+                        disabled={Boolean(manualSyncBusy)}
+                        onClick={() => { setManualSyncResult(null); setManualSyncConfirm('pull'); }}
+                      >
+                        <span className="manual-sync-btn-icon" aria-hidden="true">↓</span>
+                        <span>
+                          <span className="manual-sync-btn-title">{manualSyncBusy === 'pull' ? 'جارٍ التنزيل…' : 'تنزيل من السحابة'}</span>
+                          <span className="manual-sync-btn-sub">نسخة السحابة تحلّ محلّ نسخة هذا الجهاز</span>
+                        </span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="manual-sync-confirm">
+                      <p className="manual-sync-confirm-text">
+                        {manualSyncConfirm === 'push'
+                          ? 'سيُكتب فوق نسخة السحابة بنسخة هذا الجهاز. متأكّد؟'
+                          : 'سيُكتب فوق نسخة هذا الجهاز بنسخة السحابة، ثمّ يُعاد تحميل التطبيق. متأكّد؟'}
+                      </p>
+                      <div className="manual-sync-confirm-actions">
+                        <button
+                          type="button"
+                          className="khmasiyat-quiz-btn"
+                          onClick={manualSyncConfirm === 'push' ? handleManualPush : handleManualPull}
+                        >
+                          نعم، {manualSyncConfirm === 'push' ? 'ارفع' : 'نزّل'}
+                        </button>
+                        <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => setManualSyncConfirm(null)}>
+                          تراجع
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {manualSyncResult && (
+                    <p className={`manual-sync-result${manualSyncResult.ok ? ' is-ok' : ''}`}>{manualSyncResult.text}</p>
+                  )}
+                </div>
+
                 <button type="button" className="khmasiyat-quiz-btn" onClick={handleSyncDisable} style={{ width: '100%', marginBottom: '10px' }}>
                   إيقاف المزامنة
                 </button>

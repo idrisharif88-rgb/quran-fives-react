@@ -58,6 +58,7 @@ const QRSync = ({ appState, onRestore, onClose }) => {
       v: 1, // رقم الإصدار لتتبع التحديثات مستقبلاً
       c: appState?.currentIndex || 0,
       p: appState?.currentPageIndex || 0,
+      st: appState?.stepSize || 5,   // خطوة التنقّل: c و s محسوبان بها
       s: appState?.starredIndices ? Array.from(appState.starredIndices) : [],
       sp: appState?.starredPages ? Array.from(appState.starredPages) : [],
       spe: appState?.starredPageEnds ? Array.from(appState.starredPageEnds) : [],

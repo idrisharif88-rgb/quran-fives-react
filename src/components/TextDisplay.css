@@ -34,13 +34,27 @@
   line-height: 2.4;
 }
 
-/* ── Corner five-number ─────────────────────────────────────────────────────
-   Always-visible in-flow row at the bottom of the card.
-   Uses the same colour as the verse text so it feels like part of the content.
+/* ── Corner row ─────────────────────────────────────────────────────────────
+   Always-visible in-flow row at the bottom of the card, laid out as three
+   columns (dir=ltr, so they read left→right regardless of the RTL page):
+     left   – the verse number
+     centre – the surah picker
+     right  – the step size, set to the same type size as the number
+   The row itself stays click-through; each control re-enables pointer events.
    ────────────────────────────────────────────────────────────────────────── */
-.verse-corner-number {
+.verse-corner-row {
   flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 8px;
   padding: 0 14px 10px;
+  pointer-events: none;
+}
+
+.verse-corner-number {
+  grid-column: 1;
+  justify-self: start;
   font-size: 72px;
   font-weight: bold;
   font-family: var(--app-font-family, 'Tajawal', sans-serif);
@@ -58,9 +72,12 @@
     font-size: calc(var(--app-font-size, 38px) * 0.75);
   }
 
+  .verse-corner-row {
+    padding: 0 10px 8px;
+  }
+
   .verse-corner-number {
     font-size: 54px;
-    padding: 0 10px 8px;
   }
 }
 

@@ -2484,3 +2484,107 @@ button.nc-khitma-circle:active {
   border-top-color: var(--app-accent-deep);
   animation: sharePrepSpin 0.8s linear infinite;
 }
+/* ── المزامنة اليدوية: خطوة رفع وخطوة تنزيل داخل لوحة المزامنة ── */
+.manual-sync {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+  text-align: right;
+}
+.manual-sync-status {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--app-surface-2);
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  padding: 11px 13px;
+  font-size: 12.5px;
+}
+.manual-sync-status > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.manual-sync-status-label { color: var(--app-muted); font-weight: 700; }
+.manual-sync-status-value { color: var(--app-text); font-weight: 700; }
+.manual-sync-badge {
+  margin-top: 2px;
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--app-warn);
+}
+.manual-sync-badge.is-ok { color: var(--app-accent-ink); }
+
+.manual-sync-actions { display: flex; flex-direction: column; gap: 8px; }
+.manual-sync-btn {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 12px;
+  border: 1.5px solid var(--app-accent);
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: right;
+}
+.manual-sync-btn:disabled { opacity: 0.55; cursor: default; }
+.manual-sync-btn-icon {
+  flex: 0 0 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+}
+.manual-sync-btn--pull .manual-sync-btn-icon {
+  background: var(--app-surface-2);
+  color: var(--app-accent-ink);
+  border: 1.5px solid var(--app-accent);
+}
+.manual-sync-btn-title { display: block; font-size: 14.5px; font-weight: 800; }
+.manual-sync-btn-sub { display: block; font-size: 11.5px; color: var(--app-muted); margin-top: 2px; }
+
+.manual-sync-confirm {
+  background: var(--app-surface-2);
+  border: 1.5px solid var(--app-warn);
+  border-radius: 12px;
+  padding: 12px;
+}
+.manual-sync-confirm-text { margin: 0 0 10px; font-size: 13.5px; font-weight: 700; color: var(--app-text); line-height: 1.6; }
+.manual-sync-confirm-actions { display: flex; gap: 8px; }
+.manual-sync-confirm-actions .khmasiyat-quiz-btn { flex: 1; }
+
+.manual-sync-result {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--app-danger);
+  text-align: center;
+}
+.manual-sync-result.is-ok { color: var(--app-accent-ink); }
+
+/* ليلاً تُعكس ألوان المؤشّر: اللون الداكن (--app-accent-deep) على السطح الليلي
+   الداكن لا يتجاوز ٢٫٤:١ فلا يكاد يُرى. نملأ الحبّة بلون التطبيق الفاتح ونكتب
+   عليه بلون التبايُن — أخضر #2bd17c على #0b1117، وذهبي #ffd700 على #1a1400. */
+.app-container.night-mode .sync-status-pill {
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+  border-color: var(--app-accent);
+}
+.app-container.night-mode .sync-status-spinner {
+  border-color: var(--app-accent-contrast);
+  border-top-color: transparent;
+  opacity: 0.85;
+}

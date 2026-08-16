@@ -89,6 +89,47 @@ export async function pushLocal(state) {
   throw lastErr;
 }
 
+// ─── المزامنة اليدوية: خطوتان صريحتان، رفع وتنزيل ───
+// الطريقة نفسها في الاثنتين: نقرأ طابع الخادم الحالي ونستعمله أساساً للكتابة،
+// فالعملية تنجح دائماً بلا 409 ودون أي تغيير في عقد الخادم أو نشر جديد.
+
+// معلومات الخادم للعرض: متى آخر تحديث، وهل يطابق ما يعرفه هذا الجهاز
+export async function fetchRemoteInfo() {
+  if (!SYNC_ENABLED) return { updatedAt: 0, hasState: false, inSync: true };
+  const remote = await api('/api/state', { method: 'GET' });
+  const remoteUpdatedAt = remote?.updatedAt ?? 0;
+  return {
+    updatedAt: remoteUpdatedAt,
+    hasState: Boolean(remote?.state),
+    inSync: remoteUpdatedAt === getSyncMeta().updatedAt,
+  };
+}
+
+// رفع: نسخة هذا الجهاز تحلّ محلّ نسخة السحابة
+export async function forcePushLocal(state) {
+  if (!SYNC_ENABLED) throw new Error('sync disabled');
+  const remote = await api('/api/state', { method: 'GET' });
+  const body = JSON.stringify({
+    state,
+    baseUpdatedAt: remote?.updatedAt ?? 0,   // أساس = ما على الخادم الآن، فلا تعارض
+    writeId: newWriteId(),
+  });
+  const result = await api('/api/state', { method: 'PUT', body });
+  setSyncMeta({ updatedAt: result.updatedAt });
+  return result.updatedAt;
+}
+
+// تنزيل: نسخة السحابة تحلّ محلّ نسخة هذا الجهاز.
+// تعيد false إن كانت السحابة فارغة، كي لا يمحو التنزيلُ حالةَ الجهاز بلا شيء.
+export async function forcePullRemote() {
+  if (!SYNC_ENABLED) throw new Error('sync disabled');
+  const remote = await api('/api/state', { method: 'GET' });
+  if (!remote || !remote.state) return false;
+  localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(remote.state));
+  setSyncMeta({ updatedAt: remote.updatedAt });
+  return true;
+}
+
 // ─── سجلّ الختمات الخاص: محمي ببيانات المالك (user + code) ───
 function khitmaHeaders(creds) {
   return { 'X-Khitma-User': creds.user, 'X-Khitma-Code': creds.code };

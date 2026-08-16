@@ -11,7 +11,9 @@
 
 .surah-transition-toast {
   align-self: center;
-  background: #1B4332;
+  /* لون التطبيق الداكن: يبقى داكناً في التشكيلات الأربع (أخضر/ذهبي × نهاري/ليلي)
+     فيظلّ النصّ الأبيض الثابت مقروءاً، ويتبع الإشعارُ لونَ التطبيق المختار */
+  background: var(--app-accent-deep);
   color: #fff;
   padding: 8px 22px;
   border-radius: 24px;

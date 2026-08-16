@@ -35,8 +35,13 @@ function Verse({ verse }) {
  * @param {number}  [cornerNumber] – Last verse number of the current khmasiyat
  *                                   (shown as a large number at the bottom-left).
  *                                   Only passed in khmasiyat mode.
+ * @param {ReactNode} [cornerAction] – Navigation controls for the corner row. Rendered
+ *                                   as a fragment so its children land directly in the
+ *                                   row's grid: surah picker centre, step size right.
  */
-export default function TextDisplay({ verses, cornerNumber, cardClassName = '' }) {
+export default function TextDisplay({ verses, cornerNumber, cornerAction, cardClassName = '' }) {
+  const hasCornerRow = cornerNumber != null || cornerAction != null;
+
   return (
     <div className={`verse-card ${cardClassName}`.trim()}>
       <div className="verse-scroll">
@@ -45,9 +50,13 @@ export default function TextDisplay({ verses, cornerNumber, cardClassName = '' }
         ))}
       </div>
 
-      {cornerNumber != null && (
-        <div className="verse-corner-number" dir="ltr" aria-hidden="true">
-          {cornerNumber}
+      {/* dir=ltr so the grid columns read left→right: number | surah | step */}
+      {hasCornerRow && (
+        <div className="verse-corner-row" dir="ltr">
+          <div className="verse-corner-number" aria-hidden="true">
+            {cornerNumber ?? ''}
+          </div>
+          {cornerAction}
         </div>
       )}
     </div>
