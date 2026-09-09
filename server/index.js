@@ -12,13 +12,17 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'state.json');
 const KHITMA_FILE = path.join(DATA_DIR, 'khitma.json');
 
-// بيانات دخول مالك سجلّ الختمات الخاص (تُضبط عبر البيئة، وإلا القيم الافتراضية)
-const KHITMA_USER = process.env.KHITMA_USER || 'IdrisAhmedSh';
-const KHITMA_CODE = process.env.KHITMA_CODE || '27956';
+// بيانات دخول مالك سجلّ الختمات الخاص — تُضبط عبر البيئة فقط، لا قيم افتراضية في الكود
+const KHITMA_USER = process.env.KHITMA_USER || '';
+const KHITMA_CODE = process.env.KHITMA_CODE || '';
 
-// رفض التشغيل بدون رمز مزامنة حتى لا يبقى الخادم مفتوحاً للعلن
+// رفض التشغيل بدون الأسرار حتى لا يبقى الخادم مفتوحاً للعلن
 if (!SYNC_CODE) {
   console.error('SYNC_CODE غير مضبوط. عيّن متغيّر البيئة SYNC_CODE قبل التشغيل.');
+  process.exit(1);
+}
+if (!KHITMA_USER || !KHITMA_CODE) {
+  console.error('KHITMA_USER أو KHITMA_CODE غير مضبوط. عيّنهما عبر البيئة قبل التشغيل.');
   process.exit(1);
 }
 

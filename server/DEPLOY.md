@@ -10,12 +10,12 @@ protected by a secret sync code.
 - Node.js 18+ and npm installed (`node -v` to verify).
 
 ## Secret sync code
-Use this code (or generate your own with `openssl rand -base64 24`):
+Generate your own and keep it out of this file and out of git:
 ```
-2dDQNYhGkXAVanrKCYsvL42CooQxg8bH
+openssl rand -base64 24
 ```
 It must be **identical** on the server (`SYNC_CODE`) and in the React project's `.env`
-(`VITE_SYNC_CODE`).
+(`VITE_SYNC_CODE`). Never commit the real value — store it in a password manager.
 
 ## 1) Upload the server files
 Copy the whole `server/` folder to the VPS (via scp or git). Example:
@@ -31,13 +31,13 @@ npm install --omit=dev
 ## 2) Run it persistently with pm2
 ```bash
 sudo npm i -g pm2
-SYNC_CODE="2dDQNYhGkXAVanrKCYsvL42CooQxg8bH" pm2 start index.js --name quran-sync
+SYNC_CODE="YOUR_SYNC_CODE" pm2 start index.js --name quran-sync
 pm2 save
 pm2 startup        # run the command it prints so it auto-starts on reboot
 ```
 Verify it's running:
 ```bash
-curl -s -H "X-Sync-Code: 2dDQNYhGkXAVanrKCYsvL42CooQxg8bH" http://localhost:3001/api/health
+curl -s -H "X-Sync-Code: YOUR_SYNC_CODE" http://localhost:3001/api/health
 # expected: {"ok":true}
 ```
 
@@ -77,7 +77,7 @@ Do NOT expose port 3001 publicly — only nginx reaches it locally.
 
 ## 5) Test from outside
 ```bash
-curl -s -H "X-Sync-Code: 2dDQNYhGkXAVanrKCYsvL42CooQxg8bH" https://YOUR_DOMAIN.com/api/health
+curl -s -H "X-Sync-Code: YOUR_SYNC_CODE" https://YOUR_DOMAIN.com/api/health
 # expected: {"ok":true}
 
 # without the code it must return 401:
@@ -88,7 +88,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://YOUR_DOMAIN.com/api/health
 In the React project root, create a `.env` file:
 ```
 VITE_SYNC_URL=https://YOUR_DOMAIN.com
-VITE_SYNC_CODE=2dDQNYhGkXAVanrKCYsvL42CooQxg8bH
+VITE_SYNC_CODE=YOUR_SYNC_CODE
 ```
 Then rebuild and sync:
 ```bash
