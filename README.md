@@ -1,5 +1,7 @@
 # Quran Fives (الخماسيات)
 
+[![CI](https://github.com/idrisharif88-rgb/quran-fives-react/actions/workflows/ci.yml/badge.svg)](https://github.com/idrisharif88-rgb/quran-fives-react/actions/workflows/ci.yml)
+
 A paid Quran **indexing-memorization** app, **live on Google Play**. Built with React +
 Capacitor — one codebase running on Android, iOS and web (PWA). Arabic-first, fully offline,
 with optional cloud sync.
