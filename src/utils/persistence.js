@@ -35,13 +35,3 @@ export function removeStoredState(storageKey) {
     // Ignore storage failures so the app keeps working.
   }
 }
-
-export function hasStoredState(storageKey) {
-  if (typeof window === 'undefined') return false;
-
-  try {
-    return window.localStorage.getItem(storageKey) !== null;
-  } catch {
-    return false;
-  }
-}

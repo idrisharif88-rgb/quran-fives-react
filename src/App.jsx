@@ -40,7 +40,6 @@ import {
   PAGE_STARTS_QUIZ_STORAGE_KEY,
   RANDOM_AYAH_QUIZ_STORAGE_KEY,
   SURAH_COUNT_QUIZ_STORAGE_KEY,
-  hasStoredState,
   loadStoredState,
   removeStoredState,
   saveStoredState
@@ -51,6 +50,7 @@ import SyncStatusIndicator from './components/SyncStatusIndicator';
 import StartupSyncPrompt from './components/StartupSyncPrompt';
 import HomeButton from './components/HomeButton';
 import QuranFal from './components/QuranFal';
+import QuranSearch from './components/QuranSearch';
 import useAccentTheme from './hooks/useAccentTheme';
 import { ACCENT_THEMES, ACCENT_THEME_LABEL, getPageBg } from './constants/themes';
 // الخطوط أوّلاً: ملفّات محلية داخل الحزمة، فلا شيء يُطلب من الشبكة
@@ -159,9 +159,6 @@ function formatHijriTimestamp(ms) {
 
 function App() {
   const [persistedAppState] = useState(() => loadStoredState(APP_STORAGE_KEY) || {});
-  const [showSessionPrompt, setShowSessionPrompt] = useState(() => (
-    SESSION_STORAGE_KEYS.some(storageKey => hasStoredState(storageKey))
-  ));
 
   // قارئ محفوظ حُذف من القائمة (مثل أصوات المرتّل القديمة) يعود للافتراضي
   const [activeReciter, setActiveReciter] = useState(() => (
@@ -331,6 +328,8 @@ function App() {
   const [showExitToast, setShowExitToast] = useState(false);
   const [isQRSyncOpen, setIsQRSyncOpen] = useState(false);
   const [isFalOpen, setIsFalOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [syncFailed, setSyncFailed] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncUnlocked, setSyncUnlocked] = useState(() => {
@@ -1487,11 +1486,6 @@ function App() {
     setActiveSurahNamesQuiz(false);
     setQuranicWondersNotes([]); // إعادة تعيين الملاحظات
     setIsNightMode(false);
-    setShowSessionPrompt(false);
-  };
-
-  const handleResumeSession = () => {
-    setShowSessionPrompt(false);
   };
 
   const applyNightCounterInputs = () => {
@@ -1690,8 +1684,8 @@ function App() {
       setCounterConfirm({ type: null, id: null });
       return true;
     }
-    if (showSessionPrompt) {
-      setShowSessionPrompt(false);
+    if (isResetConfirmOpen) {
+      setIsResetConfirmOpen(false);
       return true;
     }
     if (mainKeyboard && mainKeyboard.showKeyboard) {
@@ -1724,6 +1718,10 @@ function App() {
     }
     if (isFalOpen) {
       setIsFalOpen(false);
+      return true;
+    }
+    if (isSearchOpen) {
+      setIsSearchOpen(false);
       return true;
     }
     if (isSyncPanelOpen) {
@@ -2323,14 +2321,34 @@ function App() {
           </div>
         </div>
       )}
-      {showSessionPrompt && (
-        <div className="session-overlay" dir="rtl">
-          <div className="session-card">
-            <h2 className="session-title">متابعة الجلسة السابقة؟</h2>
-            <p className="session-text">يمكنك المتابعة من نفس المكان أو البدء من جديد.</p>
-            <div className="session-actions">
-              <button type="button" className="khmasiyat-quiz-btn" onClick={handleResumeSession}>متابعة</button>
-              <button type="button" className="khmasiyat-quiz-btn secondary" onClick={handleStartFresh}>بدء جديد</button>
+      {isResetConfirmOpen && (
+        <div className="session-overlay" dir="rtl" style={{ zIndex: 10001, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
+          <div style={{
+            background: 'var(--app-surface)',
+            border: '1px solid var(--app-border)',
+            padding: '24px',
+            borderRadius: '16px',
+            maxWidth: '380px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.4)'
+          }}>
+            <h3 style={{ marginTop: 0, color: 'var(--app-text)', fontSize: '18px', marginBottom: '12px' }}>إعادة تعيين التطبيق</h3>
+            <p style={{ color: 'var(--app-muted)', fontSize: '14px', marginBottom: '24px', lineHeight: '1.6' }}>
+              سيتم مسح كل البيانات المحفوظة على هذا الجهاز (موضع القراءة، المثبّتات، الاختبارات، العدادات، الخطّ…) والبدء من جديد. لا يمكن التراجع.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                className="night-counter-chip active"
+                style={{ flex: 1, margin: 0, background: 'var(--app-danger)', color: '#fff', border: 'none' }}
+                onClick={() => { handleStartFresh(); setIsResetConfirmOpen(false); }}
+              >
+                إعادة تعيين
+              </button>
+              <button type="button" className="night-counter-chip" style={{ flex: 1, margin: 0 }} onClick={() => setIsResetConfirmOpen(false)}>
+                إلغاء
+              </button>
             </div>
           </div>
         </div>
@@ -2386,7 +2404,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['العداد', 'ختماتي', 'فقهيات', 'فأل القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد'].map(option => (
+                  {['العداد', 'ختماتي', 'فقهيات', 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -2396,6 +2414,7 @@ function App() {
                         if (option === 'ختماتي') { mainKeyboard.closeKeyboard(); setIsKhatmaListOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فقهيات') { mainKeyboard.closeKeyboard(); setIsFiqhOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فأل القرآن') { mainKeyboard.closeKeyboard(); setIsFalOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'البحث في القرآن') { mainKeyboard.closeKeyboard(); setIsSearchOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'خماسيات - سور') { mainKeyboard.closeKeyboard(); setSurahFivesIndex(0); setViewMode('surah-fives'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'الوضع الليلي') { setIsNightMode(prev => !prev); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === ACCENT_THEME_LABEL) { setAccentTheme(prev => (prev === ACCENT_THEMES.YELLOW ? ACCENT_THEMES.GREEN : ACCENT_THEMES.YELLOW)); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -2407,6 +2426,7 @@ function App() {
                         if (option === 'مزامنة QR') { mainKeyboard.closeKeyboard(); setIsQRSyncOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'المزامنة السحابية') { mainKeyboard.closeKeyboard(); setIsSyncPanelOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'السور المتشابهة في العدد') { setViewMode(prev => prev === 'shared-verses' ? 'khmasiyat' : 'shared-verses'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'إعادة تعيين التطبيق') { mainKeyboard.closeKeyboard(); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); setIsResetConfirmOpen(true); return; }
                         setIsMoreMenuOpen(false);
                       }}
                     >
@@ -3510,6 +3530,16 @@ function App() {
         </div>
       )}
       {isFalOpen && <QuranFal onClose={() => setIsFalOpen(false)} />}
+      {isSearchOpen && (
+        <QuranSearch
+          onClose={() => setIsSearchOpen(false)}
+          onJump={(surah, ayah) => {
+            setCurrentIndex(indexForSurahAyah(surah, ayah, stepSize));
+            setViewMode('khmasiyat');
+            setIsSearchOpen(false);
+          }}
+        />
+      )}
       {isSyncPanelOpen && (
         <div className="audio-settings-overlay" dir="rtl" style={{ zIndex: 10000 }} onClick={closeSyncPanel}>
           <div className="audio-settings-card" style={{ maxWidth: '380px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>

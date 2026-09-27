@@ -30,3 +30,4 @@ dist-ssr
 
 # Signed release bundles/APKs — build output, regenerable, ~14 MB each
 android/app/release/
+.aider*

@@ -180,20 +180,6 @@ body.night-mode #root {
   font-weight: 800;
 }
 
-.session-text {
-  margin: 0;
-  color: var(--app-muted);
-  font-size: 18px;
-  line-height: 1.8;
-}
-
-.session-actions {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 18px;
-}
-
 .verse-container {
   /* Used by shared-verses, surah-fives, loading and error states.
      TextDisplay uses .verse-card / .verse-scroll instead. */
@@ -1944,12 +1930,6 @@ button.nc-khitma-circle:active {
   }
   .session-title {
     font-size: 24px;
-  }
-  .session-text {
-    font-size: 16px;
-  }
-  .session-actions {
-    flex-direction: column;
   }
   .nav-arrow {
     width: 40px;
