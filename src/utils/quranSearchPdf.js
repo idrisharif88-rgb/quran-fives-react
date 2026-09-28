@@ -199,9 +199,11 @@ function drawPageCanvas(blocks, query, count, pageNo, totalPages) {
   ctx.lineTo(PAGE_W - MARGIN, 238);
   ctx.stroke();
 
-  ctx.font = VERSE_FONT;
   let y = CONTENT_TOP;
   for (const block of blocks) {
+    // إعادة ضبط خطّ الآية في كلّ كتلة — سطر السورة يغيّره إلى Tajawal
+    ctx.font = VERSE_FONT;
+    ctx.fillStyle = INK;
     for (const line of block.verseLines) {
       const segments = segmentsForLine(line.text, line.start, block.ranges);
       drawTextLine(ctx, segments, PAGE_W - MARGIN, y, INK);
@@ -241,7 +243,8 @@ function buildSearchPdf(results, query) {
   pages.forEach((pageBlocks, i) => {
     if (i > 0) pdf.addPage();
     const canvas = drawPageCanvas(pageBlocks, query, results.length, i + 1, pages.length);
-    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
+    // JPEG بدل PNG: النصّ على خلفية بيضاء يُضغط بحجم أصغر بكثير (PNG بلا فقدان يضخّم الملف)
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
   });
 
   return pdf.output('blob');

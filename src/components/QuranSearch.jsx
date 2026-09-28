@@ -63,6 +63,8 @@ export default function QuranSearch({ onClose, onJump }) {
   const handleSharePdf = async () => {
     if (!results.length || isPreparingPdf) return;
     setIsPreparingPdf(true);
+    // دع المتصفّح يرسم «جارٍ التحضير» قبل العمل المتزامن الثقيل (رسم الصفحات)
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     try {
       await shareSearchResultsPdf(results, query.trim());
     } catch (e) {
