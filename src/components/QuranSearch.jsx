@@ -49,6 +49,29 @@ export default function QuranSearch({ onClose, onJump }) {
     preloadSearchPdfFonts();
   }, []);
 
+  // مطابقة النافذة للمنطقة المرئية فوق لوحة المفاتيح.
+  // الأجهزة القديمة (مثل Note 9) لا تقلّص vh عند فتح اللوحة، فيُدفع حقل
+  // البحث خلفها؛ نضبط الارتفاع والإزاحة من VisualViewport بدل vh.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const root = document.documentElement;
+    const apply = () => {
+      const h = vv ? vv.height : window.innerHeight;
+      const top = vv ? vv.offsetTop : 0;
+      root.style.setProperty('--qs-vvh', `${h}px`);
+      root.style.setProperty('--qs-vvtop', `${top}px`);
+    };
+    apply();
+    vv?.addEventListener('resize', apply);
+    vv?.addEventListener('scroll', apply);
+    return () => {
+      vv?.removeEventListener('resize', apply);
+      vv?.removeEventListener('scroll', apply);
+      root.style.removeProperty('--qs-vvh');
+      root.style.removeProperty('--qs-vvtop');
+    };
+  }, []);
+
   // بحث مؤجّل قليلاً كي لا يُعاد فحص 6236 آية مع كل حرف
   useEffect(() => {
     const timer = setTimeout(() => {

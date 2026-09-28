@@ -1,15 +1,22 @@
 .quran-search-overlay {
   position: fixed;
-  top: 0;
+  top: 0; /* fallback لمتصفّحات لا تدعم المتغيّرات (أجهزة قديمة) */
+  top: var(--qs-vvtop, 0px);
   left: 0;
   right: 0;
-  bottom: 0;
+  /* ارتفاع المنطقة المرئية فعلاً (فوق لوحة المفاتيح). JS يضبط --qs-vvh عبر
+     VisualViewport. الأجهزة القديمة (Note 9) لا تقلّص vh عند فتح اللوحة،
+     فيبقى الحقل مخفياً خلفها؛ استعمال الارتفاع المرئي يحلّ ذلك. */
+  height: 100vh; /* fallback */
+  height: var(--qs-vvh, 100vh);
   background-color: rgba(0, 0, 0, 0.6);
   z-index: 10000;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .quran-search-card {
@@ -19,7 +26,11 @@
   padding: 18px;
   width: 100%;
   max-width: 560px;
-  height: min(88vh, 720px);
+  /* بلا min() — غير مدعومة في WebView القديم. القيمة الاحتياطية 88vh ثم
+     نسبة من الارتفاع المرئي حين تتوفّر، وسقف 720px للشاشات الكبيرة. */
+  height: 88vh; /* fallback */
+  height: calc(var(--qs-vvh, 100vh) * 0.88);
+  max-height: 720px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
