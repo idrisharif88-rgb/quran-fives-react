@@ -244,7 +244,9 @@ function App() {
     Boolean(persistedAppState.isNightTimerRunning)
   ));
   const [isPlaying, setIsPlaying] = useState(false);
-  const [hijriData, setHijriData] = useState([]);
+  // يُحسب التاريخ الهجري محلياً فوراً (تقويم أم القرى) كي تظهر الدائرة معبّأة من أول إطار
+  // بلا انتظار الشبكة؛ يحدّثه التأثير لاحقاً من الكاش/الإنترنت إن لزم.
+  const [hijriData, setHijriData] = useState(() => calcHijriOffline(new Date()));
   const [hijriIndex, setHijriIndex] = useState(0);
   // سجلّ الختمات خاص الآن: لا يُحفظ في الحالة المشتركة بل يُحمَّل من الخادم بعد الدخول
   const [khatmaList, setKhatmaList] = useState([]);
