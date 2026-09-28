@@ -16,7 +16,7 @@ const GOLD = '#c9a84c';
 const INK = '#1a1a1a';
 const HIGHLIGHT_BG = '#16a34a';
 
-const VERSE_FONT = '42px Amiri';
+const VERSE_FONT = '42px Tajawal';
 const VERSE_FONT_PX = 42;
 const VERSE_LINE_H = 62;
 const HIGHLIGHT_PAD_X = 3;
@@ -33,7 +33,7 @@ export async function preloadSearchPdfFonts() {
   if (typeof document === 'undefined' || !document.fonts) return;
   try {
     await Promise.all([
-      document.fonts.load('42px Amiri'),
+      document.fonts.load('42px Tajawal'),
       document.fonts.load('bold 26px Tajawal'),
       document.fonts.load('bold 46px Tajawal'),
       document.fonts.load('22px Tajawal'),
@@ -262,7 +262,7 @@ function blobToBase64(blob) {
 // اسم وصفيّ للملف يعتمد على الكلمة المبحوث عنها
 function buildPdfFileName(query) {
   const q = String(query || '').trim().replace(/\s+/g, ' ');
-  return q ? `نتائج البحث عن ${q} في القرآن.pdf` : 'نتائج البحث في القرآن.pdf';
+  return q ? `نتائج البحث عن «${q}» في القرآن.pdf` : 'نتائج البحث في القرآن.pdf';
 }
 
 /**
