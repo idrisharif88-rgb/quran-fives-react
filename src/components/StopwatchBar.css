@@ -1,0 +1,75 @@
+.stopwatch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  direction: ltr;
+  gap: 8px;
+  padding: 8px 0;
+  width: 100%;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+
+.stopwatch-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+}
+
+.stopwatch-total {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: clamp(26px, 7.5vw, 38px);
+  font-weight: 800;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text-strong);
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.stopwatch-lap {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: clamp(15px, 4.5vw, 20px);
+  font-weight: 800;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.stopwatch-lap.green { color: var(--sw-green); }
+.stopwatch-lap.orange { color: var(--sw-orange); }
+.stopwatch-lap.red { color: var(--sw-red); }
+
+.stopwatch-side-btn {
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 3px 8px var(--app-shadow);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.stopwatch-side-btn.running {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.stopwatch-side-btn:active {
+  transform: scale(0.94);
+}

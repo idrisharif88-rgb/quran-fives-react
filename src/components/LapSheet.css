@@ -1,0 +1,198 @@
+.lap-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 13000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.lap-sheet {
+  width: 100%;
+  max-width: 640px;
+  max-height: 80vh;
+  background: var(--app-surface);
+  color: var(--app-text);
+  border-radius: 22px;
+  padding: 14px 18px 22px;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.lap-sheet-handle {
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--app-muted);
+  margin: 0 auto 12px;
+  opacity: 0.6;
+}
+
+.lap-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.lap-sheet-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.lap-sheet-close {
+  border: none;
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lap-sheet-stats {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.lap-sheet-stat {
+  flex: 1;
+  background: var(--app-surface-3);
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lap-sheet-stat span { font-size: 13px; color: var(--app-muted); }
+.lap-sheet-stat strong { font-size: 16px; font-variant-numeric: tabular-nums; }
+
+.lap-sheet-scroll { overflow-y: auto; flex: 1; min-height: 0; }
+
+.lap-sheet-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.lap-sheet-table th,
+.lap-sheet-table td {
+  padding: 8px 6px;
+  text-align: center;
+  font-size: 14px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.lap-sheet-table th {
+  color: var(--app-muted);
+  font-weight: 700;
+  font-size: 12px;
+  position: sticky;
+  top: 0;
+  background: var(--app-surface);
+}
+
+.lap-sheet-empty {
+  text-align: center;
+  color: var(--app-muted);
+  padding: 30px 0;
+}
+
+.lap-sheet-juz {
+  border-top: 1px solid var(--app-border);
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+.lap-sheet-juz h3 { margin: 0 0 8px; font-size: 15px; font-weight: 800; }
+
+.lap-sheet-juz-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 2px;
+  font-size: 14px;
+  border-bottom: 1px dashed var(--app-border);
+}
+
+.lap-sheet-juz-row strong { font-variant-numeric: tabular-nums; }
+
+/* بطاقات الجولات: صفوف داخل بطاقات بيضاء بحوافّ دائرية */
+.lap-sheet-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lap-sheet-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+}
+
+.lap-sheet-card-page {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.lap-sheet-card-time {
+  font-weight: 700;
+  color: #0e6a58;
+}
+
+.lap-sheet-card-total {
+  font-weight: 600;
+  color: #6b7280;
+}
+
+/* أزرار الحفظ والمشاركة أسفل ورقة النتائج */
+.lap-sheet-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.lap-sheet-action-btn {
+  flex: 1;
+  border: none;
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  color: #ffffff;
+}
+
+.lap-sheet-action-btn.save {
+  background: var(--app-save-grad-from, #22c55e);
+}
+
+.lap-sheet-action-btn.share {
+  background: var(--app-accent-deep);
+}
+
+.lap-sheet-action-btn:disabled {
+  background: #9ca3af;
+  color: #ffffff;
+  cursor: not-allowed;
+  opacity: 0.7;
+}

@@ -7,6 +7,14 @@
   stroke: var(--app-font-color, darkgreen);
 }
 
+.counter-ring-circle.orange {
+  stroke: var(--sw-orange);
+}
+
+.counter-ring-circle.red {
+  stroke: var(--sw-red);
+}
+
 .counter-ring-number {
   font-family: var(--app-font-family); /* Use the app's main font */
   font-size: 75px;

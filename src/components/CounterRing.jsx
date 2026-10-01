@@ -1,7 +1,7 @@
 import React from 'react';
 import './CounterRing.css';
 
-const CounterRing = ({ value }) => {
+const CounterRing = ({ value, status = 'green' }) => {
   const radius = 90;
   const circumference = 2 * Math.PI * radius;
   const numberOfSegments = 8;
@@ -16,7 +16,7 @@ const CounterRing = ({ value }) => {
   return (
     <svg className="counter-ring-svg" viewBox="0 0 200 200">
       <circle
-        className="counter-ring-circle"
+        className={`counter-ring-circle ${status}`}
         cx="100"
         cy="100"
         r={radius}

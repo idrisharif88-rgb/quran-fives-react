@@ -14,6 +14,10 @@ import { QURAN_VERSES } from './data/quranVerses';
 import { SURAH_METADATA } from './data/quranConstants';
 import { SURAH_PAGE_COUNTS } from './data/surahPageCounts';
 import CounterRing from './components/CounterRing';
+import StopwatchBar from './components/StopwatchBar';
+import LapSheet from './components/LapSheet';
+import SavedRunsSheet from './components/SavedRunsSheet';
+import useStopwatch, { lapStatus } from './hooks/useStopwatch';
 import CustomKeyboard, { useCustomKeyboard } from './components/CustomKeyboard';
 import { PAGE_STARTS } from './data/pageStarts';
 import { PAGE_ENDS } from './data/pageEnds';
@@ -53,6 +57,7 @@ import QuranFal from './components/QuranFal';
 import QuranSearch from './components/QuranSearch';
 import useAccentTheme from './hooks/useAccentTheme';
 import { ACCENT_THEMES, ACCENT_THEME_LABEL, getPageBg } from './constants/themes';
+import { shareCounterResultsPdf } from './utils/counterPdf';
 // الخطوط أوّلاً: ملفّات محلية داخل الحزمة، فلا شيء يُطلب من الشبكة
 import './styles/fonts.css';
 import './App.css';
@@ -237,12 +242,21 @@ function App() {
   const [nightCounterNameInput, setNightCounterNameInput] = useState('');
   const [nightCounterValueInput, setNightCounterValueInput] = useState('0');
   const [nightCounterLimitInput, setNightCounterLimitInput] = useState('');
-  const [nightTimerSeconds, setNightTimerSeconds] = useState(() => (
-    Number.isInteger(persistedAppState.nightTimerSeconds) ? persistedAppState.nightTimerSeconds : 0
+  // إعدادات ساعة الحفظ: الهدف لكل صفحة (ثانية) والأفضلان الشخصيان (متوسط الصفحة + زمن الجزء)
+  const [stopwatchTargetSeconds, setStopwatchTargetSeconds] = useState(() => (
+    Number.isFinite(persistedAppState.stopwatchTargetSeconds) ? persistedAppState.stopwatchTargetSeconds : 60
   ));
-  const [isNightTimerRunning, setIsNightTimerRunning] = useState(() => (
-    Boolean(persistedAppState.isNightTimerRunning)
+  const [stopwatchBestAvgMs, setStopwatchBestAvgMs] = useState(() => (
+    Number.isFinite(persistedAppState.stopwatchBestAvgMs) ? persistedAppState.stopwatchBestAvgMs : null
   ));
+  const [stopwatchBestJuzMs, setStopwatchBestJuzMs] = useState(() => (
+    Number.isFinite(persistedAppState.stopwatchBestJuzMs) ? persistedAppState.stopwatchBestJuzMs : null
+  ));
+  const [stopwatchTargetInput, setStopwatchTargetInput] = useState(() => {
+    const v = persistedAppState.stopwatchTargetSeconds;
+    return Number.isFinite(v) && v >= 1 ? String(v) : '60';
+  });
+  const [isLapSheetOpen, setIsLapSheetOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hijriData, setHijriData] = useState([]);
   const [hijriIndex, setHijriIndex] = useState(0);
@@ -312,10 +326,20 @@ function App() {
   const [fontColor, setFontColor] = useState(() => (
     typeof persistedAppState.fontColor === 'string' ? persistedAppState.fontColor : 'darkgreen'
   ));
-  const [isNightMode, setIsNightMode] = useState(() => (
-    Boolean(persistedAppState.isNightMode)
-  ));
+  // يتبع الوضع الليلي وضع النظام الداكن تلقائياً؛ وزرّ «الوضع الليلي» يقلبه يدوياً
+  const [isNightMode, setIsNightMode] = useState(() => {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
   const [accentTheme, setAccentTheme] = useAccentTheme(persistedAppState.accentTheme);
+  // جلسات العداد المحفوظة (تُحفظ محلياً وتُرفع للسحابة مع بقية الحالة)
+  const [stopwatchRuns, setStopwatchRuns] = useState(() => (
+    Array.isArray(persistedAppState.stopwatchRuns) ? persistedAppState.stopwatchRuns : []
+  ));
+  const [isSavedRunsOpen, setIsSavedRunsOpen] = useState(false);
+  const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
   const [quranicWondersNotes, setQuranicWondersNotes] = useState(() => (
     Array.isArray(persistedAppState.quranicWondersNotes) ? persistedAppState.quranicWondersNotes : []
   ));
@@ -475,6 +499,52 @@ function App() {
   const surahFivesSurahNumber = SURAH_FIVES_ORDER[clampedSurahFivesIndex];
   const surahFivesSurahName = SURAH_NAMES[surahFivesSurahNumber - 1];
   const activeNightCounter = nightCounters.find(counter => counter.id === activeNightCounterId) || nightCounters[0];
+
+  // ساعة الحفظ: الهدف بالمللي ثانية + منطق التوقيت/الجولات/الأجزاء
+  const targetMs = Math.max(1, stopwatchTargetSeconds) * 1000;
+  const stopwatch = useStopwatch({
+    onJuzComplete: useCallback(({ ms, avgPerPage }) => {
+      setStopwatchBestJuzMs(prev => (prev == null ? ms : Math.min(prev, ms)));
+      setStopwatchBestAvgMs(prev => (prev == null ? avgPerPage : Math.min(prev, avgPerPage)));
+    }, []),
+  });
+  const applyStopwatchTarget = useCallback(() => {
+    const n = parseInt(stopwatchTargetInput, 10);
+    const clamped = Number.isFinite(n) && n >= 1 ? Math.min(n, 600) : 60;
+    setStopwatchTargetSeconds(clamped);
+    setStopwatchTargetInput(String(clamped));
+  }, [stopwatchTargetInput]);
+
+  // حفظ جلسة العداد الحالية (الجولات + الأجزاء + الإجمالي) ضمن سجلّ يُرفع للسحابة
+  const handleSaveRun = useCallback(() => {
+    const completedMs = stopwatch.laps.reduce((sum, l) => sum + l.ms, 0);
+    setStopwatchRuns(prev => [...prev, {
+      savedAt: Date.now(),
+      laps: stopwatch.laps,
+      juzTimes: stopwatch.juzTimes,
+      totalMs: completedMs,
+    }]);
+  }, [stopwatch.laps, stopwatch.juzTimes]);
+
+  // مشاركة نتيجة العداد كملف PDF (مسار أندرويد الأصلي عبر Capacitor)
+  const handleShareCounterPdf = useCallback(() => {
+    const completedMs = stopwatch.laps.reduce((sum, l) => sum + l.ms, 0);
+    shareCounterResultsPdf({
+      laps: stopwatch.laps,
+      juzTimes: stopwatch.juzTimes,
+      totalMs: completedMs,
+    });
+  }, [stopwatch.laps, stopwatch.juzTimes]);
+
+  // حذف جلسة محفوظة من السجلّ
+  const handleDeleteRun = useCallback((index) => {
+    setStopwatchRuns(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // مشاركة جلسة محفوظة كملف PDF
+  const handleShareSavedRun = useCallback((run) => {
+    shareCounterResultsPdf({ laps: run.laps, juzTimes: run.juzTimes, totalMs: run.totalMs });
+  }, []);
 
   useEffect(() => {
     if (isPageStartsMode || isPageEndsMode) setIsFontMenuOpen(false);
@@ -759,8 +829,9 @@ function App() {
       pageJumpInput,
       nightCounters,
       activeNightCounterId,
-      nightTimerSeconds,
-      isNightTimerRunning,
+      stopwatchTargetSeconds,
+      stopwatchBestAvgMs,
+      stopwatchBestJuzMs,
       activeAyahTest,
       activePageStartsTest,
       currentPageIndex,
@@ -774,6 +845,7 @@ function App() {
       quranicWondersNotes, // إضافة الملاحظات للحفظ
       isNightMode,
       accentTheme,
+      stopwatchRuns,
       // ملاحظة: khatmaList لم يعد ضمن الحالة المشتركة — صار خاصاً على الخادم خلف بيانات دخول
     };
     saveStoredState(APP_STORAGE_KEY, appStateSnapshot);
@@ -795,8 +867,10 @@ function App() {
     pageJumpInput,
     nightCounters,
     activeNightCounterId,
-    nightTimerSeconds,
-    isNightTimerRunning,
+    stopwatchTargetSeconds,
+    stopwatchBestAvgMs,
+    stopwatchBestJuzMs,
+    stopwatchRuns,
     sharedGroupIndex,
     quranicWondersNotes, // إضافة الملاحظات إلى مصفوفة التبعيات
     starredByStep,
@@ -807,9 +881,10 @@ function App() {
     viewMode,
   ]);
 
-  // رفع فوري للسحابة عند كل تغيير حقيقي — دون nightTimerSeconds عمداً:
-  // دقّات المؤقّت (كل ثانية) كانت تعيد ضبط مهلة الرفع إلى الأبد فلا يُرفع شيء
-  // ما دام العدّاد يعمل. الدقّات تُحفظ محلياً أعلاه وتركب مع أول رفعة تالية،
+  // رفع فوري للسحابة عند كل تغيير حقيقي — دون دقّات ساعة الحفظ عمداً:
+  // دقّات المؤقّت (زمن الجولة/الإجمالي كل ~33ms) كانت ستعيد ضبط مهلة الرفع إلى
+  // الأبد فلا يُرفع شيء ما دامت الساعة تعمل. الجولات جلسةٌ محلية وحدها، والأفضلان
+  // الشخصيان (stopwatchBestAvgMs/JuzMs) والهدف يركبان مع أول رفعة تالية،
   // وحارس cloudPushBusyRef يجمع التغييرات المتتابعة في رفعة واحدة.
   useEffect(() => {
     if (SYNC_ENABLED && cloudSyncReadyRef.current) {
@@ -832,7 +907,10 @@ function App() {
     pageJumpInput,
     nightCounters,
     activeNightCounterId,
-    isNightTimerRunning,
+    stopwatchTargetSeconds,
+    stopwatchBestAvgMs,
+    stopwatchBestJuzMs,
+    stopwatchRuns,
     sharedGroupIndex,
     quranicWondersNotes,
     starredByStep,
@@ -858,7 +936,21 @@ function App() {
       document.head.appendChild(metaThemeColor);
     }
     metaThemeColor.content = pageBg;
+
+    // يلوّن خلفية النافذة الأصلية (الشريط أسفل WebView) ليطابق خلفية التطبيق في الوضعين
+    if (window.AndroidApp && window.AndroidApp.setWindowBackground) {
+      window.AndroidApp.setWindowBackground(pageBg);
+    }
   }, [isNightMode, accentTheme]);
+
+  // اتّباع وضع النظام الداكن دائماً — زرّ الهاتف يقلب وضع التطبيق في كل مرة
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = (e) => setIsNightMode(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   // Logic: We pass the state to our pure function to get the exact Surah details
   // Effect to prevent body scrolling and ensure app fills viewport
@@ -1430,14 +1522,6 @@ function App() {
     else handleSwipeNav('prev');
   };
 
-  useEffect(() => {
-    if (!isNightTimerRunning) return;
-    const timer = setInterval(() => {
-      setNightTimerSeconds(prev => prev + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [isNightTimerRunning]);
-
   const clearSavedSession = () => {
     SESSION_STORAGE_KEYS.forEach(storageKey => removeStoredState(storageKey));
   };
@@ -1467,8 +1551,7 @@ function App() {
     setNightCounterValueInput('0');
     setNightCounterLimitInput('');
     setIsNightCounterSettingsOpen(false);
-    setNightTimerSeconds(0);
-    setIsNightTimerRunning(false);
+    stopwatch.reset();
     setIsPlaying(false);
     setIsAyahMenuOpen(false);
     setActiveAyahTest(null);
@@ -1485,7 +1568,11 @@ function App() {
     setFontColor('darkgreen');
     setActiveSurahNamesQuiz(false);
     setQuranicWondersNotes([]); // إعادة تعيين الملاحظات
-    setIsNightMode(false);
+    setIsNightMode(
+      typeof window !== 'undefined' && window.matchMedia
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+        : false
+    );
   };
 
   const applyNightCounterInputs = () => {
@@ -1684,6 +1771,10 @@ function App() {
       setCounterConfirm({ type: null, id: null });
       return true;
     }
+    if (isExitConfirmOpen) {
+      setIsExitConfirmOpen(false);
+      return true;
+    }
     if (isResetConfirmOpen) {
       setIsResetConfirmOpen(false);
       return true;
@@ -1780,11 +1871,15 @@ function App() {
       return true;
     }
     if (viewMode === 'starred' || viewMode === 'shared-verses' || viewMode === 'night-counter' || viewMode === 'page-starts' || viewMode === 'page-ends' || viewMode === 'surah-fives' || viewMode === 'surah-pages') {
+      // مغادرة العدّاد: إيقاف مؤقت + تصفير الجولة الحالية فقط — تبقى الجولات المحفوظة
+      if (viewMode === 'night-counter') stopwatch.leaveScreen();
       setViewMode('khmasiyat');
       return true;
     }
 
-    return false;
+    // على الشاشة الرئيسية: عرض تأكيد خروج احترافي بدل التوست الأصلي
+    setIsExitConfirmOpen(true);
+    return true;
   };
 
   backHandlerRef.current = handleHardwareBack;
@@ -1800,6 +1895,9 @@ function App() {
     && !isUserManualOpen
   );
 
+  // زرّ الرئيسية العائم لا يظهر داخل العدّاد — هناك زرّ رئيسية في منتصف شريطه العلوي
+  const showFloatingHome = !isHomeScreen && viewMode !== 'night-counter';
+
   // ضغطة واحدة تقابل ٢-٤ ضغطات رجوع. تُغلق القوائم والنوافذ أيضاً كي لا تبقى
   // مفتوحة فوق الشاشة الرئيسية بعد الوصول إليها.
   const goHome = () => {
@@ -1812,6 +1910,7 @@ function App() {
     setActivePageStartsTest(null);
     setActiveSurahNamesQuiz(false);
     setIsUserManualOpen(false);
+    stopwatch.leaveScreen();
     setViewMode('khmasiyat');
   };
 
@@ -2270,7 +2369,7 @@ function App() {
   }, []);
 
   return (
-    <div className={`app-container ${isNightMode ? 'night-mode' : ''}${isHomeScreen ? '' : ' has-home-btn'}`} data-accent={accentTheme} style={{
+    <div className={`app-container ${isNightMode ? 'night-mode' : ''}${showFloatingHome ? ' has-home-btn' : ''}`} data-accent={accentTheme} style={{
       '--app-font-size': `${fontSize}px`,
       '--app-font-family': fontFamily,
       '--app-font-weight': fontWeight,
@@ -2315,6 +2414,36 @@ function App() {
                 {counterConfirm.type === 'reset' ? 'تصفير' : 'مسح'}
               </button>
               <button type="button" className="night-counter-chip" style={{ flex: 1, margin: 0 }} onClick={() => setCounterConfirm({ type: null, id: null })}>
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isExitConfirmOpen && (
+        <div className="session-overlay" dir="rtl" style={{ zIndex: 10002, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
+          <div style={{
+            background: 'var(--app-surface)',
+            border: '1px solid var(--app-border)',
+            padding: '24px',
+            borderRadius: '16px',
+            maxWidth: '320px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.4)'
+          }}>
+            <h3 style={{ marginTop: 0, color: 'var(--app-text)', fontSize: '18px', marginBottom: '12px' }}>الخروج من التطبيق</h3>
+            <p style={{ color: 'var(--app-muted)', fontSize: '14px', marginBottom: '24px', lineHeight: '1.6' }}>هل تريد الخروج من التطبيق؟</p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                className="night-counter-chip active"
+                style={{ flex: 1, margin: 0, background: 'var(--app-danger)', color: '#fff', border: 'none' }}
+                onClick={() => { if (window.AndroidApp && window.AndroidApp.finishApp) window.AndroidApp.finishApp(); }}
+              >
+                خروج
+              </button>
+              <button type="button" className="night-counter-chip" style={{ flex: 1, margin: 0 }} onClick={() => setIsExitConfirmOpen(false)}>
                 إلغاء
               </button>
             </div>
@@ -2404,7 +2533,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['العداد', 'ختماتي', 'فقهيات', 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
+                  {['العداد', 'ختماتي', 'المحفوظات', 'فقهيات', 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -2412,6 +2541,7 @@ function App() {
                       onClick={() => {
                         if (option === 'العداد') { setViewMode('night-counter'); setIsMoreMenuOpen(false); return; }
                         if (option === 'ختماتي') { mainKeyboard.closeKeyboard(); setIsKhatmaListOpen(true); setIsMoreMenuOpen(false); return; }
+                        if (option === 'المحفوظات') { setIsSavedRunsOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فقهيات') { mainKeyboard.closeKeyboard(); setIsFiqhOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فأل القرآن') { mainKeyboard.closeKeyboard(); setIsFalOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'البحث في القرآن') { mainKeyboard.closeKeyboard(); setIsSearchOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -2817,38 +2947,17 @@ function App() {
                   </button>
                 </div>
 
-                <div className="night-timer night-timer-toolbar">
+                <div className="night-counter-toolbar-side night-counter-toolbar-center">
                   <button
-                    type="button"
-                    className="night-timer-btn secondary"
-                    onClick={() => {
-                      setIsNightTimerRunning(false);
-                      setNightTimerSeconds(0);
-                    }}
-                    aria-label="إعادة"
+                    className="action-icon night-counter-top-btn"
+                    title="الشاشة الرئيسية"
+                    onClick={goHome}
                   >
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-                      <path d="M12 5V2L7 7l5 5V8c2.97 0 5.44 2.16 5.91 5h2.02A8.004 8.004 0 0 0 12 5zm-5.91 6H4.07A8.004 8.004 0 0 0 12 19v3l5-5-5-5v3c-2.97 0-5.44-2.16-5.91-5z"/>
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M3.5 10.7 12 4.2l8.5 6.5" />
+                      <path d="M5.9 9.7v9.5c0 .7.5 1.2 1.2 1.2h9.8c.7 0 1.2-.5 1.2-1.2V9.7" />
+                      <path d="M9.9 20.4v-4.7h4.2v4.7" />
                     </svg>
-                  </button>
-                  <div className="night-timer-display">
-                    {String(Math.floor(nightTimerSeconds / 60)).padStart(2, '0')}:{String(nightTimerSeconds % 60).padStart(2, '0')}
-                  </div>
-                  <button
-                    type="button"
-                    className="night-timer-btn"
-                    onClick={() => setIsNightTimerRunning(prev => !prev)}
-                    aria-label={isNightTimerRunning ? 'إيقاف' : 'تشغيل'}
-                  >
-                    {isNightTimerRunning ? (
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                      </svg>
-                    ) : (
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
-                    )}
                   </button>
                 </div>
 
@@ -2856,7 +2965,7 @@ function App() {
                   <button
                     className="action-icon night-counter-top-btn"
                     title="العودة للقراءة"
-                    onClick={() => setViewMode('khmasiyat')}
+                    onClick={() => { stopwatch.leaveScreen(); setViewMode('khmasiyat'); }}
                   >
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
                       <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
@@ -2865,6 +2974,16 @@ function App() {
                 </div>
               </div>
 
+              <StopwatchBar
+                totalMs={stopwatch.totalMs}
+                currentLapMs={stopwatch.currentLapMs}
+                isRunning={stopwatch.isRunning}
+                targetMs={targetMs}
+                onToggle={stopwatch.toggle}
+                onReset={stopwatch.reset}
+                onOpenLapSheet={() => setIsLapSheetOpen(true)}
+              />
+
               <div className="night-counter-screen">
                 <button
                   type="button"
@@ -2872,20 +2991,28 @@ function App() {
                   style={{ background: 'none', border: 'none' }}
                   onPointerDown={() => {
                     if (!activeNightCounter) return;
-                    setIsNightTimerRunning(true);
+                    const finishedPage = activeNightCounter.value;
+                    const wasRunning = stopwatch.isRunning;
+                    const hasLimit = Number.isInteger(activeNightCounter.limit);
+                    const nextValue = hasLimit
+                      ? Math.min(activeNightCounter.limit, finishedPage + 1)
+                      : finishedPage + 1;
+                    // سجّل زمن الصفحة المنتهية إن وُجدت صفحة فعلية
+                    if (finishedPage >= 1) {
+                      stopwatch.recordLap(finishedPage);
+                    }
+                    setNightCounters(prev => prev.map(counter => (
+                      counter.id === activeNightCounterId ? { ...counter, value: nextValue } : counter
+                    )));
+                    // إن كانت الساعة متوقفة (جديدة أو مؤقّتة)، شغّلها للصفحة الجديدة
+                    if (!wasRunning) {
+                      stopwatch.start();
+                    }
                     playNightCounterSound('up');
-                    setNightCounters(prev => prev.map(counter => {
-                      if (counter.id !== activeNightCounterId) return counter;
-                      const hasLimit = Number.isInteger(counter.limit);
-                      const nextValue = hasLimit
-                        ? Math.min(counter.limit, counter.value + 1)
-                        : counter.value + 1;
-                      return { ...counter, value: nextValue };
-                    }));
                   }}
                   aria-label="night counter"
                 >
-                  <CounterRing value={activeNightCounter?.value ?? 0} />
+                  <CounterRing value={activeNightCounter?.value ?? 0} status={lapStatus(stopwatch.currentLapMs, targetMs)} />
                 </button>
               </div>
 
@@ -2950,6 +3077,7 @@ function App() {
                   onClick={() => {
                     if (!activeNightCounter) return;
                     playNightCounterSound('down');
+                    stopwatch.resetCurrentLap();
                     setNightCounters(prev => prev.map(counter => (
                       counter.id === activeNightCounterId
                         ? { ...counter, value: Math.max(0, counter.value - 1) }
@@ -3304,6 +3432,33 @@ function App() {
         <div className="session-overlay" dir="rtl" style={{ zIndex: 10000, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
           <div className="session-card" style={{ maxWidth: '420px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', textAlign: 'right' }}>
             <h2 className="session-title" style={{ textAlign: 'center', marginBottom: '20px', fontSize: '24px' }}>إعدادات العدادات</h2>
+
+            <div style={{ background: 'var(--app-surface-3)', borderRadius: '12px', padding: '14px', border: '1px solid var(--app-border)', marginBottom: '18px' }}>
+              <label style={{ display: 'block', fontSize: '13px', color: 'var(--app-muted)', marginBottom: '6px' }}>
+                الهدف لكل صفحة في ساعة الحفظ (بالثواني)
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  className="night-counter-input"
+                  value={stopwatchTargetInput}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, '');
+                    setStopwatchTargetInput(raw);
+                    const n = parseInt(raw, 10);
+                    if (Number.isFinite(n) && n >= 1) setStopwatchTargetSeconds(Math.min(n, 600));
+                  }}
+                  onBlur={applyStopwatchTarget}
+                  onKeyDown={(e) => { if (e.key === 'Enter') applyStopwatchTarget(); }}
+                  placeholder="60"
+                />
+                <span style={{ fontSize: '13px', color: 'var(--app-muted)' }}>ثانية</span>
+              </div>
+              <p style={{ margin: '8px 0 0', fontSize: '12px', color: 'var(--app-muted)' }}>
+                أخضر أقل من 80% من الهدف · برتقالي 80%–100% · أحمر فوق الهدف
+              </p>
+            </div>
             
             <div className="night-counter-manager-header" style={{ marginBottom: '15px' }}>
               <div className="night-counter-manager-title">قائمة العدادات</div>
@@ -3438,6 +3593,24 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+      {isLapSheetOpen && (
+        <LapSheet
+          laps={stopwatch.laps}
+          juzTimes={stopwatch.juzTimes}
+          onClose={() => setIsLapSheetOpen(false)}
+          onSave={handleSaveRun}
+          onSharePdf={handleShareCounterPdf}
+        />
+      )}
+      {isSavedRunsOpen && (
+        <SavedRunsSheet
+          runs={stopwatchRuns}
+          onClose={() => setIsSavedRunsOpen(false)}
+          onDelete={handleDeleteRun}
+          onShare={handleShareSavedRun}
+          formatDate={formatHijriTimestamp}
+        />
       )}
       {isQRSyncOpen && (
         <QRSync
@@ -4059,7 +4232,7 @@ function App() {
         </div>
       )}
 
-      {!isHomeScreen && <HomeButton onClick={goHome} />}
+      {showFloatingHome && <HomeButton onClick={goHome} />}
 
       {startupSyncChoice && (
         <StartupSyncPrompt
