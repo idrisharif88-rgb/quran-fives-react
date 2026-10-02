@@ -16,7 +16,8 @@ import { SURAH_PAGE_COUNTS } from './data/surahPageCounts';
 import CounterRing from './components/CounterRing';
 import StopwatchBar from './components/StopwatchBar';
 import LapSheet from './components/LapSheet';
-import SavedRunsSheet from './components/SavedRunsSheet';
+import SavedSessionsSheet from './components/SavedSessionsSheet';
+import JuzResults from './components/JuzResults';
 import useStopwatch, { lapStatus } from './hooks/useStopwatch';
 import CustomKeyboard, { useCustomKeyboard } from './components/CustomKeyboard';
 import { PAGE_STARTS } from './data/pageStarts';
@@ -58,6 +59,8 @@ import QuranSearch from './components/QuranSearch';
 import useAccentTheme from './hooks/useAccentTheme';
 import { ACCENT_THEMES, ACCENT_THEME_LABEL, getPageBg } from './constants/themes';
 import { shareCounterResultsPdf } from './utils/counterPdf';
+import { buildSessionFromLaps } from './utils/sessions';
+import { shareElementAsImage } from './utils/shareImage';
 // الخطوط أوّلاً: ملفّات محلية داخل الحزمة، فلا شيء يُطلب من الشبكة
 import './styles/fonts.css';
 import './App.css';
@@ -334,12 +337,14 @@ function App() {
     return false;
   });
   const [accentTheme, setAccentTheme] = useAccentTheme(persistedAppState.accentTheme);
-  // جلسات العداد المحفوظة (تُحفظ محلياً وتُرفع للسحابة مع بقية الحالة)
-  const [stopwatchRuns, setStopwatchRuns] = useState(() => (
-    Array.isArray(persistedAppState.stopwatchRuns) ? persistedAppState.stopwatchRuns : []
-  ));
-  const [isSavedRunsOpen, setIsSavedRunsOpen] = useState(false);
+  const [isSavedSessionsOpen, setIsSavedSessionsOpen] = useState(false);
   const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
+  // جلسات الجزء (المصدر: محلي، append-only، تُرفع مع المزامنة)
+  const [sessions, setSessions] = useState(() => (
+    Array.isArray(persistedAppState.sessions) ? persistedAppState.sessions : []
+  ));
+  const [activeResultSession, setActiveResultSession] = useState(null);
+  const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [quranicWondersNotes, setQuranicWondersNotes] = useState(() => (
     Array.isArray(persistedAppState.quranicWondersNotes) ? persistedAppState.quranicWondersNotes : []
   ));
@@ -503,9 +508,16 @@ function App() {
   // ساعة الحفظ: الهدف بالمللي ثانية + منطق التوقيت/الجولات/الأجزاء
   const targetMs = Math.max(1, stopwatchTargetSeconds) * 1000;
   const stopwatch = useStopwatch({
-    onJuzComplete: useCallback(({ ms, avgPerPage }) => {
+    onJuzComplete: useCallback(({ ms, avgPerPage, laps, startedAt }) => {
       setStopwatchBestJuzMs(prev => (prev == null ? ms : Math.min(prev, ms)));
       setStopwatchBestAvgMs(prev => (prev == null ? avgPerPage : Math.min(prev, avgPerPage)));
+      // بناء جلسة الجزء وفتح شاشة النتيجة
+      const session = buildSessionFromLaps(laps, startedAt, Date.now());
+      if (session) {
+        setSessions(prev => [...prev, session]);
+        setActiveResultSession(session);
+        setIsResultsOpen(true);
+      }
     }, []),
   });
   const applyStopwatchTarget = useCallback(() => {
@@ -515,16 +527,16 @@ function App() {
     setStopwatchTargetInput(String(clamped));
   }, [stopwatchTargetInput]);
 
-  // حفظ جلسة العداد الحالية (الجولات + الأجزاء + الإجمالي) ضمن سجلّ يُرفع للسحابة
-  const handleSaveRun = useCallback(() => {
-    const completedMs = stopwatch.laps.reduce((sum, l) => sum + l.ms, 0);
-    setStopwatchRuns(prev => [...prev, {
-      savedAt: Date.now(),
-      laps: stopwatch.laps,
-      juzTimes: stopwatch.juzTimes,
-      totalMs: completedMs,
-    }]);
-  }, [stopwatch.laps, stopwatch.juzTimes]);
+  // فتح شاشة النتائج (من صندوق الوقت) بجلسة حيّة من الجولات الحالية
+  const handleOpenResults = useCallback(() => {
+    const session = buildSessionFromLaps(stopwatch.laps, null, null);
+    if (session) {
+      setActiveResultSession(session);
+      setIsResultsOpen(true);
+    } else {
+      setIsLapSheetOpen(true);
+    }
+  }, [stopwatch.laps]);
 
   // مشاركة نتيجة العداد كملف PDF (مسار أندرويد الأصلي عبر Capacitor)
   const handleShareCounterPdf = useCallback(() => {
@@ -536,15 +548,44 @@ function App() {
     });
   }, [stopwatch.laps, stopwatch.juzTimes]);
 
-  // حذف جلسة محفوظة من السجلّ
-  const handleDeleteRun = useCallback((index) => {
-    setStopwatchRuns(prev => prev.filter((_, i) => i !== index));
+  // فتح جلسة محفوظة من قائمة المحفوظات
+  const handleOpenSavedSession = useCallback((session) => {
+    setActiveResultSession(session);
+    setIsSavedSessionsOpen(false);
+    setIsResultsOpen(true);
   }, []);
 
-  // مشاركة جلسة محفوظة كملف PDF
-  const handleShareSavedRun = useCallback((run) => {
-    shareCounterResultsPdf({ laps: run.laps, juzTimes: run.juzTimes, totalMs: run.totalMs });
+  // حذف جلسة محفوظة من القائمة
+  const handleDeleteSavedSession = useCallback((session) => {
+    setSessions(prev => prev.filter(s => s !== session));
   }, []);
+
+  // ─── جلسات الجزء: حفظ/حذف/دعاء/مشاركة/مدينة ───
+  const handleSaveSession = useCallback((session) => {
+    setSessions(prev => {
+      const exists = prev.some(s => s === session);
+      if (!exists) return [...prev, session];
+      return prev.map(s => (s === session ? { ...s, bookmarked: !s.bookmarked } : s));
+    });
+  }, []);
+
+  const handleDeleteSession = useCallback((session) => {
+    setSessions(prev => prev.filter(s => s !== session));
+    setActiveResultSession(null);
+    setIsResultsOpen(false);
+  }, []);
+
+  const handleUpdateSessionDua = useCallback((dua) => {
+    setActiveResultSession(prev => prev ? { ...prev, dua } : prev);
+    setSessions(prev => prev.map(s => (s === activeResultSession ? { ...s, dua } : s)));
+  }, [activeResultSession]);
+
+  const handleShareSession = useCallback((session) => {
+    const el = document.querySelector('.jz-card');
+    shareElementAsImage(el, `juz-${session.juzNumber}`);
+  }, []);
+
+
 
   useEffect(() => {
     if (isPageStartsMode || isPageEndsMode) setIsFontMenuOpen(false);
@@ -845,7 +886,7 @@ function App() {
       quranicWondersNotes, // إضافة الملاحظات للحفظ
       isNightMode,
       accentTheme,
-      stopwatchRuns,
+      sessions,
       // ملاحظة: khatmaList لم يعد ضمن الحالة المشتركة — صار خاصاً على الخادم خلف بيانات دخول
     };
     saveStoredState(APP_STORAGE_KEY, appStateSnapshot);
@@ -870,7 +911,7 @@ function App() {
     stopwatchTargetSeconds,
     stopwatchBestAvgMs,
     stopwatchBestJuzMs,
-    stopwatchRuns,
+    sessions,
     sharedGroupIndex,
     quranicWondersNotes, // إضافة الملاحظات إلى مصفوفة التبعيات
     starredByStep,
@@ -910,7 +951,7 @@ function App() {
     stopwatchTargetSeconds,
     stopwatchBestAvgMs,
     stopwatchBestJuzMs,
-    stopwatchRuns,
+    sessions,
     sharedGroupIndex,
     quranicWondersNotes,
     starredByStep,
@@ -1771,6 +1812,19 @@ function App() {
       setCounterConfirm({ type: null, id: null });
       return true;
     }
+    if (isResultsOpen) {
+      setIsResultsOpen(false);
+      setActiveResultSession(null);
+      return true;
+    }
+    if (isLapSheetOpen) {
+      setIsLapSheetOpen(false);
+      return true;
+    }
+    if (isSavedSessionsOpen) {
+      setIsSavedSessionsOpen(false);
+      return true;
+    }
     if (isExitConfirmOpen) {
       setIsExitConfirmOpen(false);
       return true;
@@ -2541,7 +2595,7 @@ function App() {
                       onClick={() => {
                         if (option === 'العداد') { setViewMode('night-counter'); setIsMoreMenuOpen(false); return; }
                         if (option === 'ختماتي') { mainKeyboard.closeKeyboard(); setIsKhatmaListOpen(true); setIsMoreMenuOpen(false); return; }
-                        if (option === 'المحفوظات') { setIsSavedRunsOpen(true); setIsMoreMenuOpen(false); return; }
+                        if (option === 'المحفوظات') { setIsSavedSessionsOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فقهيات') { mainKeyboard.closeKeyboard(); setIsFiqhOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فأل القرآن') { mainKeyboard.closeKeyboard(); setIsFalOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'البحث في القرآن') { mainKeyboard.closeKeyboard(); setIsSearchOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -2982,6 +3036,7 @@ function App() {
                 onToggle={stopwatch.toggle}
                 onReset={stopwatch.reset}
                 onOpenLapSheet={() => setIsLapSheetOpen(true)}
+                onOpenResults={handleOpenResults}
               />
 
               <div className="night-counter-screen">
@@ -3599,17 +3654,27 @@ function App() {
           laps={stopwatch.laps}
           juzTimes={stopwatch.juzTimes}
           onClose={() => setIsLapSheetOpen(false)}
-          onSave={handleSaveRun}
           onSharePdf={handleShareCounterPdf}
         />
       )}
-      {isSavedRunsOpen && (
-        <SavedRunsSheet
-          runs={stopwatchRuns}
-          onClose={() => setIsSavedRunsOpen(false)}
-          onDelete={handleDeleteRun}
-          onShare={handleShareSavedRun}
+      {isSavedSessionsOpen && (
+        <SavedSessionsSheet
+          sessions={sessions}
+          onClose={() => setIsSavedSessionsOpen(false)}
+          onOpen={handleOpenSavedSession}
+          onDelete={handleDeleteSavedSession}
           formatDate={formatHijriTimestamp}
+        />
+      )}
+      {isResultsOpen && activeResultSession && (
+        <JuzResults
+          session={activeResultSession}
+          sessions={sessions}
+          onSave={handleSaveSession}
+          onDelete={handleDeleteSession}
+          onShare={handleShareSession}
+          onUpdateDua={handleUpdateSessionDua}
+          onClose={() => { setIsResultsOpen(false); setActiveResultSession(null); }}
         />
       )}
       {isQRSyncOpen && (

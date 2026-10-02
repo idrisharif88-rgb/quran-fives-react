@@ -58,6 +58,7 @@ export default function useStopwatch({ onJuzComplete } = {}) {
 
   const lapStartRef = useRef(null);           // performance.now() عند بدء الجولة الحالية
   const currentLapAccumRef = useRef(0);       // ما تراكم من الجولة قبل الإيقاف اليدوي
+  const sessionStartRef = useRef(null);       // طابع زمني لبداية جلسة الجزء (أول تشغيل)
   const wakeLockRef = useRef(null);
   const onJuzCompleteRef = useRef(onJuzComplete);
   const seenJuzRef = useRef(new Set());
@@ -122,7 +123,13 @@ export default function useStopwatch({ onJuzComplete } = {}) {
     juzTimes.forEach((t) => {
       if (!seen.has(t.juz)) {
         seen.add(t.juz);
-        onJuzCompleteRef.current?.({ juz: t.juz, ms: t.ms, avgPerPage: t.ms / 20 });
+        onJuzCompleteRef.current?.({
+          juz: t.juz,
+          ms: t.ms,
+          avgPerPage: t.ms / 20,
+          laps,
+          startedAt: sessionStartRef.current,
+        });
       }
     });
   }, [juzTimes]);
@@ -151,6 +158,8 @@ export default function useStopwatch({ onJuzComplete } = {}) {
 
   const start = useCallback(() => {
     if (isRunning) return;
+    // سجّل بداية الجلسة عند أول تشغيل فقط (لا يتغيّر لاحقاً)
+    if (sessionStartRef.current == null) sessionStartRef.current = Date.now();
     lapStartRef.current = performance.now();
     setCurrentLapMs(currentLapAccumRef.current);
     setIsRunning(true);
@@ -180,6 +189,7 @@ export default function useStopwatch({ onJuzComplete } = {}) {
     setCurrentLapMs(0);
     setCarryMs(0);
     setLaps([]);
+    sessionStartRef.current = null;
     seenJuzRef.current = new Set();
     releaseWakeLock();
   }, [releaseWakeLock]);

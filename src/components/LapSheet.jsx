@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { formatTotal, formatLap } from '../hooks/useStopwatch';
 import './LapSheet.css';
 
-const LapSheet = ({ laps, juzTimes, onClose, onSave, onSharePdf }) => {
+const LapSheet = ({ laps, juzTimes, onClose, onSharePdf }) => {
   const touchStartRef = useRef(null);
-  const [saved, setSaved] = useState(false);
-  const savedTimerRef = useRef(null);
 
   // إجمالي تراكمي لكل جولة
   const rows = laps.map((l, i) => ({
@@ -17,17 +15,6 @@ const LapSheet = ({ laps, juzTimes, onClose, onSave, onSharePdf }) => {
   const avgMs = rows.length ? totalLapMs / rows.length : 0;
   const slowest = rows.length ? rows.reduce((a, b) => (b.ms > a.ms ? b : a)) : null;
   const hasData = rows.length > 0;
-
-  useEffect(() => () => {
-    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-  }, []);
-
-  const handleSave = () => {
-    if (onSave) onSave();
-    setSaved(true);
-    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-    savedTimerRef.current = setTimeout(() => setSaved(false), 2200);
-  };
 
   const handleTouchStart = (e) => {
     const t = e.touches?.[0];
@@ -102,14 +89,6 @@ const LapSheet = ({ laps, juzTimes, onClose, onSave, onSharePdf }) => {
         )}
 
         <div className="lap-sheet-actions">
-          <button
-            type="button"
-            className="lap-sheet-action-btn save"
-            onClick={handleSave}
-            disabled={!hasData}
-          >
-            {saved ? 'تم الحفظ ✓' : 'حفظ'}
-          </button>
           <button
             type="button"
             className="lap-sheet-action-btn share"

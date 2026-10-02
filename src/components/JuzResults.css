@@ -1,0 +1,247 @@
+.jz-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 13100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.jz-card {
+  width: 100%;
+  max-width: 480px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: #ffffff;
+  color: #1f2937;
+  border-radius: 20px;
+  padding: 18px 18px 20px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* الرأس */
+.jz-header {
+  text-align: center;
+  border-bottom: 1px solid #eef0f2;
+  padding-bottom: 12px;
+}
+.jz-juz {
+  font-size: 24px;
+  font-weight: 900;
+  color: #0F6E56;
+}
+.jz-range {
+  font-size: 16px;
+  font-weight: 700;
+  color: #374151;
+}
+.jz-total {
+  font-size: 30px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: #0F6E56;
+  letter-spacing: 1px;
+}
+
+/* الإحصاءات */
+.jz-stats {
+  display: flex;
+  gap: 8px;
+}
+.jz-stat {
+  flex: 1;
+  background: #f6f8f7;
+  border: 1px solid #e6e8ea;
+  border-radius: 12px;
+  padding: 10px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.jz-stat span {
+  font-size: 12px;
+  color: #6b7280;
+}
+.jz-stat strong {
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #0F6E56;
+}
+
+/* المخطط */
+.jz-chart-wrap {
+  width: 100%;
+}
+.jz-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* أفضل وقت + مقارنة */
+.jz-best {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  text-align: center;
+}
+.jz-best-label {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0F6E56;
+}
+.jz-compare {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* شريط التقدم */
+.jz-progress-line {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+}
+.jz-progress-bar {
+  height: 10px;
+  border-radius: 6px;
+  background: #eef0f2;
+  overflow: hidden;
+}
+.jz-progress-fill {
+  height: 100%;
+  background: #0F6E56;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+/* الدعاء */
+.jz-dua {
+  background: #f6f8f7;
+  border: 1px solid #e6e8ea;
+  border-radius: 14px;
+  padding: 12px;
+}
+.jz-dua-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-weight: 800;
+  color: #0F6E56;
+}
+.jz-dua-edit {
+  border: none;
+  background: transparent;
+  color: #0F6E56;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+}
+.jz-dua-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #374151;
+}
+.jz-dua-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.jz-dua-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.jz-dua-preset {
+  border: 1px solid #d7e2dd;
+  background: #ffffff;
+  color: #0F6E56;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.jz-dua-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 72px;
+  border: 1px solid #e6e8ea;
+  border-radius: 10px;
+  padding: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+.jz-dua-save {
+  border: none;
+  background: #0F6E56;
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 9px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* الأزرار */
+.jz-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.jz-action {
+  flex: 1;
+  max-width: 96px;
+  height: 48px;
+  border: none;
+  border-radius: 12px;
+  background: #0F6E56;
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease;
+}
+.jz-action.danger {
+  background: #b91c1c;
+}
+.jz-action:active {
+  transform: scale(0.94);
+}
+
+.jz-city {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+.jz-city select {
+  border: 1px solid #d7e2dd;
+  background: #ffffff;
+  color: #0F6E56;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}

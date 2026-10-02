@@ -10,6 +10,7 @@ const StopwatchBar = ({
   onToggle,
   onReset,
   onOpenLapSheet,
+  onOpenResults,
 }) => {
   const touchStartRef = useRef(null);
   const status = lapStatus(currentLapMs, targetMs);
@@ -54,10 +55,10 @@ const StopwatchBar = ({
 
       <div
         className="stopwatch-display"
-        onClick={onOpenLapSheet}
+        onClick={onOpenResults}
         role="button"
         tabIndex={0}
-        aria-label="فتح ورقة الجولات"
+        aria-label="فتح النتائج"
       >
         <div className="stopwatch-total">{formatTotal(totalMs)}</div>
         <div className={`stopwatch-lap ${status}`}>{formatLap(currentLapMs)}</div>
