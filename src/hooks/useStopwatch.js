@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { juzOfPage, juzPageCount } from '../data/juzPages';
+import { upsertLap, closingJuz, summarizeJuz } from '../utils/juzSessions';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -33,20 +35,20 @@ export function formatLap(ms) {
   return `${pad(m)}:${pad(s)}.${pad(centis)}`;
 }
 
-// تجميع الأجزاء المكتملة (كل 20 صفحة = جزء) من قائمة الجولات
+// تجميع الأجزاء المكتملة (بحدود الأجزاء الحقيقية في المصحف) من قائمة الجولات
 function deriveJuzTimes(laps) {
   const totals = {};
   const counts = {};
   laps.forEach((l) => {
     if (!Number.isFinite(l.page) || l.page < 1) return;
-    const j = Math.floor((l.page - 1) / 20) + 1;
+    const j = juzOfPage(l.page);
     totals[j] = (totals[j] || 0) + l.ms;
     counts[j] = (counts[j] || 0) + 1;
   });
   return Object.keys(totals)
     .map(Number)
     .sort((a, b) => a - b)
-    .filter((j) => (counts[j] || 0) >= 20)
+    .filter((j) => (counts[j] || 0) >= juzPageCount(j))
     .map((j) => ({ juz: j, ms: totals[j] }));
 }
 
@@ -62,6 +64,7 @@ export default function useStopwatch({ onJuzComplete } = {}) {
   const wakeLockRef = useRef(null);
   const onJuzCompleteRef = useRef(onJuzComplete);
   const seenJuzRef = useRef(new Set());
+  const lapsRef = useRef([]);                 // مرآة للجولات تُقرأ فوراً داخل recordLap
 
   useEffect(() => { onJuzCompleteRef.current = onJuzComplete; }, [onJuzComplete]);
 
@@ -116,23 +119,8 @@ export default function useStopwatch({ onJuzComplete } = {}) {
     return () => clearInterval(id);
   }, [isRunning]);
 
-  // كشف الأجزاء الجديدة وإبلاغ الأفضل الشخصي (مرة واحدة لكل جزء)
+  // الأجزاء المكتملة (كل صفحاتها موقّتة) — لورقة الجولات وتقرير PDF
   const juzTimes = useMemo(() => deriveJuzTimes(laps), [laps]);
-  useEffect(() => {
-    const seen = seenJuzRef.current;
-    juzTimes.forEach((t) => {
-      if (!seen.has(t.juz)) {
-        seen.add(t.juz);
-        onJuzCompleteRef.current?.({
-          juz: t.juz,
-          ms: t.ms,
-          avgPerPage: t.ms / 20,
-          laps,
-          startedAt: sessionStartRef.current,
-        });
-      }
-    });
-  }, [juzTimes]);
 
   // عند فقدان التركيز/الظهور (متصفح أو Capacitor في الخلفية):
   // إيقاف مؤقت + تصفير زمن الجولة الحالية فقط — تبقى الجولات السابقة والإجمالي كما هما.
@@ -188,6 +176,7 @@ export default function useStopwatch({ onJuzComplete } = {}) {
     currentLapAccumRef.current = 0;
     setCurrentLapMs(0);
     setCarryMs(0);
+    lapsRef.current = [];
     setLaps([]);
     sessionStartRef.current = null;
     seenJuzRef.current = new Set();
@@ -204,13 +193,20 @@ export default function useStopwatch({ onJuzComplete } = {}) {
     // نُبقي الجولة الحالية تُصفَّر وتبدأ الصفحة التالية من الصفر، لكن لا نضيف جولة.
     if (ms >= MIN_PAGE_MS) {
       // إعادة قراءة صفحة تستبدل جولتها القديمة بدل إضافة جولة مكرّرة
-      setLaps((prev) => {
-        const idx = prev.findIndex((l) => l.page === finishedPage);
-        if (idx === -1) return [...prev, { page: finishedPage, ms }];
-        const next = prev.slice();
-        next[idx] = { page: finishedPage, ms };
-        return next;
-      });
+      lapsRef.current = upsertLap(lapsRef.current, finishedPage, ms);
+      setLaps(lapsRef.current);
+    }
+    // إنهاء آخر صفحة في الجزء = بدء الجزء التالي: تظهر بطاقة هذا الجزء وحده (مرة واحدة)
+    // بما وُقِّت من صفحاته ولو كانت أقل من الجزء كاملاً.
+    const juz = closingJuz(finishedPage);
+    if (juz != null && !seenJuzRef.current.has(juz)) {
+      const summary = summarizeJuz(lapsRef.current, juz);
+      if (summary) {
+        seenJuzRef.current.add(juz);
+        onJuzCompleteRef.current?.({ ...summary, startedAt: sessionStartRef.current });
+        // الجزء التالي يبدأ الآن — لكل جزء وقت بدايته
+        sessionStartRef.current = Date.now();
+      }
     }
     currentLapAccumRef.current = 0;
     lapStartRef.current = isRunning ? performance.now() : null;

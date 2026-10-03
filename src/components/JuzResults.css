@@ -26,6 +26,19 @@
   gap: 14px;
 }
 
+/* شريط تمرير ظاهر دائماً — الافتراضي في أندرويد يختفي فلا يُعرف أن البطاقة تُمرَّر */
+.jz-card::-webkit-scrollbar {
+  width: 6px;
+}
+.jz-card::-webkit-scrollbar-track {
+  margin: 18px 0;
+  background: transparent;
+}
+.jz-card::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: #9ca3af;
+}
+
 /* الرأس */
 .jz-header {
   text-align: center;
@@ -156,49 +169,6 @@
   line-height: 1.7;
   color: #374151;
 }
-.jz-dua-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.jz-dua-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.jz-dua-preset {
-  border: 1px solid #d7e2dd;
-  background: #ffffff;
-  color: #0F6E56;
-  border-radius: 20px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: inherit;
-}
-.jz-dua-input {
-  width: 100%;
-  box-sizing: border-box;
-  min-height: 72px;
-  border: 1px solid #e6e8ea;
-  border-radius: 10px;
-  padding: 10px;
-  font-family: inherit;
-  font-size: 14px;
-  resize: vertical;
-}
-.jz-dua-save {
-  border: none;
-  background: #0F6E56;
-  color: #ffffff;
-  border-radius: 10px;
-  padding: 9px;
-  font-weight: 800;
-  cursor: pointer;
-  font-family: inherit;
-}
-
 /* الأزرار */
 .jz-actions {
   display: flex;

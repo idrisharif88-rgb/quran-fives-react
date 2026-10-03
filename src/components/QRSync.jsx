@@ -1,24 +1,10 @@
 import React, { useState, useEffect, Component } from 'react';
 import QRCode from 'react-qr-code';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { encodeQrPayload, decodeQrPayload } from '../utils/qrPayload';
 
 // معالجة مشكلة توافق استيراد مكتبة QR مع خادم Vite
 const SafeQRCode = typeof QRCode === 'function' ? QRCode : (QRCode && QRCode.default ? QRCode.default : null);
-
-// تحويل بين نص UTF-8 و base64 — base64 نص ASCII صرف يُمسح بموثوقية (يتجاوز مشكلة
-// قراءة العربي UTF-8 خطأً)، وأقل كثافة بكثير من encodeURIComponent.
-const utf8ToBase64 = (str) => {
-  const bytes = new TextEncoder().encode(str);
-  let bin = '';
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
-};
-const base64ToUtf8 = (b64) => {
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return new TextDecoder().decode(bytes);
-};
 
 // دالة لتشغيل صوت رنين (Beep) عند التقاط الكود بنجاح
 const playSuccessBeep = () => {
@@ -51,27 +37,8 @@ const QRSync = ({ appState, onRestore, onClose }) => {
   const [error, setError] = useState('');
   const [isCameraStarted, setIsCameraStarted] = useState(false);
 
-  // تجهيز الحالة الأساسية للتطبيق في كائن مصغر لتقليل حجم الـ QR
-  let payload = '{}';
-  try {
-    const rawData = {
-      v: 1, // رقم الإصدار لتتبع التحديثات مستقبلاً
-      c: appState?.currentIndex || 0,
-      p: appState?.currentPageIndex || 0,
-      st: appState?.stepSize || 5,   // خطوة التنقّل: c و s محسوبان بها
-      s: appState?.starredIndices ? Array.from(appState.starredIndices) : [],
-      sp: appState?.starredPages ? Array.from(appState.starredPages) : [],
-      spe: appState?.starredPageEnds ? Array.from(appState.starredPageEnds) : [],
-      n: appState?.nightCounters || [],
-      qw: appState?.quranicWondersNotes || [],
-      kl: appState?.khatmaList || []
-    };
-    // base64 لنص JSON بترميز UTF-8 — ASCII صرف فيُمسح بموثوقية، وأقل كثافة من
-    // encodeURIComponent القديم. الماسح متوافق مع الصيغ القديمة (خام/مُرمّز).
-    payload = utf8ToBase64(JSON.stringify(rawData));
-  } catch (err) {
-    console.error("Error formatting QR data:", err);
-  }
+  // الحمولة: موضع القراءة والمثبّتات فقط بترميز مضغوط — رمز قليل المربّعات سهل المسح
+  const payload = encodeQrPayload(appState);
 
   // Effect لطلب الصلاحية فقط عند الدخول لوضع المسح
   useEffect(() => {
@@ -92,49 +59,47 @@ const QRSync = ({ appState, onRestore, onClose }) => {
       const timer = setTimeout(() => {
         if (!isMounted) return;
         try {
-          scanner = new Html5Qrcode("qr-reader");
-          
+          // كاشف الباركود الأصلي للنظام (BarcodeDetector) وحصر البحث في QR يُضبطان هنا
+          // في المُنشئ — وضعهما في إعدادات start() يُتجاهَل بصمت.
+          scanner = new Html5Qrcode("qr-reader", {
+            formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+            experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+            verbose: false,
+          });
+          let handled = false;
+
           scanner.start(
             { facingMode: "environment" },
             {
-              fps: 24,
-              // استخدام كاشف الباركود الأصلي للنظام (BarcodeDetector) إن توفّر — أسرع بمراحل
-              // من محرّك JavaScript، وهو ما تعتمده الماسحات الاحترافية على الأجهزة الحديثة.
-              experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+              fps: 15,
+              // مربّع المسح: 80% من أقصر ضلع — يحصر التحليل في وسط الصورة
+              qrbox: (w, h) => {
+                const side = Math.floor(Math.min(w, h) * 0.8);
+                return { width: side, height: side };
+              },
+              // دقّة عالية وتركيز مستمر: الدقّة الافتراضية (640×480) لا تُظهر المربّعات الصغيرة
+              videoConstraints: {
+                facingMode: "environment",
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                advanced: [{ focusMode: "continuous" }],
+              },
             },
             (decodedText) => {
-              try {
-                // فك القراءة بترتيب: base64 (الجديد) ← خام/مُرمّز (القديم) — للتوافقية
-                let data = null;
-                try {
-                  const j = base64ToUtf8(decodedText);
-                  const parsed = JSON.parse(j);
-                  if (parsed && parsed.v === 1) data = parsed;
-                } catch (e) { /* ليس base64، نجرّب الصيغ القديمة */ }
-                if (!data) {
-                  let parsedText = decodedText;
-                  try { parsedText = decodeURIComponent(decodedText); } catch (e) {}
-                  data = JSON.parse(parsedText);
-                }
-
-                if (data && data.v === 1) {
-                  playSuccessBeep(); // 🎵 تشغيل صوت النجاح
-                  if (scanner) {
-                    scanner.stop().then(() => {
-                      scanner.clear();
-                      onRestore(data);
-                    }).catch(() => onRestore(data));
-                  } else {
-                    onRestore(data);
-                  }
-                } else {
-                  if (isMounted) setError('رمز QR غير صالح أو إصدار قديم.');
-                }
-              } catch (err) {
-                // تجاهل أخطاء القراءة الناتجة عن تشوه الإطارات من الشاشة واستمرار المسح بصمت
+              if (handled) return;
+              const data = decodeQrPayload(decodedText);
+              if (!data) {
+                if (isMounted) setError('هذا الرمز ليس من التطبيق. وجّه الكاميرا نحو رمز «إنشاء QR».');
+                return;
               }
+              handled = true;
+              playSuccessBeep();
+              scanner.stop()
+                .then(() => scanner.clear())
+                .catch(() => {})
+                .finally(() => onRestore(data));
             },
-            () => { /* نتجاهل أخطاء المسح المستمرة هنا */ }
+            () => { /* إطار بلا رمز — المسح مستمر */ }
           ).catch((err) => {
             console.error("Camera start error:", err);
             if (isMounted) setError('تعذر فتح الكاميرا، يرجى التأكد من إعطاء الصلاحية.');
@@ -187,10 +152,10 @@ const QRSync = ({ appState, onRestore, onClose }) => {
 
         {mode === 'generate' && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
-            <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--app-muted)' }}>امسح هذا الرمز من جهاز آخر لاستعادة تقدمك والمفضلات والعدادات.</p>
+            <p style={{ textAlign: 'center', fontSize: '14px', color: 'var(--app-muted)' }}>امسح هذا الرمز من جهاز آخر لنقل موضع القراءة والمثبّتات. العدادات والملاحظات تنتقل بالمزامنة السحابية.</p>
             <div style={{ background: 'white', padding: '16px', borderRadius: '8px' }}>
               {SafeQRCode ? (
-                <SafeQRCode value={payload} size={280} level="L" />
+                <SafeQRCode value={payload} size={256} level="M" style={{ width: '100%', maxWidth: '256px', height: 'auto', display: 'block' }} />
               ) : (
                 <p style={{ color: 'var(--app-danger)', fontSize: '14px' }}>يجب إعادة تشغيل الخادم (Vite) لتحميل المكتبة</p>
               )}
