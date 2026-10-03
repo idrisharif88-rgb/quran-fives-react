@@ -47,13 +47,14 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: end;
-  gap: 8px;
+  gap: 6px 8px;
   padding: 0 14px 10px;
   pointer-events: none;
 }
 
 .verse-corner-number {
   grid-column: 1;
+  grid-row: 1 / span 2;
   justify-self: start;
   font-size: 72px;
   font-weight: bold;
@@ -63,6 +64,75 @@
   text-align: left;
   pointer-events: none;
   user-select: none;
+}
+
+/* ── Flip to notes ──────────────────────────────────────────────────────────
+   The button lives in the corner row's centre column, stacked above the surah
+   picker; the number and the step span both rows so they stay bottom-aligned.
+   Each face turns in from its own side, so the card reads as one sheet flipped.
+   ────────────────────────────────────────────────────────────────────────── */
+.verse-flip-btn {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+  pointer-events: auto;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.verse-flip-i {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 21px;
+  font-weight: bold;
+  font-style: italic;
+  line-height: 1;
+}
+
+/* على الظهر: الزرّ نفسه شفّاف (يبقى هدف اللمس كاملاً) وفيه دائرة مصمتة صغيرة */
+.verse-flip-btn.active {
+  border-color: transparent;
+  background: transparent;
+}
+
+.verse-flip-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--app-accent-deep);
+}
+
+.verse-card.is-back {
+  animation: verseFlipToBack 0.35s ease-out;
+}
+
+.verse-card.is-front {
+  animation: verseFlipToFront 0.35s ease-out;
+}
+
+@keyframes verseFlipToBack {
+  from { transform: perspective(1200px) rotateY(-90deg); }
+  to   { transform: perspective(1200px) rotateY(0deg); }
+}
+
+@keyframes verseFlipToFront {
+  from { transform: perspective(1200px) rotateY(90deg); }
+  to   { transform: perspective(1200px) rotateY(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verse-card.is-back,
+  .verse-card.is-front {
+    animation: none;
+  }
 }
 
 /* ── Mobile ─────────────────────────────────────────────────────────────── */

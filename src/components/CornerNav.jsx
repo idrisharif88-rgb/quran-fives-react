@@ -104,7 +104,7 @@ export default function CornerNav({ surahNumber, surahName, step, onSelectSurah,
         className="corner-nav-surah-btn"
         onClick={() => togglePanel('surah')}
         aria-expanded={openPanel === 'surah'}
-        title="الانتقال إلى سورة"
+        title={`سورة ${surahName} (${surahNumber}) — الانتقال إلى سورة`}
         dir="rtl"
       >
         {/* مصحف مفتوح بخطّ مرسوم لا بمساحة مصمتة: أوضح عند الأحجام الصغيرة
@@ -126,6 +126,8 @@ export default function CornerNav({ surahNumber, surahName, step, onSelectSurah,
           <path d="M12 6.7v13.2" />
         </svg>
         <span className="corner-nav-surah-name">{surahName}</span>
+        {/* رقم السورة في المصحف — كان يظهر في تلميح زرّ «i» القديم */}
+        <span className="corner-nav-surah-number" dir="ltr">{surahNumber}</span>
       </button>
 
       {/* يمين الصفّ: رقم الخطوة، بحجم رقم الآية في اليسار */}

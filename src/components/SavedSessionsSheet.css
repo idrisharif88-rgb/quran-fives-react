@@ -1,0 +1,84 @@
+/* صفّ جلسة محفوظة: ملخّص قابل للضغط + أزرار أيقونات صغيرة */
+.saved-session-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--app-surface-2);
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  padding: 4px 8px 4px 6px;
+}
+
+.saved-session-main {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--app-text);
+  text-align: right;
+}
+
+.saved-session-juz {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.saved-session-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--app-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.saved-session-sub strong {
+  font-size: 13px;
+  color: var(--app-accent-ink);
+}
+
+.saved-session-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.saved-session-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.saved-session-icon.danger {
+  color: #dc2626;
+}
+
+.saved-session-confirm {
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: #b91c1c;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}

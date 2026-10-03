@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { getSurahAndRange } from './utils/quranLogic';
 import {
   DEFAULT_STEP,
@@ -60,6 +60,11 @@ import useAccentTheme from './hooks/useAccentTheme';
 import { ACCENT_THEMES, ACCENT_THEME_LABEL, getPageBg } from './constants/themes';
 import { shareCounterResultsPdf } from './utils/counterPdf';
 import { buildSessionFromLaps } from './utils/sessions';
+import { juzOfPage, lapsOfJuz } from './data/juzPages';
+import useVerseNotes, { cardKeyOf } from './hooks/useVerseNotes';
+
+// قارئ المصحف يُحمَّل عند أول فتح فقط — بياناته وخطوطه خارج الحزمة الرئيسية
+const MushafReader = lazy(() => import('./components/mushaf/MushafReader'));
 import { shareElementAsImage } from './utils/shareImage';
 // الخطوط أوّلاً: ملفّات محلية داخل الحزمة، فلا شيء يُطلب من الشبكة
 import './styles/fonts.css';
@@ -345,9 +350,18 @@ function App() {
   ));
   const [activeResultSession, setActiveResultSession] = useState(null);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
+  const resultsBackRef = useRef(null);   // يضعه JuzResults حين يكون محرّر الدعاء مفتوحاً
+  // المصحف: آخر صفحة مقروءة تُحفظ وتُستعاد
+  const [isMushafOpen, setIsMushafOpen] = useState(false);
+  const [mushafPage, setMushafPage] = useState(() => (
+    Number.isInteger(persistedAppState.mushafPage) && persistedAppState.mushafPage >= 1 ? persistedAppState.mushafPage : 1
+  ));
+  const mushafBackRef = useRef(null);    // يضعه MushafReader حين تكون نافذة الانتقال مفتوحة
   const [quranicWondersNotes, setQuranicWondersNotes] = useState(() => (
     Array.isArray(persistedAppState.quranicWondersNotes) ? persistedAppState.quranicWondersNotes : []
   ));
+  // ملاحظات الآيات المكتوبة باليد (ظهر البطاقة) — مفتاحها سورة:آية
+  const { verseNotes, saveNote: saveVerseNote, mergeNotes: mergeVerseNotes, flippedCardKey, setFlippedCardKey } = useVerseNotes(persistedAppState.verseNotes);
   const [activeSurahNamesQuiz, setActiveSurahNamesQuiz] = useState(false);
   const [isUserManualOpen, setIsUserManualOpen] = useState(false);
   // مرساة الموضع قبل دخول مراجعة المثبتات { mode, index } للعودة إليه لاحقاً
@@ -508,10 +522,13 @@ function App() {
   // ساعة الحفظ: الهدف بالمللي ثانية + منطق التوقيت/الجولات/الأجزاء
   const targetMs = Math.max(1, stopwatchTargetSeconds) * 1000;
   const stopwatch = useStopwatch({
-    onJuzComplete: useCallback(({ ms, avgPerPage, laps, startedAt }) => {
-      setStopwatchBestJuzMs(prev => (prev == null ? ms : Math.min(prev, ms)));
-      setStopwatchBestAvgMs(prev => (prev == null ? avgPerPage : Math.min(prev, avgPerPage)));
-      // بناء جلسة الجزء وفتح شاشة النتيجة
+    onJuzComplete: useCallback(({ ms, avgPerPage, laps, startedAt, complete }) => {
+      // الأفضلان الشخصيان من جزء كامل فقط — جزء ناقص الصفحات لا يصير «الأسرع»
+      if (complete) {
+        setStopwatchBestJuzMs(prev => (prev == null ? ms : Math.min(prev, ms)));
+        setStopwatchBestAvgMs(prev => (prev == null ? avgPerPage : Math.min(prev, avgPerPage)));
+      }
+      // بناء جلسة الجزء (صفحاته وحده) وفتح شاشة النتيجة
       const session = buildSessionFromLaps(laps, startedAt, Date.now());
       if (session) {
         setSessions(prev => [...prev, session]);
@@ -527,9 +544,11 @@ function App() {
     setStopwatchTargetInput(String(clamped));
   }, [stopwatchTargetInput]);
 
-  // فتح شاشة النتائج (من صندوق الوقت) بجلسة حيّة من الجولات الحالية
+  // فتح شاشة النتائج (من صندوق الوقت) بجلسة حيّة من جولات الجزء الجاري وحده
   const handleOpenResults = useCallback(() => {
-    const session = buildSessionFromLaps(stopwatch.laps, null, null);
+    const lastLap = stopwatch.laps[stopwatch.laps.length - 1];
+    const currentJuzLaps = lastLap ? lapsOfJuz(stopwatch.laps, juzOfPage(lastLap.page)) : [];
+    const session = buildSessionFromLaps(currentJuzLaps, null, null);
     if (session) {
       setActiveResultSession(session);
       setIsResultsOpen(true);
@@ -548,11 +567,17 @@ function App() {
     });
   }, [stopwatch.laps, stopwatch.juzTimes]);
 
-  // فتح جلسة محفوظة من قائمة المحفوظات
+  // فتح جلسة محفوظة من قائمة المحفوظات — تبقى القائمة مفتوحة تحت البطاقة
+  // كي يعود زرّ الرجوع إليها بدل القفز إلى الرئيسية
   const handleOpenSavedSession = useCallback((session) => {
     setActiveResultSession(session);
-    setIsSavedSessionsOpen(false);
     setIsResultsOpen(true);
+  }, []);
+
+  // إغلاق المحفوظات يعيد القائمة التي فُتحت منها
+  const closeSavedSessions = useCallback(() => {
+    setIsSavedSessionsOpen(false);
+    setIsMoreMenuOpen(true);
   }, []);
 
   // حذف جلسة محفوظة من القائمة
@@ -884,6 +909,8 @@ function App() {
       fontWeight,
       fontColor,
       quranicWondersNotes, // إضافة الملاحظات للحفظ
+      verseNotes,
+      mushafPage,
       isNightMode,
       accentTheme,
       sessions,
@@ -914,6 +941,8 @@ function App() {
     sessions,
     sharedGroupIndex,
     quranicWondersNotes, // إضافة الملاحظات إلى مصفوفة التبعيات
+    verseNotes,
+    mushafPage,
     starredByStep,
     starredPages,
     starredPageEnds,
@@ -954,6 +983,8 @@ function App() {
     sessions,
     sharedGroupIndex,
     quranicWondersNotes,
+    verseNotes,
+    mushafPage,
     starredByStep,
     starredPages,
     starredPageEnds,
@@ -1813,6 +1844,11 @@ function App() {
       return true;
     }
     if (isResultsOpen) {
+      // محرّر الدعاء مفتوح فوق البطاقة: الرجوع يغلقه وحده
+      if (resultsBackRef.current) {
+        resultsBackRef.current();
+        return true;
+      }
       setIsResultsOpen(false);
       setActiveResultSession(null);
       return true;
@@ -1821,8 +1857,14 @@ function App() {
       setIsLapSheetOpen(false);
       return true;
     }
+    if (isMushafOpen) {
+      // نافذة الانتقال مفتوحة فوق المصحف: الرجوع يغلقها وحدها
+      if (mushafBackRef.current) mushafBackRef.current();
+      else setIsMushafOpen(false);
+      return true;
+    }
     if (isSavedSessionsOpen) {
-      setIsSavedSessionsOpen(false);
+      closeSavedSessions();
       return true;
     }
     if (isExitConfirmOpen) {
@@ -1908,6 +1950,16 @@ function App() {
     }
     if (isUserManualOpen) {
       setIsUserManualOpen(false);
+      return true;
+    }
+
+    // بطاقة مقلوبة على ظهرها (ملاحظات الآيات): الرجوع يعيدها إلى وجهها
+    if (
+      flippedCardKey
+      && (viewMode === 'khmasiyat' || viewMode === 'page-starts' || viewMode === 'page-ends')
+      && flippedCardKey === cardKeyOf(currentVersesText)
+    ) {
+      setFlippedCardKey(null);
       return true;
     }
 
@@ -2587,12 +2639,13 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['العداد', 'ختماتي', 'المحفوظات', 'فقهيات', 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
+                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'فقهيات', 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
                       className={`ayah-menu-item ${(option === 'الوضع الليلي' && isNightMode) || (option === ACCENT_THEME_LABEL && accentTheme === ACCENT_THEMES.YELLOW) || (option === 'السور المتشابهة في العدد' && viewMode === 'shared-verses') ? 'active' : ''}`}
                       onClick={() => {
+                        if (option === 'المصحف') { mainKeyboard.closeKeyboard(); setIsMushafOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'العداد') { setViewMode('night-counter'); setIsMoreMenuOpen(false); return; }
                         if (option === 'ختماتي') { mainKeyboard.closeKeyboard(); setIsKhatmaListOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'المحفوظات') { setIsSavedSessionsOpen(true); setIsMoreMenuOpen(false); return; }
@@ -3253,7 +3306,16 @@ function App() {
                 </div>
               );
             }
-            return <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} cornerAction={cornerAction} cardClassName={cardClass} />;
+            // قلب البطاقة لملاحظات الآيات — في أوضاع البطاقة فقط، ويعود الوجه عند التنقّل
+            const cardKey = cardKeyOf(currentVersesText);
+            const notesFlip = (cardClass && cardKey) ? {
+              flipped: flippedCardKey === cardKey,
+              onFlip: () => setFlippedCardKey(prev => (prev === cardKey ? null : cardKey)),
+              notes: verseNotes,
+              onSave: saveVerseNote,
+              onImport: mergeVerseNotes,
+            } : undefined;
+            return <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} cornerAction={cornerAction} cardClassName={cardClass} notesFlip={notesFlip} />;
           })()}
           {/* The main content area (TextDisplay, shared-verses, surah-fives)
               needs to be scrollable if its content overflows.
@@ -3299,21 +3361,6 @@ function App() {
       <div className="action-buttons-container" ref={actionButtonsRef}>
         {viewMode !== 'shared-verses' && viewMode !== 'surah-pages' && (
           <>
-            <div className="icon-wrapper">
-              {activeTooltip === 'surah' && (
-                <div className="surah-tooltip">
-                  {currentKhmasiyat.name} ({currentVersesText[0]?.s})
-                </div>
-              )}
-              <button 
-                className="action-icon" 
-                title="فهرس السور"
-                onClick={() => setActiveTooltip(activeTooltip === 'surah' ? null : 'surah')}
-              >
-                <span style={{ fontSize: '26px', fontWeight: 'bold', fontStyle: 'italic' }}>i</span>
-              </button>
-            </div>
-            
             <div className="icon-wrapper">
               {activeTooltip === 'verses' && (() => {
                 const sameCountSurahs = SURAH_METADATA.filter(s => s.verseCount === verseCount).map(s => s.name);
@@ -3657,10 +3704,20 @@ function App() {
           onSharePdf={handleShareCounterPdf}
         />
       )}
+      {isMushafOpen && (
+        <Suspense fallback={null}>
+          <MushafReader
+            page={mushafPage}
+            onPageChange={setMushafPage}
+            onClose={() => setIsMushafOpen(false)}
+            backRef={mushafBackRef}
+          />
+        </Suspense>
+      )}
       {isSavedSessionsOpen && (
         <SavedSessionsSheet
           sessions={sessions}
-          onClose={() => setIsSavedSessionsOpen(false)}
+          onClose={closeSavedSessions}
           onOpen={handleOpenSavedSession}
           onDelete={handleDeleteSavedSession}
           formatDate={formatHijriTimestamp}
@@ -3674,6 +3731,7 @@ function App() {
           onDelete={handleDeleteSession}
           onShare={handleShareSession}
           onUpdateDua={handleUpdateSessionDua}
+          backRef={resultsBackRef}
           onClose={() => { setIsResultsOpen(false); setActiveResultSession(null); }}
         />
       )}
@@ -3686,9 +3744,6 @@ function App() {
             starredIndices,
             starredPages,
             starredPageEnds,
-            nightCounters,
-            quranicWondersNotes,
-            khatmaList
           }}
           onRestore={(data) => {
             // الخطوة أوّلاً: الفهرس والمثبّتات في الرمز محسوبة بها

@@ -1,4 +1,5 @@
 import { timeBucket, BUCKETS, getCity } from './prayerTimes';
+import { juzOfPage } from '../data/juzPages';
 
 // نموذج الجلسة: append-only — لا يُكتب فوق أي جلسة سابقة أبداً.
 // تُخزَّن محلياً (مصدر الحقيقة) وتُضمَّن في حمولة المزامنة إلى الخادم.
@@ -28,7 +29,7 @@ export function buildSessionFromLaps(laps, startedAt, finishedAt) {
   const avgSeconds = totalSeconds / sorted.length;
   const fastest = sorted.reduce((a, b) => (b.ms < a.ms ? b : a));
   const slowest = sorted.reduce((a, b) => (b.ms > a.ms ? b : a));
-  const juzNumber = Math.floor((startPage - 1) / 20) + 1;
+  const juzNumber = juzOfPage(startPage);
   return {
     juzNumber,
     startPage,

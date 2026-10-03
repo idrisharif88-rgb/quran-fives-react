@@ -1,20 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   formatSeconds,
-  DUA_PRESETS,
   allTimeAverage,
   previousJuzAverage,
 } from '../utils/sessions';
+import DuaEditor from './DuaEditor';
 import './JuzResults.css';
+
+// خطوات المحور العمودي الممكنة بالثواني (نصف دقيقة ← 10 دقائق)
+const Y_STEPS = [30, 60, 120, 300, 600];
+const MAX_Y_INTERVALS = 5;
 
 // المخطط الشريطي: المحور العمودي = الزمن (م:ث)، الأفقي = أرقام الصفحات
 function BarChart({ pageTimes }) {
   const W = 340, H = 190;
-  const padL = 42, padR = 6, padT = 12, padB = 24;
-  const innerW = W - padL - padR;
+  // padL يتّسع لأرقام المحور العمودي العريضة، و axisGap يُبعد الأعمدة عنها
+  const padL = 40, axisGap = 10, padR = 6, padT = 14, padB = 24;
+  const plotL = padL + axisGap;
+  const innerW = W - plotL - padR;
   const innerH = H - padT - padB;
   const maxSec = Math.max(...pageTimes.map((p) => p.seconds), 1);
-  const yMax = Math.max(30, Math.ceil(maxSec / 30) * 30);
+  // خطوة المحور تكبر مع أطول عمود كي لا تتزاحم الأرقام (6 علامات على الأكثر)
+  const yStep = Y_STEPS.find((s) => maxSec / s <= MAX_Y_INTERVALS) ?? Y_STEPS[Y_STEPS.length - 1];
+  const yMax = Math.max(yStep, Math.ceil(maxSec / yStep) * yStep);
   const yFor = (s) => padT + innerH * (1 - s / yMax);
 
   const minPage = pageTimes[0].page;
@@ -22,22 +30,20 @@ function BarChart({ pageTimes }) {
   const slot = innerW / pageTimes.length;
   const barW = Math.max(5, slot * 0.72);
   const xFor = (page) =>
-    padL + ((page - minPage) / Math.max(1, maxPage - minPage)) * (innerW - slot) + (slot - barW) / 2;
+    plotL + ((page - minPage) / Math.max(1, maxPage - minPage)) * (innerW - slot) + (slot - barW) / 2;
 
   const minuteLabel = (t) => {
     const m = t / 60;
-    return m === 0 ? '0' : m.toFixed(1);
+    return Number.isInteger(m) ? String(m) : m.toFixed(1);
   };
   const yTicks = [];
-  for (let s = 0; s <= yMax; s += 30) yTicks.push(s);
+  for (let s = 0; s <= yMax; s += yStep) yTicks.push(s);
   const xTicks = [];
   for (let p = Math.ceil(minPage / 5) * 5; p <= maxPage; p += 5) xTicks.push(p);
 
   return (
-    <svg className="jz-chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-      {yTicks.map((t) => (
-        <text key={`y${t}`} x={padL - 6} y={yFor(t) + 4} textAnchor="end" fontSize="10" fill="#6b7280">{minuteLabel(t)}</text>
-      ))}
+    // direction: ltr — داخل بطاقة RTL ينعكس textAnchor="end" فتمتدّ أرقام المحور يميناً تحت الأعمدة
+    <svg className="jz-chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true" style={{ direction: 'ltr' }}>
       {xTicks.map((p) => (
         <text key={`x${p}`} x={xFor(p) + barW / 2} y={H - 8} textAnchor="middle" fontSize="9" fill="#6b7280">{p}</text>
       ))}
@@ -57,13 +63,23 @@ function BarChart({ pageTimes }) {
           />
         );
       })}
+      {yTicks.map((t) => (
+        <text key={`y${t}`} x={padL - 4} y={yFor(t) + 5} textAnchor="end" fontSize="13" fontWeight="800" fill="#374151">{minuteLabel(t)}</text>
+      ))}
     </svg>
   );
 }
 
-const JuzResults = ({ session, sessions, onSave, onDelete, onShare, onUpdateDua, onClose }) => {
+const JuzResults = ({ session, sessions, onSave, onDelete, onShare, onUpdateDua, onClose, backRef }) => {
   const [dua, setDua] = useState(session.dua || '');
   const [editing, setEditing] = useState(false);
+
+  // زرّ الرجوع يغلق محرّر الدعاء أولاً ثم البطاقة — يُسجَّل الإغلاق ما دام المحرّر مفتوحاً
+  useEffect(() => {
+    if (!backRef || !editing) return undefined;
+    backRef.current = () => setEditing(false);
+    return () => { backRef.current = null; };
+  }, [backRef, editing]);
 
   const prev = previousJuzAverage(sessions, session.juzNumber);
   const all = allTimeAverage(sessions);
@@ -76,8 +92,9 @@ const JuzResults = ({ session, sessions, onSave, onDelete, onShare, onUpdateDua,
     compareParts.push(session.avgSeconds < all ? 'أسرع من متوسطك العام' : 'أبطأ من متوسطك العام');
   }
 
-  const saveDua = () => {
-    onUpdateDua(dua);
+  const saveDua = (text) => {
+    setDua(text);
+    onUpdateDua(text);
     setEditing(false);
   };
 
@@ -113,23 +130,9 @@ const JuzResults = ({ session, sessions, onSave, onDelete, onShare, onUpdateDua,
         <div className="jz-dua">
           <div className="jz-dua-head">
             <span>دعاء</span>
-            <button type="button" className="jz-dua-edit" onClick={() => setEditing((e) => !e)}>
-              {editing ? 'إغلاق' : 'تعديل'}
-            </button>
+            <button type="button" className="jz-dua-edit" onClick={() => setEditing(true)}>تعديل</button>
           </div>
-          {editing ? (
-            <div className="jz-dua-editor">
-              <div className="jz-dua-presets">
-                {DUA_PRESETS.map((d, i) => (
-                  <button key={i} type="button" className="jz-dua-preset" onClick={() => setDua(d)}>{d}</button>
-                ))}
-              </div>
-              <textarea className="jz-dua-input" value={dua} onChange={(e) => setDua(e.target.value)} placeholder="اكتب دعاءً…" />
-              <button type="button" className="jz-dua-save" onClick={saveDua}>حفظ الدعاء</button>
-            </div>
-          ) : (
-            <p className="jz-dua-text">{dua || 'لا يوجد دعاء محفوظ'}</p>
-          )}
+          <p className="jz-dua-text">{dua || 'لا يوجد دعاء محفوظ'}</p>
         </div>
 
         <div className="jz-actions">
@@ -144,6 +147,7 @@ const JuzResults = ({ session, sessions, onSave, onDelete, onShare, onUpdateDua,
           </button>
         </div>
       </div>
+      {editing && <DuaEditor initialDua={dua} onSave={saveDua} onCancel={() => setEditing(false)} />}
     </div>
   );
 };

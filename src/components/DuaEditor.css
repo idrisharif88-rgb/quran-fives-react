@@ -1,0 +1,105 @@
+/* محرّر الدعاء — فوق بطاقة النتيجة (13100)، ومحاذى لأعلى الشاشة لا لوسطها */
+.dua-editor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 13200;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: max(28px, calc(env(safe-area-inset-top, 0px) + 10px)) 12px 12px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.dua-editor {
+  width: 100%;
+  max-width: 480px;
+  background: #ffffff;
+  color: #1f2937;
+  border-radius: 16px;
+  padding: 12px 14px 14px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* الحفظ والإلغاء في الرأس: يبقيان فوق لوحة المفاتيح مهما طال النص */
+.dua-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F6E56;
+}
+
+.dua-editor-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.dua-editor-btn {
+  border: 1px solid #d7e2dd;
+  background: #ffffff;
+  color: #0F6E56;
+  border-radius: 10px;
+  padding: 7px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.dua-editor-btn.primary {
+  border-color: #0F6E56;
+  background: #0F6E56;
+  color: #ffffff;
+}
+
+/* ألوان مصمتة صريحة: WebView القديم يرسم الحقل المركَّز أسود إن ورث ألوان الوضع الليلي
+   (docs/fixes/android-webview-black-input.md) */
+.dua-editor-input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 120px;
+  border: 1.5px solid #0F6E56;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #ffffff;
+  color: #1f2937;
+  -webkit-text-fill-color: #1f2937;
+  caret-color: #0F6E56;
+  color-scheme: light;
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+  font-size: 17px;
+  line-height: 1.8;
+  resize: none;
+}
+
+.dua-editor-input::placeholder {
+  color: #9ca3af;
+  -webkit-text-fill-color: #9ca3af;
+}
+
+.dua-editor-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dua-editor-preset {
+  border: 1px solid #d7e2dd;
+  background: #f6f8f7;
+  color: #0F6E56;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: right;
+}

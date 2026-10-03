@@ -1,0 +1,335 @@
+/* ── قارئ المصحف: شاشة كاملة فوق التطبيق، تحت النوافذ الحوارية (13500) ── */
+.mushaf-reader {
+  position: fixed;
+  inset: 0;
+  z-index: 11500;
+  display: flex;
+  flex-direction: column;
+  background: var(--app-surface);
+  color: var(--app-text-strong);
+  padding-top: max(28px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  font-family: 'Tajawal', sans-serif;
+}
+
+/* ── الشريط العلوي ── */
+.mushaf-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 10px 6px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+/* ملء الشاشة: يختفي الشريط فتأخذ الصفحة مكانه */
+.mushaf-reader.full-screen .mushaf-toolbar {
+  display: none;
+}
+
+.mushaf-tool-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--app-accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.mushaf-title {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.mushaf-title-surah {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--app-accent-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mushaf-title-juz {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-muted);
+}
+
+/* ── الصفحات: سحب أفقي يتوقّف عند كل صفحة ── */
+.mushaf-pager {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.mushaf-pager::-webkit-scrollbar {
+  display: none;
+}
+
+.mushaf-slot {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 6px 14px 0;   /* يطابق PAD_X و PAD_TOP في MushafPager */
+}
+
+.mushaf-lines {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* الورقة بحجمها الظاهر؛ محتواها مرسوم بحجم كبير ثابت ومصغَّر هندسياً من زاويته العليا اليمنى */
+.mushaf-sheet {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.mushaf-sheet-scaled {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform-origin: top right;
+}
+
+.mushaf-line {
+  height: var(--mushaf-line-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.mushaf-line.justified {
+  justify-content: space-between;
+}
+
+.mushaf-word {
+  flex: 0 0 auto;
+}
+
+/* عنوان السورة: شريط مؤطَّر بلون السِّمة */
+.mushaf-surah-title span {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.28em 0;
+  /* بوحدة em: الورقة تُصغَّر كلها، وحدّ بالبكسل كان سيصغر معها حتى يختفي */
+  border: 0.075em solid var(--app-accent);
+  border-radius: 0.4em;
+  background: var(--app-surface-2);
+  color: var(--app-accent-ink);
+  font-family: 'Amiri', 'Tajawal', serif;
+  font-size: 0.82em;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.mushaf-page-number {
+  flex: 0 0 30px;   /* يطابق FOOT_HEIGHT في MushafPager */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--app-muted);
+}
+
+.mushaf-page-message {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-muted);
+  font-size: 15px;
+}
+
+/* ── نافذة الانتقال ── */
+.mushaf-goto-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.mushaf-goto-tab {
+  flex: 1;
+  padding: 8px 0;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mushaf-goto-tab.active {
+  border-color: var(--app-accent-deep);
+  background: var(--app-accent-deep);
+  color: var(--app-accent-deep-contrast, #ffffff);
+}
+
+.mushaf-goto-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mushaf-goto-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--app-text);
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  text-align: right;
+}
+
+.mushaf-goto-item.current {
+  border-color: var(--app-accent);
+  background: var(--app-surface-2);
+}
+
+.mushaf-goto-num {
+  flex: 0 0 34px;
+  font-weight: 800;
+  color: var(--app-accent-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.mushaf-goto-name {
+  flex: 1;
+  font-weight: 700;
+}
+
+.mushaf-goto-page {
+  font-size: 12px;
+  color: var(--app-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.mushaf-goto-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.mushaf-goto-cell {
+  padding: 12px 0;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-surface-2);
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mushaf-goto-pagepick {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 6px 0;
+}
+
+.mushaf-goto-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mushaf-goto-step {
+  min-width: 46px;
+  padding: 8px 0;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-surface-2);
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* حقل رقم الصفحة — ألوان مصمتة صريحة (docs/fixes/android-webview-black-input.md) */
+.mushaf-goto-value {
+  width: 84px;
+  box-sizing: border-box;
+  padding: 4px 0;
+  border: 1.5px solid #0F6E56;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1f2937;
+  -webkit-text-fill-color: #1f2937;
+  caret-color: #0F6E56;
+  color-scheme: light;
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* تبويب الصفحة فيه حقل كتابة: النافذة تُرفع إلى أعلى الشاشة كي لا تغطّيها لوحة المفاتيح */
+.modal-scrim:has(.mushaf-goto-pagepick) {
+  align-items: flex-start;
+}
+
+.mushaf-goto-range {
+  width: 100%;
+  accent-color: var(--app-accent-deep);
+}
+
+.mushaf-goto-go {
+  padding: 11px;
+  border: none;
+  border-radius: 12px;
+  background: var(--app-accent-deep);
+  color: var(--app-accent-deep-contrast, #ffffff);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
