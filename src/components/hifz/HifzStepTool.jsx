@@ -1,9 +1,9 @@
 import useVerseAudio from '../../hooks/useVerseAudio';
 import { stepTarget, stepCount } from '../../utils/hifzSteps';
 
-// أداة سماع المقرئ: كل تلاوة كاملة تُحسب مرة
-function ListenTool({ verse, reciter, value, target, onCount }) {
-  const audio = useVerseAudio({ surah: verse.s, ayah: verse.a, reciter, onFinished: () => onCount(1) });
+// أداة سماع المقرئ: كل تلاوة كاملة لورد اليوم (آياته كلّها) تُحسب مرة
+function ListenTool({ verses, reciter, value, target, onCount }) {
+  const audio = useVerseAudio({ verses, reciter, onFinished: () => onCount(1) });
   const playing = audio.status === 'playing' || audio.status === 'loading';
   return (
     <div className="hifz-tool">
@@ -41,11 +41,12 @@ function RepeatTool({ value, target, onCount, onConfirm }) {
 
 /**
  * أداة الخطوة المفتوحة. كل خطوة جديدة تُضاف إلى القواعد تحتاج أداتها هنا.
+ * @param verses آيات ورد اليوم [{ s, a }]
  * @param extras أدوات تُحقن من الشاشة: hafizContacts (خطّ التواصل مع الشيخ) و recorder (التسجيل)
  */
-export default function HifzStepTool({ id, value, rules, verse, reciter, actions, extras = {} }) {
+export default function HifzStepTool({ id, value, rules, verses, reciter, actions, extras = {} }) {
   if (id === 'listen') {
-    return <ListenTool verse={verse} reciter={reciter} value={value} target={stepTarget(id, rules)} onCount={(d) => actions.count(id, d)} />;
+    return <ListenTool verses={verses} reciter={reciter} value={value} target={stepTarget(id, rules)} onCount={(d) => actions.count(id, d)} />;
   }
   if (id === 'repeat') {
     return <RepeatTool value={stepCount(id, value)} target={stepTarget(id, rules)} onCount={(d) => actions.count(id, d)} onConfirm={() => actions.confirm(id)} />;

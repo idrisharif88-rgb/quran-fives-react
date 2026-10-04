@@ -7,6 +7,7 @@ import { SURAH_METADATA } from '../data/quranConstants';
 // هكذا تُضاف لاحقاً شاشة إعدادات تغيّر رقماً أو ترتيب الخطوات دون مساس بالمنطق.
 // القيم الافتراضية قواعد صاحب البرنامج — لا تُغيَّر اجتهاداً.
 export const DEFAULT_RULES = {
+  versesPerDay: 1,       // الآيات الجديدة في اليوم (ورد اليوم) — يختاره المستخدم عند البدء
   listenTarget: 3,       // سماع المقرئ قبل الحفظ
   repeatTarget: 40,      // تكرار الآية الجديدة
   fiveTimes: 5,          // قراءة آية الأمس غيباً (للعرض)
@@ -17,8 +18,16 @@ export const DEFAULT_RULES = {
   steps: ['listen', 'hafiz', 'memorize', 'record', 'repeat'],
 };
 
-// قواعد مخزّنة ← قواعد كاملة: ما نقص يُؤخذ من الافتراضي (ترقية البيانات القديمة)
-export const withDefaultRules = (rules) => ({ ...DEFAULT_RULES, ...(rules || {}) });
+// خيارات ورد اليوم المعروضة عند بدء البرنامج
+export const VERSES_PER_DAY_CHOICES = [1, 3, 5, 7];
+
+// قواعد مخزّنة ← قواعد كاملة: ما نقص يُؤخذ من الافتراضي (ترقية البيانات القديمة).
+// برنامج بدأ قبل إضافة ورد اليوم يبقى آية واحدة في اليوم.
+export const withDefaultRules = (rules) => {
+  const merged = { ...DEFAULT_RULES, ...(rules || {}) };
+  const perDay = Number(merged.versesPerDay);
+  return { ...merged, versesPerDay: Number.isInteger(perDay) && perDay >= 1 ? perDay : DEFAULT_RULES.versesPerDay };
+};
 
 export const TOTAL_VERSES = SURAH_METADATA.reduce((sum, s) => sum + s.verseCount, 0);
 

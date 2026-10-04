@@ -37,6 +37,28 @@ export function clearAccount() {
   }
 }
 
+// آخر حالة عرفها الخادم لهذا الحساب: { approved, admin }. تُحفظ محلياً لأن التطبيق
+// يعمل بلا شبكة — المالك يرى ما يخصّه («فقهيات») حتى وهو غير متّصل.
+const STATUS_KEY = 'quran-fives-account-status-v1';
+
+export function readAccountStatus() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STATUS_KEY));
+    return saved && saved.user === readAccount()?.user ? { approved: Boolean(saved.approved), admin: Boolean(saved.admin) } : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveAccountStatus(status) {
+  try {
+    if (!status) localStorage.removeItem(STATUS_KEY);
+    else localStorage.setItem(STATUS_KEY, JSON.stringify({ user: readAccount()?.user, approved: status.approved, admin: status.admin }));
+  } catch {
+    // تجاهل فشل التخزين
+  }
+}
+
 // Authorization: Basic بترميز UTF-8 — ترويسات fetch لا تقبل الحروف العربية خاماً
 export function authHeaders(creds) {
   if (!creds) return {};

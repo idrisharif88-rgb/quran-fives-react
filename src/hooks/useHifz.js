@@ -35,7 +35,7 @@ export default function useHifz(persisted) {
   }, [today]);
 
   const actions = useMemo(() => ({
-    start: (direction) => setProgram(startProgram(direction, today)),
+    start: (direction, versesPerDay) => setProgram(startProgram(direction, today, { versesPerDay })),
     reset: () => setProgram(null),
     count: (id, delta) => apply((p) => countStep(p, today, id, delta)),
     confirm: (id) => apply((p) => confirmStep(p, today, id)),

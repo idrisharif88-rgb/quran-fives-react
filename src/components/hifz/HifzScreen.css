@@ -93,6 +93,33 @@
   cursor: pointer;
 }
 
+/* ورد اليوم: 1 / 3 / 5 / 7 */
+.hifz-start-perday {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.hifz-start-chip {
+  flex: 1;
+  max-width: 76px;
+  padding: 12px 0;
+  border: 2px solid var(--app-border);
+  border-radius: 14px;
+  background: var(--app-surface);
+  color: var(--app-text-strong);
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.hifz-start-chip.active {
+  border-color: var(--hifz-gold);
+  background: var(--hifz-gold);
+  color: var(--hifz-gold-ink);
+}
+
 .hifz-start-option strong {
   font-size: 18px;
   color: var(--app-text-strong);

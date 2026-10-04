@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { APPS, contactUrl } from '../../utils/hifzContacts';
-import { surahName } from './hifzText';
+import { surahName, refsText } from './hifzText';
 import './HifzContacts.css';
 
 const APP_LABEL = { [APPS.WHATSAPP]: 'واتساب', [APPS.TELEGRAM]: 'تلجرام' };
@@ -79,7 +79,9 @@ export default function HifzContacts({ contacts, verse, backRef }) {
   const waiting = state.askedIndex === verse.index;
 
   const open = (contact) => {
-    const message = `السلام عليكم ورحمة الله وبركاته، أريد أن أقرأ عليكم سورة ${surahName(verse.ref.s)} الآية ${verse.ref.a} للتأكد من صحة قراءتي.`;
+    const message = verse.refs.length > 1
+      ? `السلام عليكم ورحمة الله وبركاته، أريد أن أقرأ عليكم هذه الآيات: ${refsText(verse.refs)} للتأكد من صحة قراءتي.`
+      : `السلام عليكم ورحمة الله وبركاته، أريد أن أقرأ عليكم سورة ${surahName(verse.ref.s)} الآية ${verse.ref.a} للتأكد من صحة قراءتي.`;
     window.open(contactUrl(contact, message), '_blank');
     markAsked(verse.index);
   };

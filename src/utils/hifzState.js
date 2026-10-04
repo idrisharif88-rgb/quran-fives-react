@@ -46,8 +46,19 @@ export function loadProgram(raw) {
   };
 }
 
-// آية جديدة واحدة في اليوم على الأكثر
+// ورد جديد واحد في اليوم على الأكثر (آية أو أكثر حسب rules.versesPerDay)
 export const verseDoneToday = (state, today) => state.memorizedOn[state.memorizedOn.length - 1] === today;
+
+// ورد اليوم: آياته المتتالية في ترتيب الحفظ. يُحفظ وحدةً واحدة بالخطوات نفسها،
+// ويُسجَّل لكل آية منه يومُ حفظها فتدخل الصناديق كلٌّ بساعتها.
+//   start فهرس أول آية — count عدد الآيات (يقصر عند آخر المصحف) — done حُفظ اليوم
+export function portionOf(state, today) {
+  const total = state.memorizedOn.length;
+  let doneCount = 0;
+  while (doneCount < total && state.memorizedOn[total - 1 - doneCount] === today) doneCount++;
+  if (doneCount > 0) return { start: total - doneCount, count: doneCount, done: true };
+  return { start: total, count: Math.min(state.rules.versesPerDay, TOTAL_VERSES - total), done: false };
+}
 
 /**
  * خطة اليوم: ما يظهر في الخط الزمني.
@@ -58,7 +69,8 @@ export function dailyPlan(state, today) {
   const boxes = boxesFor(state.memorizedOn, state.startedOn, today, state.rules);
   const finished = state.memorizedOn.length >= TOTAL_VERSES;
   const doneToday = verseDoneToday(state, today);
-  const index = doneToday ? state.memorizedOn.length - 1 : state.memorizedOn.length;
+  const portion = portionOf(state, today);
+  const indices = Array.from({ length: portion.count }, (_, i) => portion.start + i);
 
   const boxItems = BOXES
     .filter((box) => boxes[box].length > 0)
@@ -67,7 +79,14 @@ export function dailyPlan(state, today) {
   const verseNeeded = !finished || doneToday;
 
   return {
-    verse: verseNeeded ? { index, ref: verseAt(state.direction, index), done: doneToday } : null,
+    // index/ref أول آية الورد؛ indices/refs آياته كلّها (واحدة حين versesPerDay = 1)
+    verse: verseNeeded ? {
+      index: portion.start,
+      ref: verseAt(state.direction, portion.start),
+      indices,
+      refs: indices.map((i) => verseAt(state.direction, i)),
+      done: doneToday,
+    } : null,
     openStep: doneToday || finished ? null : currentStep(state.progress, state.rules),
     boxItems,
     boxesDone,
@@ -96,9 +115,10 @@ function updateStep(state, today, id, change) {
   if (currentStep(state.progress, state.rules) !== id) return state;
   const progress = { ...state.progress, [id]: change(state.progress[id]) };
   const next = { ...state, progress };
-  // إنجاز آخر خطوة يُتمّ حفظ الآية: تُسجَّل بيومها وتبدأ ساعتها
+  // إنجاز آخر خطوة يُتمّ حفظ ورد اليوم: كل آية منه تُسجَّل بيومها وتبدأ ساعتها
   if (currentStep(progress, state.rules) !== null) return next;
-  return logDay({ ...next, memorizedOn: [...state.memorizedOn, today], progress: freshProgress(state.rules) }, today);
+  const learned = Array(portionOf(state, today).count).fill(today);
+  return logDay({ ...next, memorizedOn: [...state.memorizedOn, ...learned], progress: freshProgress(state.rules) }, today);
 }
 
 // خطوة عدّاد: زيادة أو نقص أو تصفير ('reset')، بين 0 والهدف

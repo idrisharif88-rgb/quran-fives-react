@@ -41,10 +41,6 @@ import { FIQH_DATA } from './data/fiqhData';
 import { getAudioUrl } from './utils/audioDownloader';
 import {
   APP_STORAGE_KEY,
-  KHMASIYAT_QUIZ_STORAGE_KEY,
-  PAGE_STARTS_QUIZ_STORAGE_KEY,
-  RANDOM_AYAH_QUIZ_STORAGE_KEY,
-  SURAH_COUNT_QUIZ_STORAGE_KEY,
   loadStoredState,
   removeStoredState,
   saveStoredState
@@ -52,6 +48,10 @@ import {
 import { pushLocal, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, fetchMe } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
 import { getSyncMeta, deviceDataIsForeign, clearSyncMeta } from './utils/syncMeta';
+import { readAccountStatus, saveAccountStatus } from './utils/syncAccount';
+import { SESSION_STORAGE_KEYS, wipeDeviceData, isPristineState } from './utils/deviceData';
+
+const REOPEN_SYNC_PANEL_KEY = 'quran-fives-reopen-sync-panel';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
 import StartupSyncPrompt from './components/StartupSyncPrompt';
 import AccountPanel from './components/AccountPanel';
@@ -131,14 +131,6 @@ const SHARED_VERSE_GROUPS = Object.keys(countGroups)
   .filter(count => countGroups[count].length > 1) // نأخذ فقط من يشتركون
   .sort((a, b) => a - b)
   .map(count => ({ count, surahs: countGroups[count] }));
-const SESSION_STORAGE_KEYS = [
-  APP_STORAGE_KEY,
-  KHMASIYAT_QUIZ_STORAGE_KEY,
-  RANDOM_AYAH_QUIZ_STORAGE_KEY,
-  SURAH_COUNT_QUIZ_STORAGE_KEY,
-  PAGE_STARTS_QUIZ_STORAGE_KEY,
-  'quran_fives_surah_names_quiz_state'
-];
 
 const HIJRI_CACHE_KEY = 'quran-fives-hijri-cache';
 const HIJRI_MONTHS_AR = ['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الثانية','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
@@ -391,11 +383,22 @@ function App() {
   const auth = useAccount();
   const { account, signOut } = auth;
   // حالة الحساب على الخادم: { approved, admin }. الحساب الجديد لا يزامن قبل موافقة المشرف.
-  const [accountStatus, setAccountStatus] = useState(null);
+  const [accountStatus, setAccountStatus] = useState(readAccountStatus);   // آخر حالة معروفة، تعمل بلا شبكة
+  // «فقهيات» محتوى خاص بالمالك: لا يظهر لغير حسابه
+  const isOwner = Boolean(account && accountStatus?.admin);
   const [syncCheckNonce, setSyncCheckNonce] = useState(0);   // يعيد فحص الفتح («تحقّق الآن»)
   const [isAdminUsersOpen, setIsAdminUsersOpen] = useState(false);
   const syncUnlocked = Boolean(account);
-  const [isSyncPanelOpen, setIsSyncPanelOpen] = useState(false);
+  // «الدخول بحساب آخر» يعيد التحميل بعد مسح الجهاز، ثم تُفتح اللوحة على نموذج الدخول
+  const [isSyncPanelOpen, setIsSyncPanelOpen] = useState(() => {
+    try {
+      const reopen = sessionStorage.getItem(REOPEN_SYNC_PANEL_KEY) === '1';
+      sessionStorage.removeItem(REOPEN_SYNC_PANEL_KEY);
+      return reopen;
+    } catch { return false; }
+  });
+  // تسجيل الخروج: null | 'busy' (يرفع آخر التغييرات) | 'unsynced' (تعذّر الرفع — تأكيد)
+  const [signOutState, setSignOutState] = useState(null);
   // المزامنة اليدوية بخطوتين: تأكيد قبل التنفيذ، ونتيجة صريحة بعده
   const [manualSyncBusy, setManualSyncBusy] = useState(null);      // 'push' | 'pull' | null
   const [manualSyncConfirm, setManualSyncConfirm] = useState(null); // 'push' | 'pull' | null
@@ -674,7 +677,8 @@ function App() {
       cloudSyncReadyRef.current = false;
       setStartupSyncChoice(null);
       setSyncFailed(false);
-      setAccountStatus(null);
+      // خروج فعلي يمسح الحالة؛ نسخة بلا مزامنة (SYNC_ENABLED=false) تُبقي آخر حالة معروفة
+      if (!syncUnlocked) { setAccountStatus(null); saveAccountStatus(null); }
       return;
     }
     let cancelled = false;
@@ -683,6 +687,7 @@ function App() {
         const me = await fetchMe();
         if (cancelled) return;
         setAccountStatus(me);
+        saveAccountStatus(me);
         // بانتظار موافقة المشرف: لا مزامنة ولا علامة فشل — التطبيق يعمل محلياً
         if (!me.approved) {
           cloudSyncReadyRef.current = false;
@@ -690,6 +695,11 @@ function App() {
           return;
         }
         const info = await fetchRemoteInfo();
+        if (cancelled) return;
+        // جهاز بلا محتوى (جديد، أو بعد تسجيل خروج) والحساب له نسخة: تُنزَّل بلا سؤال
+        if (info.hasState && !info.inSync && isPristineState(loadStoredState(APP_STORAGE_KEY))) {
+          if (await forcePullRemote()) { window.location.reload(); return; }
+        }
         if (cancelled) return;
         const choice = startupChoiceFor(info);
         if (choice) { setStartupSyncChoice(choice); return; }
@@ -838,10 +848,41 @@ function App() {
     wasSignedInRef.current = Boolean(account);
   }, [account]);
 
+  // ─── تسجيل الخروج: لا يبقى من بيانات الحساب شيء على الجهاز ───
+  // نرفع آخر التغييرات أوّلاً ثم نمسح؛ البيانات تعود من السحابة عند الدخول التالي.
+  // إن تعذّر الرفع (لا اتصال، أو الحساب لم يوافَق عليه بعد) لا نمسح بلا تأكيد صريح.
+  const uploadBeforeSignOut = async () => {
+    const snapshot = lastSnapshotRef.current;
+    if (!snapshot || isPristineState(snapshot)) return true;   // لا شيء يضيع
+    if (!SYNC_ENABLED || !cloudSyncReadyRef.current) return false;
+    // رفعة واحدة في كل لحظة: ننتظر الجارية كي لا تتصادما بـ409
+    for (let i = 0; i < 40 && cloudPushBusyRef.current; i++) await new Promise(r => setTimeout(r, 150));
+    try {
+      await pushLocal(snapshot);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // reopenPanel: «الدخول بحساب آخر» — تُفتح اللوحة على نموذج الدخول بعد إعادة التحميل
+  const handleSignOut = async ({ force = false, reopenPanel = false } = {}) => {
+    if (signOutState === 'busy') return;
+    if (!force) {
+      setSignOutState('busy');
+      if (!await uploadBeforeSignOut()) { setSignOutState(reopenPanel ? 'unsynced-switch' : 'unsynced'); return; }
+    }
+    wipeDeviceData();
+    signOut();
+    try { if (reopenPanel) sessionStorage.setItem(REOPEN_SYNC_PANEL_KEY, '1'); } catch { /* تجاهل */ }
+    window.location.reload();
+  };
+
   const closeSyncPanel = () => {
     mainKeyboard.closeKeyboard();
     setIsSyncPanelOpen(false);
     auth.cancelPending();
+    setSignOutState(prev => (prev === 'busy' ? prev : null));
     setManualSyncConfirm(null);
     setManualSyncResult(null);
   };
@@ -2659,7 +2700,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'فقهيات', 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
+                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', ...(isOwner ? ['فقهيات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -3964,13 +4005,35 @@ function App() {
                     إدارة المستخدمين
                   </button>
                 )}
-                {/* تبديل الحساب: خروج يُبقي اللوحة مفتوحة على نموذج الدخول */}
-                <button type="button" className="khmasiyat-quiz-btn secondary" onClick={signOut} style={{ width: '100%', marginBottom: '10px' }}>
-                  الدخول بحساب آخر
-                </button>
-                <button type="button" className="khmasiyat-quiz-btn" onClick={() => { signOut(); closeSyncPanel(); }} style={{ width: '100%', marginBottom: '10px' }}>
-                  تسجيل الخروج
-                </button>
+                {signOutState?.startsWith('unsynced') ? (
+                  <div className="manual-sync-confirm" style={{ marginBottom: '10px' }}>
+                    <p className="manual-sync-confirm-text">
+                      تعذّر رفع بياناتك إلى السحابة. الخروج الآن يمسحها من هذا الجهاز نهائياً.
+                    </p>
+                    <div className="manual-sync-confirm-actions">
+                      <button
+                        type="button"
+                        className="khmasiyat-quiz-btn"
+                        style={{ background: 'var(--app-danger)', color: '#fff' }}
+                        onClick={() => handleSignOut({ force: true, reopenPanel: signOutState === 'unsynced-switch' })}
+                      >
+                        اخرج وامسح
+                      </button>
+                      <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => setSignOutState(null)}>
+                        تراجع
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <button type="button" className="khmasiyat-quiz-btn secondary" disabled={signOutState === 'busy'} onClick={() => handleSignOut({ reopenPanel: true })} style={{ width: '100%', marginBottom: '10px' }}>
+                      الدخول بحساب آخر
+                    </button>
+                    <button type="button" className="khmasiyat-quiz-btn" disabled={signOutState === 'busy'} onClick={() => handleSignOut()} style={{ width: '100%', marginBottom: '10px' }}>
+                      {signOutState === 'busy' ? 'جارٍ حفظ بياناتك…' : 'تسجيل الخروج'}
+                    </button>
+                  </>
+                )}
               </>
             ) : (
               <>
@@ -4016,7 +4079,7 @@ function App() {
         </>
       )}
       {/* ─── قسم فقهيات ─── */}
-      {isFiqhOpen && (
+      {isFiqhOpen && isOwner && (
         <div style={{
           position: 'fixed', inset: 0, background: 'var(--app-bg)',
           zIndex: 11000, display: 'flex', flexDirection: 'column', fontFamily: 'inherit',

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { surahName } from './hifzText';
+import { recordingText } from './hifzText';
 
 const clock = (ms) => {
   const total = Math.max(0, Math.round(ms / 1000));
@@ -25,7 +25,7 @@ export default function HifzRecordingsList({ recordings, onListen }) {
           {[...recordings.list].reverse().map((recording) => (
             <li key={recording.id} className="hifz-recording">
               <div className="hifz-recording-info">
-                <strong>{surahName(recording.s)} {recording.a}</strong>
+                <strong>{recordingText(recording)}</strong>
                 <span>{dateText(recording.createdAt)} · <bdi dir="ltr">{clock(recording.durationMs)}</bdi></span>
               </div>
               {removingId === recording.id ? (

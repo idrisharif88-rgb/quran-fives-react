@@ -2244,26 +2244,6 @@ button.nc-khitma-circle:active {
   margin-top: 15px;
 }
 
-.quranic-wonders-textarea {
-  width: 100%;
-  border: 1px solid var(--app-border-strong);
-  border-radius: 10px;
-  padding: 10px;
-  resize: vertical;
-  min-height: 80px;
-  outline: none;
-  background: var(--app-input-bg);
-  color: var(--app-input-text);
-  font-family: inherit;
-  font-weight: inherit;
-  font-size: inherit;
-}
-
-.quranic-wonders-textarea:focus {
-  border-color: var(--app-accent-ink);
-  box-shadow: 0 0 0 3px var(--app-accent-glow);
-}
-
 .quranic-wonders-main-btn {
   border: none;
   border-radius: 10px;
@@ -2279,16 +2259,6 @@ button.nc-khitma-circle:active {
 
 .quranic-wonders-main-btn:hover {
   background: var(--app-accent-strong);
-}
-
-.quranic-wonders-main-btn.secondary {
-  background: var(--app-surface-3);
-  color: var(--app-text);
-  border: 1px solid var(--app-border-strong);
-}
-
-.quranic-wonders-main-btn.secondary:hover {
-  background: var(--app-popover-hover);
 }
 
 /* Mobile responsiveness for Quranic Wonders */
@@ -2309,10 +2279,6 @@ button.nc-khitma-circle:active {
   .quranic-wonders-main-btn {
     font-size: 16px;
     padding: 8px 12px;
-  }
-  .quranic-wonders-textarea {
-    min-height: 60px;
-    font-size: 16px;
   }
 }
 
