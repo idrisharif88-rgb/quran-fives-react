@@ -48,14 +48,20 @@ function withWidths(lines, widths) {
 }
 
 // سطر بقي أعرض من العمود يُوسَّط ويُضغط أفقياً بقدره
-function TextLine({ words, family, justified, squeeze }) {
+function TextLine({ words, family, justified, squeeze, highlightVerse }) {
   const squeezed = squeeze < 1;
   const style = { fontFamily: `"${family}"` };
   if (squeezed) style.transform = `scaleX(${squeeze})`;
   return (
     <div className={`mushaf-line ${justified && !squeezed ? 'justified' : ''}`.trim()} style={style}>
       {words.map((word, i) => (
-        <span key={i} className="mushaf-word" data-verse={word.verse}>{word.glyph}</span>
+        <span
+          key={i}
+          className={`mushaf-word ${highlightVerse && word.verse === highlightVerse ? 'highlight' : ''}`.trim()}
+          data-verse={word.verse}
+        >
+          {word.glyph}
+        </span>
       ))}
     </div>
   );
@@ -64,8 +70,9 @@ function TextLine({ words, family, justified, squeeze }) {
 /**
  * صفحة واحدة من المصحف بأسطرها كما في المطبوع.
  * @param width,height أبعاد المساحة المتاحة للأسطر بالبكسل
+ * @param highlightVerse مفتاح آية «سورة:آية» تُبرَز كلماتها (اختياري)
  */
-export default function MushafPage({ page, width, height }) {
+export default function MushafPage({ page, width, height, highlightVerse }) {
   const { status, data } = useMushafPage(page);
 
   // القياس وتصحيح الكلمات الموضوعة في غير سطرها: مرة واحدة لكل صفحة
@@ -123,7 +130,7 @@ export default function MushafPage({ page, width, height }) {
             </div>
           );
         }
-        return <TextLine key={i} words={line.words} family={data.family} justified={fit.justify[i]} squeeze={fit.squeeze[i]} />;
+        return <TextLine key={i} words={line.words} family={data.family} justified={fit.justify[i]} squeeze={fit.squeeze[i]} highlightVerse={highlightVerse} />;
       })}
         </div>
       </div>

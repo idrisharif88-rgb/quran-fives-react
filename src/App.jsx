@@ -62,9 +62,13 @@ import { shareCounterResultsPdf } from './utils/counterPdf';
 import { buildSessionFromLaps } from './utils/sessions';
 import { juzOfPage, lapsOfJuz } from './data/juzPages';
 import useVerseNotes, { cardKeyOf } from './hooks/useVerseNotes';
+import useHifz from './hooks/useHifz';
+import useHifzContacts from './hooks/useHifzContacts';
+import HifzIconButton from './components/hifz/HifzIconButton';
 
 // قارئ المصحف يُحمَّل عند أول فتح فقط — بياناته وخطوطه خارج الحزمة الرئيسية
 const MushafReader = lazy(() => import('./components/mushaf/MushafReader'));
+const HifzScreen = lazy(() => import('./components/hifz/HifzScreen'));
 import { shareElementAsImage } from './utils/shareImage';
 // الخطوط أوّلاً: ملفّات محلية داخل الحزمة، فلا شيء يُطلب من الشبكة
 import './styles/fonts.css';
@@ -357,6 +361,11 @@ function App() {
     Number.isInteger(persistedAppState.mushafPage) && persistedAppState.mushafPage >= 1 ? persistedAppState.mushafPage : 1
   ));
   const mushafBackRef = useRef(null);    // يضعه MushafReader حين تكون نافذة الانتقال مفتوحة
+  // برنامج الحفظ: حالته تُحفظ وتُزامن مع بقية التطبيق
+  const hifz = useHifz(persistedAppState.hifz);
+  const hifzContacts = useHifzContacts(persistedAppState.hifzContacts);
+  const [isHifzOpen, setIsHifzOpen] = useState(false);
+  const hifzBackRef = useRef(null);      // يضعه HifzScreen حين يكون فوقه شيء مفتوح
   const [quranicWondersNotes, setQuranicWondersNotes] = useState(() => (
     Array.isArray(persistedAppState.quranicWondersNotes) ? persistedAppState.quranicWondersNotes : []
   ));
@@ -911,6 +920,8 @@ function App() {
       quranicWondersNotes, // إضافة الملاحظات للحفظ
       verseNotes,
       mushafPage,
+      hifz: hifz.program,
+      hifzContacts: hifzContacts.state,
       isNightMode,
       accentTheme,
       sessions,
@@ -943,6 +954,8 @@ function App() {
     quranicWondersNotes, // إضافة الملاحظات إلى مصفوفة التبعيات
     verseNotes,
     mushafPage,
+    hifz.program,
+    hifzContacts.state,
     starredByStep,
     starredPages,
     starredPageEnds,
@@ -985,6 +998,8 @@ function App() {
     quranicWondersNotes,
     verseNotes,
     mushafPage,
+    hifz.program,
+    hifzContacts.state,
     starredByStep,
     starredPages,
     starredPageEnds,
@@ -1855,6 +1870,12 @@ function App() {
     }
     if (isLapSheetOpen) {
       setIsLapSheetOpen(false);
+      return true;
+    }
+    if (isHifzOpen) {
+      // ما فُتح فوق شاشة الحفظ (استماع، نموذج، تنبيه) يُغلق وحده أولاً
+      if (hifzBackRef.current) hifzBackRef.current();
+      else setIsHifzOpen(false);
       return true;
     }
     if (isMushafOpen) {
@@ -3359,6 +3380,7 @@ function App() {
 
       {!isPageStartsMode && !isPageEndsMode && !isNightCounterMode && viewMode !== 'starred' && viewMode !== 'surah-fives' && viewMode !== 'quranic-wonders' && ( // إخفاء الأزرار السفلية
       <div className="action-buttons-container" ref={actionButtonsRef}>
+        <HifzIconButton onClick={() => { mainKeyboard.closeKeyboard(); setIsHifzOpen(true); }} complete={Boolean(hifz.plan?.complete)} />
         {viewMode !== 'shared-verses' && viewMode !== 'surah-pages' && (
           <>
             <div className="icon-wrapper">
@@ -3703,6 +3725,11 @@ function App() {
           onClose={() => setIsLapSheetOpen(false)}
           onSharePdf={handleShareCounterPdf}
         />
+      )}
+      {isHifzOpen && (
+        <Suspense fallback={null}>
+          <HifzScreen hifz={hifz} reciter={activeReciter} contacts={hifzContacts} onClose={() => setIsHifzOpen(false)} backRef={hifzBackRef} />
+        </Suspense>
       )}
       {isMushafOpen && (
         <Suspense fallback={null}>
