@@ -77,7 +77,7 @@ export default function HifzRecorder({ value, latest, onSave, onListen }) {
       <button type="button" className="hifz-record-btn" onClick={recorder.start} aria-label="بدء التسجيل"><i /></button>
       <div className="hifz-recorder-info">
         <strong>اضغط للتسجيل</strong>
-        <span>اقرأ الآية ثلاث مرات متتالية بلا خطأ</span>
+        <span>اقرأ من حفظك ثلاث مرات متتالية بلا خطأ</span>
       </div>
       {ERRORS[recorder.status] && <p className="hifz-tool-error">{ERRORS[recorder.status]}</p>}
     </div>

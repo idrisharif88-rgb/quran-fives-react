@@ -37,14 +37,15 @@ export function clearAccount() {
   }
 }
 
-// آخر حالة عرفها الخادم لهذا الحساب: { approved, admin }. تُحفظ محلياً لأن التطبيق
+// آخر حالة عرفها الخادم لهذا الحساب: { approved, admin, hifzCustomStart }. تُحفظ محلياً لأن التطبيق
 // يعمل بلا شبكة — المالك يرى ما يخصّه («فقهيات») حتى وهو غير متّصل.
 const STATUS_KEY = 'quran-fives-account-status-v1';
 
 export function readAccountStatus() {
   try {
     const saved = JSON.parse(localStorage.getItem(STATUS_KEY));
-    return saved && saved.user === readAccount()?.user ? { approved: Boolean(saved.approved), admin: Boolean(saved.admin) } : null;
+    if (!saved || saved.user !== readAccount()?.user) return null;
+    return { approved: Boolean(saved.approved), admin: Boolean(saved.admin), hifzCustomStart: Boolean(saved.hifzCustomStart) };
   } catch {
     return null;
   }
@@ -53,7 +54,14 @@ export function readAccountStatus() {
 export function saveAccountStatus(status) {
   try {
     if (!status) localStorage.removeItem(STATUS_KEY);
-    else localStorage.setItem(STATUS_KEY, JSON.stringify({ user: readAccount()?.user, approved: status.approved, admin: status.admin }));
+    else {
+      localStorage.setItem(STATUS_KEY, JSON.stringify({
+        user: readAccount()?.user,
+        approved: status.approved,
+        admin: status.admin,
+        hifzCustomStart: status.hifzCustomStart,
+      }));
+    }
   } catch {
     // تجاهل فشل التخزين
   }

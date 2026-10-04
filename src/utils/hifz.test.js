@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   dayKey, daysBetween, verseAt, stageOfAge, STAGES, boxesFor, reviewTotal, reviewGroupOf,
-  verseRanges, TOTAL_VERSES, DIRECTIONS, DEFAULT_RULES, withDefaultRules,
+  verseRanges, TOTAL_VERSES, DIRECTIONS, DEFAULT_RULES, withDefaultRules, indexOfVerse,
 } from './hifzSchedule';
 import {
   startProgram, loadProgram, dailyPlan, rollDay, countStep, confirmStep, tickStep, recordStep, checkBox,
-  verseDoneToday, shouldCelebrate, markCelebrated, portionOf,
+  verseDoneToday, shouldCelebrate, markCelebrated, portionOf, openExtraPortion,
 } from './hifzState';
 import { currentStep } from './hifzSteps';
 
@@ -335,6 +335,83 @@ describe('hifz daily portion (3, 5, 7 verses a day)', () => {
     expect(dailyPlan(s, day(1)).verse.refs.map((r) => `${r.s}:${r.a}`)).toEqual(['114:1', '114:2', '114:3', '114:4', '114:5']);
     s = memorizeVerse(s, day(1));
     expect(dailyPlan(s, day(2)).verse.refs.map((r) => `${r.s}:${r.a}`)).toEqual(['114:6', '113:1', '113:2', '113:3', '113:4']);
+  });
+});
+
+describe('hifz extra portion on the same day (supervisor, for testing)', () => {
+  it('opens only after today’s portion is done', () => {
+    const fresh = startProgram('forward', day(1), { versesPerDay: 3 });
+    expect(openExtraPortion(fresh, day(1))).toBe(fresh);
+  });
+
+  it('a second and third portion can be memorised on the same day, each starting where the last ended', () => {
+    let s = memorizeVerse(startProgram('forward', day(1), { versesPerDay: 3 }), day(1));
+    expect(countStep(s, day(1), 'listen', 1)).toBe(s);                    // مقفل بلا فتح
+    s = openExtraPortion(s, day(1));
+    expect(dailyPlan(s, day(1)).verse).toMatchObject({ indices: [3, 4, 5], done: false });
+    s = memorizeVerse(s, day(1));
+    expect(s.memorizedOn).toEqual(Array(6).fill(day(1)));
+    expect(verseDoneToday(s, day(1))).toBe(true);                          // القفل يعود بعد الإتمام
+    expect(countStep(s, day(1), 'listen', 1)).toBe(s);
+    s = memorizeVerse(openExtraPortion(s, day(1)), day(1));
+    expect(s.memorizedOn).toHaveLength(9);
+    expect(dailyPlan(s, day(1)).verse).toMatchObject({ done: true });
+  });
+
+  it('extra portions enter tomorrow’s boxes with the rest, and tomorrow starts after them', () => {
+    let s = memorizeVerse(startProgram('forward', day(1), { versesPerDay: 3 }), day(1));
+    s = memorizeVerse(openExtraPortion(s, day(1)), day(1));
+    const plan = dailyPlan(s, day(2));
+    expect(plan.boxItems.find((item) => item.box === 'five').indices).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(plan.verse).toMatchObject({ indices: [6, 7, 8], done: false });
+  });
+
+  it('an opened extra portion left unfinished continues the next day as that day’s portion', () => {
+    let s = memorizeVerse(startProgram('forward', day(1)), day(1));
+    s = countStep(openExtraPortion(s, day(1)), day(1), 'listen', 1);
+    expect(dailyPlan(s, day(2)).verse).toMatchObject({ index: 1, done: false });
+    s = memorizeVerse(s, day(2));
+    expect(s.memorizedOn).toEqual([day(1), day(2)]);
+  });
+});
+
+describe('hifz starting from a chosen verse (supervisor permission)', () => {
+  it('finds a verse’s place in the memorising order', () => {
+    expect(indexOfVerse('forward', 1, 1)).toBe(0);
+    expect(indexOfVerse('forward', 2, 1)).toBe(7);
+    expect(indexOfVerse('forward', 114, 6)).toBe(TOTAL_VERSES - 1);
+    expect(indexOfVerse('forward', 2, 287)).toBeNull();     // لا آية بهذا الرقم
+    expect(indexOfVerse('forward', 115, 1)).toBeNull();
+    for (const [s, a] of [[1, 5], [2, 255], [36, 1], [112, 4]]) {
+      expect(verseAt('forward', indexOfVerse('forward', s, a))).toEqual({ s, a });
+    }
+  });
+
+  it('the first portion is the chosen verse and what follows it', () => {
+    const origin = indexOfVerse('forward', 36, 1);          // يس
+    const s = startProgram('forward', day(1), { versesPerDay: 3 }, origin);
+    expect(dailyPlan(s, day(1)).verse.refs).toEqual([{ s: 36, a: 1 }, { s: 36, a: 2 }, { s: 36, a: 3 }]);
+    const next = memorizeVerse(s, day(1));
+    expect(dailyPlan(next, day(2)).verse.ref).toEqual({ s: 36, a: 4 });
+    // الصناديق تعرض آياتها الحقيقية
+    expect(verseRanges('forward', dailyPlan(next, day(2)).boxItems[0].indices, next.origin)).toEqual([{ s: 36, from: 1, to: 3 }]);
+  });
+
+  it('after the end of the mushaf it wraps to the beginning, so the whole mushaf is covered', () => {
+    const origin = indexOfVerse('forward', 114, 5);
+    const s = startProgram('forward', day(1), { versesPerDay: 5 }, origin);
+    expect(dailyPlan(s, day(1)).verse.refs).toEqual([{ s: 114, a: 5 }, { s: 114, a: 6 }, { s: 1, a: 1 }, { s: 1, a: 2 }, { s: 1, a: 3 }]);
+    expect(verseAt('forward', TOTAL_VERSES - 1, origin)).toEqual({ s: 114, a: 4 });   // آخر ما يُحفظ
+    expect(verseAt('forward', TOTAL_VERSES, origin)).toBeNull();
+  });
+
+  it('programmes without a chosen start, and stored ones, begin at the edge of the mushaf', () => {
+    expect(startProgram('forward', day(1)).origin).toBe(0);
+    expect(startProgram('forward', day(1), DEFAULT_RULES, -4).origin).toBe(0);
+    expect(startProgram('forward', day(1), DEFAULT_RULES, TOTAL_VERSES).origin).toBe(0);
+    const stored = { ...startProgram('forward', day(1)) };
+    delete stored.origin;
+    expect(dailyPlan(loadProgram(stored), day(1)).verse.ref).toEqual({ s: 1, a: 1 });
   });
 });
 

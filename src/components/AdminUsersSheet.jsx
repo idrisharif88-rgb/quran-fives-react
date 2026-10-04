@@ -5,9 +5,10 @@ import './AdminUsersSheet.css';
 /**
  * لوحة المشرف: الحسابات المسجّلة، والموافقة على الجديد منها ليبدأ المزامنة.
  * إيقاف حساب يوقف مزامنته فقط؛ بياناته على الخادم وعلى جهازه تبقى.
+ * ولكل حساب صلاحية «حفظ من آية محدّدة»: يبدأ برنامج الحفظ من آية يختارها هو.
  */
 export default function AdminUsersSheet({ onClose, formatTime }) {
-  const { users, error, busyUser, setApproval } = useAdminUsers();
+  const { users, error, busyUser, setApproval, setPermission } = useAdminUsers();
   const waiting = users ? users.filter(u => !u.approved).length : 0;
   // المنتظرون أوّلاً
   const sorted = users ? [...users].sort((a, b) => Number(a.approved) - Number(b.approved)) : [];
@@ -29,6 +30,17 @@ export default function AdminUsersSheet({ onClose, formatTime }) {
               <span className="admin-users-name">{u.name}{u.admin ? ' (أنت — المشرف)' : ''}</span>
               <span className="admin-users-email" dir="ltr">{u.user}</span>
               <span className="admin-users-date">سجّل: {formatTime(u.createdAt)}</span>
+              {!u.admin && (
+                <label className="admin-users-permission">
+                  <input
+                    type="checkbox"
+                    checked={u.hifzCustomStart}
+                    disabled={busyUser === u.user}
+                    onChange={(e) => setPermission(u.user, 'hifzCustomStart', e.target.checked)}
+                  />
+                  حفظ من آية محدّدة
+                </label>
+              )}
             </div>
             {!u.admin && (
               <button

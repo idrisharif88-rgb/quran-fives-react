@@ -55,6 +55,9 @@ Establish a baseline first, scope checks to changed files, and grep for orphaned
 - **The day's portion is one unit.** `rules.versesPerDay` (1, 3, 5 or 7, chosen at start) sets how many consecutive verses are memorised through the same five steps. Completing the last step appends one `memorizedOn` entry *per verse*, so every verse ages by its own clock and the boxes need no change. Use `portionOf` / `plan.verse.indices` / `plan.verse.refs`; `plan.verse.index` and `.ref` are only the first verse.
 - **`versesPerDay: 1` is the default and load-bearing**: programmes stored before the choice existed have no such rule and must stay one verse a day (`withDefaultRules`).
 - **The numbers are the owner's rules** (3 listens, 40 repeats, 5 times, 25 days, 6-day cycle, runs of 5). Do not tune them.
+- **A recording carries all its verses.** `refs` is stored with each take so the listen view highlights the whole portion (`hifzRecordingRefs.js`); a portion can span two pages. Dropping `refs` in `writeRecording` silently highlighted only the first verse. The mushaf page view belongs to the record step; «تسجيلاتي» plays in place (`useRecordingPlayer`).
+- **`origin` shifts where memorising starts.** `verseAt(direction, index, origin)` wraps around the mushaf, so indices and boxes stay untouched. Choosing a start verse needs the `hifzCustomStart` permission, granted per user by the owner (who always has it).
+- **The owner may open another portion the same day** (`openExtraPortion`, for testing). `state.extra` lifts the one-portion-a-day lock until that portion is done.
 - **Supervision is specified but not built** (stop after 3 unfinished days in a 30-day cycle, supervisor reopens, excused freeze for new verses only, reviews always allowed). `status` and `dayLog` in `hifzState.js` are the hooks left for it.
 
 # Theming Rules
@@ -75,6 +78,11 @@ The APK must work with no network. Only recitation audio may hit the internet.
 - **No CDN references in CSS or `index.html`.** `src/App.css` opened with an `@import` from `fonts.googleapis.com`; offline it silently failed and every font — Tajawal, Amiri, Amiri Quran, Noto Naskh, Scheherazade — fell back to the system font. Fonts are now self-hosted in `src/assets/fonts/` with `@font-face` rules in `src/styles/fonts.css`.
 - **`src/styles/fonts.css` is generated — don't hand-edit it.** Re-run `scripts/fetch-fonts.sh src/assets/fonts src/styles/fonts.css` to add a family or weight. It keeps the `arabic` + `latin` subsets only and drops the rest.
 - **A failing network request must never look like a styling bug.** Test any new asset with the device in airplane mode before shipping.
+
+# Back Button Rules
+
+- **Every overlay must be reachable by `handleHardwareBack`.** State kept inside a component (CornerNav's surah and step lists) is invisible to it, so back skipped the list and showed the exit prompt. Such a component takes a `backRef` and puts its own close function there while open (`hifzBackRef`, `mushafBackRef`, `cornerNavBackRef`).
+- **Order is top layer first.** `ModalDialog` sits above everything, so its users are checked before menus and panels; a sheet opened over a panel (users list over the sync panel) closes before the panel. The startup sync choice swallows back: it must be answered, not dismissed.
 
 # Debugging
 

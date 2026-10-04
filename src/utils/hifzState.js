@@ -16,13 +16,18 @@ export const BOXES = ['five', 'daily', 'review'];
 
 const freshChecks = (day) => ({ day, five: false, daily: false, review: false });
 
-export function startProgram(direction, today, rules = DEFAULT_RULES) {
+// موضع صالح لآية البداية، وإلا صفر (أول الترتيب)
+const validOrigin = (origin) => (Number.isInteger(origin) && origin > 0 && origin < TOTAL_VERSES ? origin : 0);
+
+// origin: فهرس آية البداية في ترتيب الحفظ (صفر = أول المصحف أو آخره حسب الاتجاه)
+export function startProgram(direction, today, rules = DEFAULT_RULES, origin = 0) {
   const fullRules = withDefaultRules(rules);
   return {
     version: HIFZ_VERSION,
     status: STATUS.ACTIVE,
     rules: fullRules,
     direction: direction === DIRECTIONS.BACKWARD ? DIRECTIONS.BACKWARD : DIRECTIONS.FORWARD,
+    origin: validOrigin(origin),
     startedOn: today,
     memorizedOn: [],                     // يوم حفظ كل آية بترتيب الحفظ
     progress: freshProgress(fullRules),  // تقدّم الآية الجارية — يبقى إن لم تُنجَز في يومها
@@ -39,6 +44,7 @@ export function loadProgram(raw) {
   return {
     ...raw,
     rules,
+    origin: validOrigin(raw.origin),   // برنامج خُزّن قبل الإضافة يبدأ من طرف المصحف
     progress: normalizeProgress(raw.progress, rules),
     checks: { ...freshChecks(raw.startedOn), ...raw.checks },
     celebratedOn: raw.celebratedOn ?? null,
@@ -46,8 +52,16 @@ export function loadProgram(raw) {
   };
 }
 
+// فتح ورد إضافي في اليوم نفسه (للمشرف، للتجربة): extra = { day, at } يُبطل قفل «ورد
+// واحد في اليوم» ما دام عدد المحفوظ at لم يتغيّر — إتمام الورد الإضافي يعيد القفل.
+const extraOpen = (state, today) => (
+  state.extra?.day === today && state.extra.at === state.memorizedOn.length
+);
+
 // ورد جديد واحد في اليوم على الأكثر (آية أو أكثر حسب rules.versesPerDay)
-export const verseDoneToday = (state, today) => state.memorizedOn[state.memorizedOn.length - 1] === today;
+export const verseDoneToday = (state, today) => (
+  state.memorizedOn[state.memorizedOn.length - 1] === today && !extraOpen(state, today)
+);
 
 // ورد اليوم: آياته المتتالية في ترتيب الحفظ. يُحفظ وحدةً واحدة بالخطوات نفسها،
 // ويُسجَّل لكل آية منه يومُ حفظها فتدخل الصناديق كلٌّ بساعتها.
@@ -55,7 +69,9 @@ export const verseDoneToday = (state, today) => state.memorizedOn[state.memorize
 export function portionOf(state, today) {
   const total = state.memorizedOn.length;
   let doneCount = 0;
-  while (doneCount < total && state.memorizedOn[total - 1 - doneCount] === today) doneCount++;
+  if (!extraOpen(state, today)) {
+    while (doneCount < total && state.memorizedOn[total - 1 - doneCount] === today) doneCount++;
+  }
   if (doneCount > 0) return { start: total - doneCount, count: doneCount, done: true };
   return { start: total, count: Math.min(state.rules.versesPerDay, TOTAL_VERSES - total), done: false };
 }
@@ -82,9 +98,9 @@ export function dailyPlan(state, today) {
     // index/ref أول آية الورد؛ indices/refs آياته كلّها (واحدة حين versesPerDay = 1)
     verse: verseNeeded ? {
       index: portion.start,
-      ref: verseAt(state.direction, portion.start),
+      ref: verseAt(state.direction, portion.start, state.origin),
       indices,
-      refs: indices.map((i) => verseAt(state.direction, i)),
+      refs: indices.map((i) => verseAt(state.direction, i, state.origin)),
       done: doneToday,
     } : null,
     openStep: doneToday || finished ? null : currentStep(state.progress, state.rules),
@@ -165,6 +181,14 @@ export function checkBox(state, today, box, done = true) {
   if (!BOXES.includes(box)) return rolled;
   if (boxesFor(rolled.memorizedOn, rolled.startedOn, today, rolled.rules)[box].length === 0) return rolled;
   return logDay({ ...rolled, checks: { ...rolled.checks, [box]: done } }, today);
+}
+
+// ورد إضافي اليوم بعد إتمام ورده — لا يُفتح إلا وورد اليوم منجز والمصحف لم يُختم.
+// الآيات تُسجَّل بيومها كغيرها، فتدخل صناديق الغد مع ورد اليوم الأوّل.
+export function openExtraPortion(state, today) {
+  if (state.status !== STATUS.ACTIVE || !verseDoneToday(state, today)) return state;
+  if (state.memorizedOn.length >= TOTAL_VERSES) return state;
+  return { ...state, extra: { day: today, at: state.memorizedOn.length } };
 }
 
 // تنبيه الإتمام يُعرض مرة واحدة في اليوم

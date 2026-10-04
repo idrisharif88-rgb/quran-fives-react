@@ -73,12 +73,33 @@ export function createAccounts(store, { maxUsers }) {
     return true;
   }
 
+  // صلاحيات يمنحها المشرف لحساب بعينه. المعروف منها:
+  //   hifzCustomStart  بدء الحفظ من آية يختارها (لا من أول المصحف أو آخره فقط)
+  async function setPermission(user, name, allowed) {
+    const key = userKey(user);
+    const account = await store.read(key, ACCOUNT_FILE, null);
+    if (!account) return false;
+    await store.write(key, ACCOUNT_FILE, { ...account, permissions: { ...account.permissions, [name]: Boolean(allowed) } });
+    return true;
+  }
+
+  async function permissionsOf(user) {
+    const account = await store.read(userKey(user), ACCOUNT_FILE, null);
+    return { hifzCustomStart: account?.permissions?.hifzCustomStart === true };
+  }
+
   // كل الحسابات للوحة المشرف — بلا بصمات كلمات السر
   async function list() {
     const accounts = await Promise.all((await store.listKeys()).map(key => store.read(key, ACCOUNT_FILE, null)));
     return accounts
       .filter(Boolean)
-      .map(a => ({ user: a.user, name: a.name || a.user, createdAt: a.createdAt, approved: a.approved === true }))
+      .map(a => ({
+        user: a.user,
+        name: a.name || a.user,
+        createdAt: a.createdAt,
+        approved: a.approved === true,
+        hifzCustomStart: a.permissions?.hifzCustomStart === true,
+      }))
       .sort((a, b) => b.createdAt - a.createdAt);
   }
 
@@ -114,7 +135,7 @@ export function createAccounts(store, { maxUsers }) {
     return { key, approved: account.approved === true };
   }
 
-  return { exists, isFull, hashNew, createFromHash, create, setCode, setApproved, list, verify, nameOf };
+  return { exists, isFull, hashNew, createFromHash, create, setCode, setApproved, setPermission, permissionsOf, list, verify, nameOf };
 }
 
 // نقل بيانات المالك لمرّة واحدة: الخادم القديم كان يخزّن حالة واحدة مشتركة

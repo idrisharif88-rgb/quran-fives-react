@@ -111,7 +111,7 @@ test('موافقة المشرف: الحساب الجديد لا يزامن قب�
   const ahmad = basic('ahmad@example.com', 'secret1', devices.ahmad);
   const owner = basic('owner', '12345');
   // داخلٌ لكن بانتظار الموافقة
-  assert.deepEqual((await call('GET', '/api/auth/me', { headers: ahmad })).json, { name: 'أحمد علي', approved: false, admin: false });
+  assert.deepEqual((await call('GET', '/api/auth/me', { headers: ahmad })).json, { name: 'أحمد علي', approved: false, admin: false, hifzCustomStart: false });
   assert.equal((await call('GET', '/api/state', { headers: ahmad })).status, 403);
   assert.equal((await call('PUT', '/api/khitma', { headers: ahmad, body: { list: [], baseUpdatedAt: 0 } })).status, 403);
   // غير المشرف لا يرى اللوحة ولا يوافق على نفسه
@@ -119,7 +119,7 @@ test('موافقة المشرف: الحساب الجديد لا يزامن قب�
   const approve = (headers, user, approved) => call('POST', '/api/admin/users/approval', { headers, body: { user, approved } });
   assert.equal((await approve(ahmad, 'ahmad@example.com', true)).status, 403);
 
-  assert.deepEqual((await call('GET', '/api/auth/me', { headers: owner })).json, { name: 'owner', approved: true, admin: true });
+  assert.deepEqual((await call('GET', '/api/auth/me', { headers: owner })).json, { name: 'owner', approved: true, admin: true, hifzCustomStart: true });
   const listed = await call('GET', '/api/admin/users', { headers: owner });
   assert.deepEqual(listed.json.users.map(u => [u.user, u.approved, u.admin]), [['ahmad@example.com', false, false], ['owner', true, true]]);
   assert.equal('hash' in listed.json.users[0], false);
@@ -132,6 +132,20 @@ test('موافقة المشرف: الحساب الجديد لا يزامن قب�
   await approve(owner, 'ahmad@example.com', false);
   assert.equal((await call('GET', '/api/state', { headers: ahmad })).status, 403);
   await approve(owner, 'ahmad@example.com', true);
+
+  // صلاحية بدء الحفظ من آية محدّدة: يمنحها المشرف لحساب بعينه
+  const permit = (headers, body) => call('POST', '/api/admin/users/permission', { headers, body });
+  const grant = { user: 'ahmad@example.com', permission: 'hifzCustomStart', allowed: true };
+  assert.equal((await permit(ahmad, grant)).status, 403);                       // لا يمنح نفسه
+  assert.equal((await permit(owner, { ...grant, permission: 'admin' })).status, 400);
+  assert.equal((await permit(owner, { ...grant, user: 'nobody@example.com' })).status, 404);
+  assert.equal((await permit(owner, grant)).status, 200);
+  assert.equal((await call('GET', '/api/auth/me', { headers: ahmad })).json.hifzCustomStart, true);
+  const withPermission = (await call('GET', '/api/admin/users', { headers: owner })).json.users.find(u => u.user === 'ahmad@example.com');
+  assert.equal(withPermission.hifzCustomStart, true);
+  assert.equal(withPermission.approved, true);                                   // الصلاحية لا تمسّ الموافقة
+  assert.equal((await permit(owner, { ...grant, allowed: false })).status, 200);
+  assert.equal((await call('GET', '/api/auth/me', { headers: ahmad })).json.hifzCustomStart, false);
   // البريد المسجّل لا يُسجَّل ثانية
   assert.equal((await call('POST', '/api/auth/register', { body: { name: 'أحمد علي', user: 'AHMAD@example.com', code: 'another1' } })).status, 409);
 });

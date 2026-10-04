@@ -156,3 +156,6 @@ export const fetchMe = () => api('/api/auth/me', { method: 'GET' });
 export const listUsers = async () => (await api('/api/admin/users', { method: 'GET' })).users;
 export const setUserApproval = (user, approved) =>
   api('/api/admin/users/approval', { method: 'POST', body: JSON.stringify({ user, approved }) });
+// صلاحية لحساب بعينه — hifzCustomStart: بدء الحفظ من آية يختارها
+export const setUserPermission = (user, permission, allowed) =>
+  api('/api/admin/users/permission', { method: 'POST', body: JSON.stringify({ user, permission, allowed }) });

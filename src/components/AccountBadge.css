@@ -1,12 +1,13 @@
 /* شارة الحساب أسفل الشاشة الرئيسية — من الداخل الآن. */
 
-/* على الطرف لا في الوسط: وسط أسفل الشاشة محجوز لمؤشّر المزامنة (sync-status-*) */
+/* الشارة تتّسع للاسم كاملاً، فقد تمتدّ على عرض الشاشة؛ لذلك تحمل حالة المزامنة داخلها
+   بدل المؤشّر العائم — انظر آخر الملف */
 .account-badge {
   display: flex;
   align-items: center;
   gap: 6px;
   width: fit-content;
-  max-width: 62vw;   /* يسع 13 حرفاً كاملة — الاسم يُقصّ بالعدد لا بالعرض */
+  max-width: calc(100vw - 32px);   /* الاسم كاملاً؛ لا يُقصّ إلا إن جاوز عرض الشاشة */
   margin: 8px 16px 0;
   margin-inline-end: auto;
   padding: 5px 14px;
@@ -25,4 +26,22 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* دوّارة «جارٍ المزامنة» في خانة الأيقونة */
+.account-badge-spinner {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  margin: 1.5px;
+  border-radius: 50%;
+  border: 2px solid var(--app-accent-deep-soft);
+  border-top-color: var(--app-accent-ink);
+  animation: sharePrepSpin 0.8s linear infinite;
+}
+
+/* الشارة ظاهرة: حالة المزامنة داخلها، فيُخفى المؤشّر العائم الذي كان يغطّي الاسم */
+.app-container:has(.account-badge) .sync-status-pill,
+.app-container:has(.account-badge) .sync-status-warning {
+  display: none;
 }

@@ -45,6 +45,8 @@ npm test         # اختبارات الواجهة (node --test)
 المنقول اسم بلا بريد، فيبقى بكلمة السر وحدها.
 - `GET  /api/auth/me` — `{ name, approved, admin }`
 - `GET  /api/admin/users` و `POST /api/admin/users/approval` `{ user, approved }` — للمشرف وحده
+- `POST /api/admin/users/permission` `{ user, permission, allowed }` — للمشرف وحده. الصلاحية المعروفة:
+  `hifzCustomStart` (بدء الحفظ من آية يختارها المستخدم)؛ المشرف يملكها دائماً، و`/api/auth/me` يعيدها.
 
 موافقة المشرف: الحساب الجديد يدخل لكنّ مسارات البيانات تردّ 403 حتى يوافق عليه المشرف
 (المالك: `OWNER_EMAIL` أو `KHITMA_USER`) من داخل التطبيق.

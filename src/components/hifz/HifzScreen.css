@@ -120,6 +120,33 @@
   color: var(--hifz-gold-ink);
 }
 
+/* البدء من آية محدّدة (بإذن المشرف): بطاقة فيها حقول لا زرّ */
+.hifz-start-custom {
+  cursor: default;
+}
+
+.hifz-start-custom-row {
+  display: flex;
+  gap: 8px;
+}
+
+.hifz-start-field {
+  flex: 1;
+  min-width: 0;
+  padding: 10px;
+  border: 1.5px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-input-bg);
+  color: var(--app-input-text);
+  font-family: inherit;
+  font-size: 15px;
+}
+
+.hifz-start-ayah {
+  flex: 0 0 84px;
+  text-align: center;
+}
+
 .hifz-start-option strong {
   font-size: 18px;
   color: var(--app-text-strong);
@@ -221,6 +248,12 @@
   line-height: 1.8;
   color: var(--app-muted);
   border-style: dashed;
+}
+
+/* للمشرف: ورد إضافي في اليوم نفسه */
+.hifz-extra {
+  display: block;
+  margin: 10px auto 0;
 }
 
 .hifz-done-note {

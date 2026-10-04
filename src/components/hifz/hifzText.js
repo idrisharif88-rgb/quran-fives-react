@@ -1,4 +1,5 @@
 import { SURAH_METADATA } from '../../data/quranConstants';
+import { recordingRefs } from '../../utils/hifzRecordingRefs';
 
 // ورد اليوم آية أو آيات (rules.versesPerDay): النصوص تتبع العدد
 export const isMulti = (rules) => rules.versesPerDay > 1;
@@ -49,4 +50,4 @@ export function rangesOfRefs(refs) {
 export const refsText = (refs) => rangesText(rangesOfRefs(refs));
 
 // تسجيل ← وصف آياته. refs تُحفظ مع تسجيل الورد المتعدّد؛ التسجيلات الأقدم آية واحدة.
-export const recordingText = (recording) => refsText(recording.refs?.length ? recording.refs : [{ s: recording.s, a: recording.a }]);
+export const recordingText = (recording) => refsText(recordingRefs(recording));

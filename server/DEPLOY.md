@@ -114,6 +114,9 @@ password-only.
 - `GET  /api/auth/me` → `{ name, approved, admin }`
 - `GET  /api/admin/users`, `POST /api/admin/users/approval` ← `{ user, approved }` —
   owner only
+- `POST /api/admin/users/permission` ← `{ user, permission, allowed }` — owner only.
+  The one permission is `hifzCustomStart` (start memorising from a chosen verse); the
+  owner always has it, and `/api/auth/me` reports it.
 
 Owner approval: a new account can sign in, but every data endpoint answers 403 until the
 owner approves it from inside the app (sync panel → «إدارة المستخدمين»). The owner is

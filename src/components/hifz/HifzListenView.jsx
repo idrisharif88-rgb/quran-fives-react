@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import MushafPage from '../mushaf/MushafPage';
-import { pageOfVerse } from '../../utils/versePage';
+import { recordingRefs, verseKeys, pagesOfRefs } from '../../utils/hifzRecordingRefs';
 import { recordingText } from './hifzText';
 import '../mushaf/MushafReader.css';
 import './HifzRecorder.css';
@@ -11,8 +11,9 @@ const clock = (ms) => {
 };
 
 /**
- * الاستماع إلى تسجيل والعين على المصحف: صفحة المصحف الحقيقية التي فيها الآية، والآية
- * مُبرَزة فيها، وشريط تشغيل في الأسفل. يبدأ التشغيل تلقائياً.
+ * الاستماع إلى تسجيل والعين على المصحف: صفحة المصحف الحقيقية التي فيها آيات التسجيل،
+ * وهي كلّها مُبرَزة فيها (آية، أو ورد من 3 أو 5 أو 7)، وشريط تشغيل في الأسفل. يبدأ
+ * التشغيل تلقائياً. ورد يمتدّ على صفحتين: يُتنقَّل بينهما بزرّين.
  * @param recording  مدخل التسجيل من الفهرس
  * @param loadUrl    يحمّل ملف التسجيل ويعيد رابطاً لتشغيله
  * @param onVerdict  لتسجيل الآية الجارية: بعد سماعه حتى آخره يُسأل صاحبه، فيُستدعى بـ
@@ -28,6 +29,11 @@ export default function HifzListenView({ recording, loadUrl, onVerdict, onClose 
   const [playing, setPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [pageAt, setPageAt] = useState(0);
+
+  const refs = recordingRefs(recording);
+  const pages = pagesOfRefs(refs);
+  const pageIndex = Math.min(pageAt, pages.length - 1);
 
   useLayoutEffect(() => {
     const el = pageRef.current;
@@ -71,7 +77,7 @@ export default function HifzListenView({ recording, loadUrl, onVerdict, onClose 
         </button>
         <div className="hifz-listen-title">
           <strong>{recordingText(recording)}</strong>
-          <span>استمع وعينك على الآية المظلَّلة</span>
+          <span>{refs.length > 1 ? 'استمع وعينك على الآيات المظلَّلة' : 'استمع وعينك على الآية المظلَّلة'}</span>
         </div>
         <span className="hifz-header-spacer" />
       </div>
@@ -79,13 +85,21 @@ export default function HifzListenView({ recording, loadUrl, onVerdict, onClose 
       <div className="hifz-listen-page" ref={pageRef}>
         {size.width > 0 && (
           <MushafPage
-            page={pageOfVerse(recording.s, recording.a)}
+            page={pages[pageIndex]}
             width={size.width - 28}
             height={size.height - 12}
-            highlightVerse={`${recording.s}:${recording.a}`}
+            highlightVerse={verseKeys(refs)}
           />
         )}
       </div>
+
+      {pages.length > 1 && (
+        <div className="hifz-listen-pages" dir="rtl">
+          <button type="button" className="hifz-btn" onClick={() => setPageAt(pageIndex - 1)} disabled={pageIndex === 0}>الصفحة السابقة</button>
+          <span>صفحة {pages[pageIndex]} — {pageIndex + 1} من {pages.length}</span>
+          <button type="button" className="hifz-btn" onClick={() => setPageAt(pageIndex + 1)} disabled={pageIndex === pages.length - 1}>الصفحة التالية</button>
+        </div>
+      )}
 
       <div className="hifz-listen-bar" dir="ltr">
         <button type="button" className="hifz-listen-play" onClick={toggle} disabled={!url} aria-label={playing ? 'إيقاف مؤقت' : 'تشغيل'}>

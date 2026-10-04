@@ -96,7 +96,14 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
 
   // حالة الحساب للتطبيق: هل وُوفق عليه، وهل هو المشرف
   app.get('/api/auth/me', signedIn, async (req, res) => {
-    res.json({ name: await accounts.nameOf(req.email), approved: req.approved, admin: req.isAdmin });
+    const permissions = await accounts.permissionsOf(req.email);
+    res.json({
+      name: await accounts.nameOf(req.email),
+      approved: req.approved,
+      admin: req.isAdmin,
+      // المشرف له كل الصلاحيات
+      hifzCustomStart: req.isAdmin || permissions.hifzCustomStart,
+    });
   });
 
   registerAdminRoutes(app, { accounts, signedIn, adminName });

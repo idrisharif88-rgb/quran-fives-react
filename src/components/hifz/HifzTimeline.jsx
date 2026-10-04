@@ -28,8 +28,9 @@ function Item({ state, number, title, hint, children }) {
 /**
  * الخط الزمني ليوم واحد: خطوات الآية الجديدة (مقفلة بالتسلسل) ثم صناديق المراجعة
  * (مفتوحة في أي وقت، شكّ واحد لكل صندوق بلا أدوات).
+ * @param canTakeExtra للمشرف: بعد إتمام ورد اليوم يُعرض زرّ يفتح ورداً آخر في اليوم نفسه (للتجربة)
  */
-export default function HifzTimeline({ program, plan, reciter, actions, extras }) {
+export default function HifzTimeline({ program, plan, reciter, actions, extras, canTakeExtra = false }) {
   const { rules } = program;
   const verse = plan.verse;
   const multi = isMulti(rules);
@@ -70,6 +71,11 @@ export default function HifzTimeline({ program, plan, reciter, actions, extras }
             </ol>
           )}
           {verse.done && <p className="hifz-done-note">{multi ? 'الورد التالي يُفتح غداً.' : 'الآية التالية تُفتح غداً.'}</p>}
+          {verse.done && canTakeExtra && (
+            <button type="button" className="hifz-btn hifz-extra" onClick={actions.extraPortion}>
+              افتح ورداً آخر الآن (للمشرف — للتجربة)
+            </button>
+          )}
         </section>
       )}
 
@@ -85,7 +91,7 @@ export default function HifzTimeline({ program, plan, reciter, actions, extras }
                 title={`${boxTitle(item.box, rules)} (${item.indices.length})`}
                 hint={BOX_TEXT[item.box].hint(rules)}
               >
-                <div className="hifz-ranges">{rangesText(verseRanges(program.direction, item.indices))}</div>
+                <div className="hifz-ranges">{rangesText(verseRanges(program.direction, item.indices, program.origin))}</div>
                 <button
                   type="button"
                   className={`hifz-btn ${item.done ? '' : 'primary'}`.trim()}

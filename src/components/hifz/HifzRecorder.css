@@ -265,6 +265,17 @@
   align-self: center;
 }
 
+/* ورد يمتدّ على صفحتين: تنقّل بينهما */
+.hifz-listen-pages {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 14px 0;
+  font-size: 13px;
+  color: var(--app-muted);
+}
+
 .hifz-listen-note {
   margin: 0;
   padding: 2px 14px 0;

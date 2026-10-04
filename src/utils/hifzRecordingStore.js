@@ -24,7 +24,8 @@ function base64ToBlob(base64, mime) {
   return new Blob([bytes], { type: mime });
 }
 
-// فهرس التسجيلات: [{ id, verseIndex, s, a, file, mime, durationMs, createdAt }]
+// فهرس التسجيلات: [{ id, verseIndex, s, a, refs, file, mime, durationMs, createdAt }]
+// s/a أول آية؛ refs آيات الورد كلّها [{ s, a }] — تُظلَّل عند السماع. التسجيلات الأقدم بلا refs.
 export function loadRecordingIndex() {
   const list = loadStoredState(INDEX_KEY);
   return Array.isArray(list) ? list.filter((r) => r && r.id && r.file) : [];
@@ -33,12 +34,12 @@ export function loadRecordingIndex() {
 export const saveRecordingIndex = (list) => saveStoredState(INDEX_KEY, list);
 
 // يحفظ المقطع ملفاً ويعيد مدخله في الفهرس
-export async function writeRecording(blob, { verseIndex, s, a, durationMs }) {
+export async function writeRecording(blob, { verseIndex, s, a, refs, durationMs }) {
   const id = `${Date.now()}`;
   const mime = blob.type || 'audio/webm';
   const file = `${FOLDER}/${id}.${extensionOf(mime)}`;
   await Filesystem.writeFile({ path: file, data: await blobToBase64(blob), directory: Directory.Data, recursive: true });
-  return { id, verseIndex, s, a, file, mime, durationMs, createdAt: Date.now() };
+  return { id, verseIndex, s, a, refs, file, mime, durationMs, createdAt: Date.now() };
 }
 
 // يقرأ المقطع ويعيد رابطاً مؤقتاً لتشغيله — على المستدعي تحريره بـURL.revokeObjectURL

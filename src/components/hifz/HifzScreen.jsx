@@ -5,14 +5,16 @@ import HifzContacts from './HifzContacts';
 import HifzRecorder from './HifzRecorder';
 import HifzRecordingsList from './HifzRecordingsList';
 import HifzListenView from './HifzListenView';
+import HifzCustomStart from './HifzCustomStart';
 import useHifzRecordings from '../../hooks/useHifzRecordings';
 import { DIRECTIONS, VERSES_PER_DAY_CHOICES, daysBetween } from '../../utils/hifzSchedule';
 import './HifzScreen.css';
 
 const perDayLabel = (n) => (n === 1 ? 'آية واحدة' : `${n} آيات`);
 
-// بدء البرنامج: ورد اليوم (آية أو 3 أو 5 أو 7) ثم نقطة البداية (أول المصحف أو آخره)
-function HifzStart({ onStart }) {
+// بدء البرنامج: ورد اليوم (آية أو 3 أو 5 أو 7) ثم نقطة البداية (أول المصحف أو آخره،
+// أو آية يختارها من أذن له المشرف)
+function HifzStart({ onStart, canCustomStart }) {
   const [perDay, setPerDay] = useState(VERSES_PER_DAY_CHOICES[0]);
   return (
     <div className="hifz-start">
@@ -40,6 +42,7 @@ function HifzStart({ onStart }) {
         <strong>من آخر المصحف</strong>
         <span>الصفحة 604 — من الناس إلى الفاتحة، وآيات كل سورة بترتيبها</span>
       </button>
+      {canCustomStart && <HifzCustomStart onStart={(origin) => onStart(DIRECTIONS.FORWARD, perDay, origin)} />}
       <p className="hifz-start-note">{perDayLabel(perDay)} في اليوم، ثم مراجعة ما حُفظ.</p>
     </div>
   );
@@ -52,8 +55,10 @@ function HifzStart({ onStart }) {
  * @param contacts ما يعيده useHifzContacts (شيوخ خطوة تأكيد الحافظ)
  * @param backRef  يُملأ بدالّة تغلق ما فُتح فوق الشاشة (الاستماع، نموذج الشيخ، تنبيه الإتمام)
  *                 ليغلقه زرّ الرجوع أولاً قبل الشاشة نفسها
+ * @param canTakeExtra حساب المشرف: يسمح بأكثر من ورد في اليوم الواحد (للتجربة)
+ * @param canCustomStart أذن المشرف لهذا الحساب أن يبدأ الحفظ من آية يختارها
  */
-export default function HifzScreen({ hifz, reciter, contacts, onClose, backRef }) {
+export default function HifzScreen({ hifz, reciter, contacts, onClose, backRef, canTakeExtra = false, canCustomStart = false }) {
   const { program, plan, today, celebrate, actions } = hifz;
   const [confirmReset, setConfirmReset] = useState(false);
   const recordings = useHifzRecordings();
@@ -106,7 +111,7 @@ export default function HifzScreen({ hifz, reciter, contacts, onClose, backRef }
       </div>
 
       <div className="hifz-body">
-        {!program ? <HifzStart onStart={actions.start} /> : (
+        {!program ? <HifzStart onStart={actions.start} canCustomStart={canCustomStart} /> : (
           <>
             <div className="hifz-summary">
               <div><strong>{daysBetween(program.startedOn, today) + 1}</strong><span>اليوم</span></div>
@@ -114,8 +119,8 @@ export default function HifzScreen({ hifz, reciter, contacts, onClose, backRef }
               <div className={plan.complete ? 'complete' : ''}><strong>{plan.complete ? '✓' : '…'}</strong><span>{plan.complete ? 'اكتمل اليوم' : 'مهام اليوم'}</span></div>
             </div>
 
-            <HifzTimeline program={program} plan={plan} reciter={reciter} actions={actions} extras={extras} />
-            <HifzRecordingsList recordings={recordings} onListen={setListening} />
+            <HifzTimeline program={program} plan={plan} reciter={reciter} actions={actions} extras={extras} canTakeExtra={canTakeExtra} />
+            <HifzRecordingsList recordings={recordings} />
 
             <div className="hifz-footer">
               {confirmReset ? (

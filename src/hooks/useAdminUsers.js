@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { listUsers, setUserApproval } from '../utils/cloudSync';
+import { listUsers, setUserApproval, setUserPermission } from '../utils/cloudSync';
 
 /**
  * لوحة المشرف: قائمة الحسابات والموافقة عليها.
@@ -35,5 +35,19 @@ export default function useAdminUsers() {
     }
   }, []);
 
-  return { users, error, busyUser, setApproval };
+  // صلاحية لحساب بعينه (مثل hifzCustomStart)
+  const setPermission = useCallback(async (user, permission, allowed) => {
+    setBusyUser(user);
+    setError('');
+    try {
+      await setUserPermission(user, permission, allowed);
+      setUsers(prev => prev.map(u => (u.user === user ? { ...u, [permission]: allowed } : u)));
+    } catch {
+      setError('تعذّر الحفظ — تحقّق من الاتصال');
+    } finally {
+      setBusyUser(null);
+    }
+  }, []);
+
+  return { users, error, busyUser, setApproval, setPermission };
 }

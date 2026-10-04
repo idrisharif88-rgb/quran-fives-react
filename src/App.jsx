@@ -361,6 +361,7 @@ function App() {
   const hifzContacts = useHifzContacts(persistedAppState.hifzContacts);
   const [isHifzOpen, setIsHifzOpen] = useState(false);
   const hifzBackRef = useRef(null);      // يضعه HifzScreen حين يكون فوقه شيء مفتوح
+  const cornerNavBackRef = useRef(null); // يضعه CornerNav حين تكون قائمة السور أو الخطوة مفتوحة
   const [quranicWondersNotes, setQuranicWondersNotes] = useState(() => (
     Array.isArray(persistedAppState.quranicWondersNotes) ? persistedAppState.quranicWondersNotes : []
   ));
@@ -1903,6 +1904,20 @@ function App() {
   });
 
   const handleHardwareBack = () => {
+    // النوافذ الحاجبة (ModalDialog) فوق كل شيء، فهي أوّل ما يغلقه الرجوع.
+    // قرار المزامنة لا يُغلق بالرجوع: يُختار منه صراحةً، والزرّ لا يفعل شيئاً تحته.
+    if (startupSyncChoice) return true;
+    // قائمة السور أو خطوة التنقّل (من اسم السورة ورقمها أسفل البطاقة)
+    if (cornerNavBackRef.current) {
+      cornerNavBackRef.current();
+      return true;
+    }
+    // قائمة المستخدمين مفتوحة فوق لوحة المزامنة: تُغلق وحدها أوّلاً
+    if (isAdminUsersOpen) {
+      setIsAdminUsersOpen(false);
+      return true;
+    }
+
     // الأولوية 0: إغلاق لوحة المفاتيح المنبثقة ورسالة الجلسة السابقة ومربعات التأكيد
     if (counterConfirm.type) {
       setCounterConfirm({ type: null, id: null });
@@ -3342,6 +3357,7 @@ function App() {
                 step={stepSize}
                 onSelectSurah={handleSurahJump}
                 onSelectStep={handleStepChange}
+                backRef={cornerNavBackRef}
               />
             ) : undefined;
             const cardClass = (viewMode === 'page-starts' || viewMode === 'page-ends' || viewMode === 'khmasiyat') ? 'page-card-style' : '';
@@ -3517,7 +3533,7 @@ function App() {
               {currentIndex + 1} / {TOTAL_GROUPS}
             </div>
           </div>
-          <AccountBadge account={account} onOpen={() => setIsSyncPanelOpen(true)} />
+          <AccountBadge account={account} onOpen={() => setIsSyncPanelOpen(true)} syncing={isSyncing} failed={syncFailed} onRetry={handleSyncRetry} />
         </>
       )}
 
@@ -3769,7 +3785,7 @@ function App() {
       )}
       {isHifzOpen && (
         <Suspense fallback={null}>
-          <HifzScreen hifz={hifz} reciter={activeReciter} contacts={hifzContacts} onClose={() => setIsHifzOpen(false)} backRef={hifzBackRef} />
+          <HifzScreen hifz={hifz} reciter={activeReciter} contacts={hifzContacts} onClose={() => setIsHifzOpen(false)} backRef={hifzBackRef} canTakeExtra={isOwner} canCustomStart={Boolean(account && accountStatus?.hifzCustomStart)} />
         </Suspense>
       )}
       {isMushafOpen && (

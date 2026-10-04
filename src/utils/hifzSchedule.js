@@ -54,13 +54,25 @@ const surahOrder = (direction) => (
   direction === DIRECTIONS.BACKWARD ? [...SURAH_METADATA].reverse() : SURAH_METADATA
 );
 
-// الآية رقم index (من صفر) في ترتيب الحفظ ← { s, a }، أو null بعد ختم المصحف
-export function verseAt(direction, index) {
-  if (!Number.isInteger(index) || index < 0) return null;
-  let remaining = index;
+// الآية رقم index (من صفر) في ترتيب الحفظ ← { s, a }، أو null بعد ختم المصحف.
+// origin: فهرس آية البداية حين يبدأ الحفظ من آية مختارة (بإذن المشرف) لا من طرف المصحف.
+// الحفظ يمضي منها إلى آخر الترتيب ثم يلتفّ إلى أوّله، فيُختم المصحف كاملاً في كل حال.
+export function verseAt(direction, index, origin = 0) {
+  if (!Number.isInteger(index) || index < 0 || index >= TOTAL_VERSES) return null;
+  let remaining = (index + origin) % TOTAL_VERSES;
   for (const surah of surahOrder(direction)) {
     if (remaining < surah.verseCount) return { s: surah.id, a: remaining + 1 };
     remaining -= surah.verseCount;
+  }
+  return null;
+}
+
+// موضع الآية في ترتيب الحفظ (عكس verseAt بلا origin)، أو null إن لم توجد
+export function indexOfVerse(direction, s, a) {
+  let index = 0;
+  for (const surah of surahOrder(direction)) {
+    if (surah.id === s) return Number.isInteger(a) && a >= 1 && a <= surah.verseCount ? index + a - 1 : null;
+    index += surah.verseCount;
   }
   return null;
 }
@@ -114,10 +126,10 @@ export function reviewTotal(memorizedOn, today, rules = DEFAULT_RULES) {
 }
 
 // فهارس ← مقاطع متصلة داخل السورة الواحدة: [{ s, from, to }] للعرض «البقرة 74–98»
-export function verseRanges(direction, indices) {
+export function verseRanges(direction, indices, origin = 0) {
   const ranges = [];
   for (const index of indices) {
-    const verse = verseAt(direction, index);
+    const verse = verseAt(direction, index, origin);
     if (!verse) continue;
     const last = ranges[ranges.length - 1];
     if (last && last.s === verse.s && verse.a === last.to + 1) last.to = verse.a;
