@@ -1,46 +1,70 @@
-# خادم مزامنة حالة تطبيق المصحف
+# خادم مزامنة تطبيق المصحف
 
-خدمة Express صغيرة تخزّن حالة التطبيق الواحدة (استخدام شخصي) محمية برمز مزامنة.
+خدمة Express صغيرة: حساب لكل مستخدم (بريد إلكتروني + كلمة سر)، ولكل حساب حالته
+وسجلّ ختماته في مجلّد خاص به. التسجيل مفتوح حتى بلوغ `MAX_USERS`، ويُؤكَّد البريد
+برمز من 6 أرقام يُرسل عبر Resend؛ وبالطريقة نفسها تُسترجع كلمة السر.
 
 ## التشغيل محلياً
 
 ```bash
 cd server
 npm install
-SYNC_CODE="رمز-سري-طويل-عشوائي" npm start
+npm start        # المنفذ 3001
+npm test         # اختبارات الواجهة (node --test)
 ```
 
-(على ويندوز PowerShell: `$env:SYNC_CODE="..."; npm start`)
+## الملفّات
+
+- `index.js` — القراءة من البيئة والتشغيل ونقل بيانات المالك القديمة.
+- `app.js` — مسارات البيانات والتحقّق من الدخول.
+- `authRoutes.js` — التسجيل بالبريد والتأكيد واسترجاع كلمة السر.
+- `accounts.js` — إنشاء الحسابات والتحقّق منها (scrypt) والنقل.
+- `otp.js` — رموز التأكيد (15 دقيقة، 5 محاولات).
+- `devices.js` — الأجهزة الموثوقة (التحقّق بخطوتين).
+- `adminRoutes.js` — لوحة المشرف: قائمة الحسابات والموافقة عليها.
+- `mailer.js` — الإرسال عبر Resend.
+- `mailTemplates.js` — نصّ الرسائل وقالبها (الرمز في العنوان وبأرقام كبيرة في المتن).
+- `store.js` — ملفّات كل مستخدم تحت `data/users/<key>/`.
+- `rateLimit.js` — تحديد المحاولات في الذاكرة.
 
 ## النقاط (Endpoints)
 
-كلها تتطلب ترويسة `X-Sync-Code` مطابقة لـ `SYNC_CODE`.
+الدخول بترويسة `Authorization: Basic base64(user:code)` (UTF-8). الإصدارات القديمة
+من التطبيق ترسل `X-Khitma-User` / `X-Khitma-Code` وما زالتا مقبولتين.
 
-- `GET  /api/health` — فحص الحياة
-- `GET  /api/state`  — يعيد `{ updatedAt, state }`
-- `PUT  /api/state`  — يستقبل `{ updatedAt, state }` ويخزّنه (آخر تعديل يفوز)
+- `GET  /api/health` — فحص الحياة (بلا دخول)
+- `POST /api/auth/register` — `{ user, code }` (user بريد) ← 202 ويُرسل الرمز، أو 400 / 409 (مسجّل) / 403 (اكتمل العدد) / 429 / 503 (فشل البريد)
+- `POST /api/auth/verify` — `{ user, otp }` ← 201 ويُنشأ الحساب، أو 400
+- `POST /api/auth/reset/request` — `{ user }` ← 200 دائماً (لا يكشف وجود الحساب)
+- `POST /api/auth/reset/confirm` — `{ user, otp, code }` ← 200 أو 400
+- `POST /api/auth/login` — كلمة السر ← 202 ويُرسل رمز الدخول (جهاز جديد)، أو 200 لجهاز موثوق، أو 401 / 429
+- `POST /api/auth/login/confirm` — `{ otp }` ← 200 مع `{ device }`
 
-## النشر على VPS
+التحقّق بخطوتين: كل حساب بريدي يحتاج مع كلمة السر ترويسة `X-Device` بمفتاح جهاز
+موثوق؛ يمنحه الخادم بعد تأكيد رمز البريد (تسجيل، دخول، أو استرجاع). حساب المالك
+المنقول اسم بلا بريد، فيبقى بكلمة السر وحدها.
+- `GET  /api/auth/me` — `{ name, approved, admin }`
+- `GET  /api/admin/users` و `POST /api/admin/users/approval` `{ user, approved }` — للمشرف وحده
 
-1. انسخ مجلد `server/` إلى الخادم.
-2. `npm install --omit=dev`
-3. شغّله دائماً عبر `pm2`:
-   ```bash
-   npm i -g pm2
-   SYNC_CODE="..." pm2 start index.js --name quran-sync
-   pm2 save && pm2 startup
-   ```
-4. **HTTPS إلزامي:** تطبيق أندرويد يعمل من أصل https، فلا يستطيع نداء http (Mixed Content).
-   ضع nginx كوكيل عكسي مع شهادة Let's Encrypt:
-   ```nginx
-   location /api/ {
-       proxy_pass http://127.0.0.1:3001;
-   }
-   ```
-5. ضع رابط الـ HTTPS ورمز المزامنة في ملف `.env` بجذر مشروع React (انظر `.env.example`).
+موافقة المشرف: الحساب الجديد يدخل لكنّ مسارات البيانات تردّ 403 حتى يوافق عليه المشرف
+(المالك: `OWNER_EMAIL` أو `KHITMA_USER`) من داخل التطبيق.
+
+- `GET  /api/state`  — `{ updatedAt, state }`
+- `PUT  /api/state`  — `{ state, baseUpdatedAt, writeId }` ← `{ ok, updatedAt }` أو 409 عند التعارض
+- `GET  /api/khitma` / `PUT /api/khitma` — العقد نفسه مع `list` بدل `state`
 
 ## متغيّرات البيئة
 
-- `SYNC_CODE` (إلزامي) — الرمز السري المشترك.
-- `PORT` (اختياري، الافتراضي 3001)
-- `DATA_DIR` (اختياري) — مكان حفظ `state.json`.
+- `RESEND_API_KEY` و `MAIL_FROM` — مفتاح Resend وعنوان المرسِل على نطاق موثّق فيه
+  (مثل `خماسيات <no-reply@example.com>`). بدونهما تُطبع الرموز في السجلّ ولا تُرسل
+  (للتجربة المحلية فقط).
+- `MAX_USERS` (الافتراضي 100) — سقف عدد الحسابات. يُرفع بتغييره وإعادة التشغيل.
+- `PORT` (الافتراضي 3001)
+- `DATA_DIR` (الافتراضي `./data`)
+- `KHITMA_USER` / `KHITMA_CODE` — بيانات المالك القديمة. تُستعمل مرّة واحدة عند أوّل
+  تشغيل لنقل `data/state.json` و`data/khitma.json` إلى حسابه، ثم لا حاجة إليها.
+- `OWNER_EMAIL` (و `OWNER_NAME` اختياري) — إن ضُبط عند أوّل تشغيل صار حساب المالك
+  بريدياً: يدخل به وبكلمة سرّه القديمة، بتحقّق بخطوتين واسترجاع بالبريد.
+- `SYNC_CODE` — لم يعد مستعملاً.
+
+النشر على الخادم: انظر `DEPLOY.md`.

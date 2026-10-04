@@ -1,26 +1,10 @@
-import { SYNC_URL, SYNC_CODE, SYNC_ENABLED } from './syncConfig';
+import { SYNC_URL, SYNC_ENABLED } from './syncConfig';
+import { readAccount, authHeaders } from './syncAccount';
+import { getSyncMeta, setSyncMeta } from './syncMeta';
 import { APP_STORAGE_KEY } from './persistence';
 
-// طابع زمني محلي لآخر حالة معروفة (مرفوعة أو مسحوبة) لحسم آخر-تعديل-يفوز
-const SYNC_META_KEY = 'quran-fives-sync-meta-v1';
-
-export function getSyncMeta() {
-  try {
-    return JSON.parse(localStorage.getItem(SYNC_META_KEY)) || { updatedAt: 0 };
-  } catch {
-    return { updatedAt: 0 };
-  }
-}
-
-function setSyncMeta(meta) {
-  try {
-    localStorage.setItem(SYNC_META_KEY, JSON.stringify(meta));
-  } catch {
-    // تجاهل فشل التخزين
-  }
-}
-
-async function api(path, options = {}, timeoutMs = 12000) {
+// creds: حساب الطلب. الافتراضي هو الحساب المحفوظ على الجهاز؛ null يرسل بلا دخول.
+async function api(path, { creds = readAccount(), ...options } = {}, timeoutMs = 12000) {
   // مهلة زمنية حتى لا يعلّق الطلب إلى ما لا نهاية على شبكة بطيئة
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -30,7 +14,7 @@ async function api(path, options = {}, timeoutMs = 12000) {
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
-        'X-Sync-Code': SYNC_CODE,
+        ...authHeaders(creds),
         ...(options.headers || {}),
       },
     });
@@ -120,21 +104,36 @@ export async function forcePullRemote() {
   return true;
 }
 
-// ─── سجلّ الختمات الخاص: محمي ببيانات المالك (user + code) ───
-function khitmaHeaders(creds) {
-  return { 'X-Khitma-User': creds.user, 'X-Khitma-Code': creds.code };
-}
+// ─── الحساب: تسجيل بالبريد، دخول بخطوتين، واسترجاع كلمة السر ───
+// كلّها ترمي خطأً يحمل status (400/401/403/409/429/503) لتعرض الواجهة السبب.
+// كل خطوة تؤكّد رمز البريد تعيد { device }: مفتاح هذا الجهاز الموثوق.
 
-// يتحقّق من بيانات الدخول؛ يرمي خطأ (401) إن كانت غير صحيحة
-export async function authKhitma(creds) {
-  await api('/api/khitma/auth', { method: 'POST', headers: khitmaHeaders(creds) });
-  return true;
-}
+const post = (path, body) => api(path, { method: 'POST', creds: null, body: JSON.stringify(body) });
+
+// الخطوة 1: يطلب الحساب فيُرسل الخادم رمز تأكيد إلى البريد
+export const registerAccount = (creds) => post('/api/auth/register', creds);
+
+// الخطوة 2: الرمز المُرسل يُنشئ الحساب
+export const verifyAccount = (user, otp) => post('/api/auth/verify', { user, otp });
+
+// الدخول، الخطوة 1: كلمة السر. يعيد { pending: true } إن أُرسل رمز إلى البريد
+// (جهاز جديد)، أو { ok: true } بلا رمز لحساب أقدم بلا بريد.
+export const loginAccount = (creds) => api('/api/auth/login', { method: 'POST', creds });
+
+// الدخول، الخطوة 2: رمز البريد
+export const confirmLogin = (creds, otp) =>
+  api('/api/auth/login/confirm', { method: 'POST', creds, body: JSON.stringify({ otp }) });
+
+// استرجاع كلمة السر: رمز إلى البريد، ثم الرمز مع الكلمة الجديدة
+export const requestReset = (user) => post('/api/auth/reset/request', { user });
+export const confirmReset = (user, otp, code) => post('/api/auth/reset/confirm', { user, otp, code });
+
+// ─── سجلّ الختمات: خاص بكل حساب ───
 
 // يسحب قائمة الختمات من الخادم (يتطلّب بيانات دخول صحيحة).
 // يعيد الطابع الزمني أيضاً ليحتفظ به الجهاز أساساً (base) للرفع التالي.
 export async function getKhitma(creds) {
-  const r = await api('/api/khitma', { method: 'GET', headers: khitmaHeaders(creds) });
+  const r = await api('/api/khitma', { method: 'GET', creds });
   return { list: Array.isArray(r?.list) ? r.list : [], updatedAt: r?.updatedAt ?? 0 };
 }
 
@@ -143,7 +142,17 @@ export async function getKhitma(creds) {
 export async function putKhitma(creds, list, baseUpdatedAt) {
   return api('/api/khitma', {
     method: 'PUT',
-    headers: khitmaHeaders(creds),
+    creds,
     body: JSON.stringify({ list, baseUpdatedAt, writeId: newWriteId() }),
   });
 }
+
+// ─── حالة الحساب ولوحة المشرف ───
+
+// { name, approved, admin } — الحساب الجديد لا يزامن قبل موافقة المشرف (approved)
+export const fetchMe = () => api('/api/auth/me', { method: 'GET' });
+
+// للمشرف وحده: كل الحسابات، والموافقة على حساب أو إيقافه
+export const listUsers = async () => (await api('/api/admin/users', { method: 'GET' })).users;
+export const setUserApproval = (user, approved) =>
+  api('/api/admin/users/approval', { method: 'POST', body: JSON.stringify({ user, approved }) });

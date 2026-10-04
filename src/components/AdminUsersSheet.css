@@ -1,0 +1,91 @@
+/* لوحة المشرف: قائمة الحسابات. الهيكل والحاجب في ModalDialog. */
+
+.admin-users-summary {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--app-muted);
+  text-align: center;
+}
+
+.admin-users-error {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-danger);
+  text-align: center;
+}
+
+.admin-users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-users-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-2);
+}
+
+.admin-users-row.is-waiting {
+  border-color: var(--app-warn);
+}
+
+.admin-users-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  text-align: right;
+}
+
+.admin-users-name {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--app-text);
+}
+
+.admin-users-email,
+.admin-users-date {
+  font-size: 12px;
+  color: var(--app-muted);
+  overflow-wrap: anywhere;
+}
+
+.admin-users-email {
+  text-align: right;
+}
+
+.admin-users-btn {
+  flex: 0 0 auto;
+  min-width: 64px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--app-accent);
+  border-radius: 10px;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-users-btn--stop {
+  border-color: var(--app-danger);
+  background: none;
+  color: var(--app-danger);
+}
+
+.admin-users-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

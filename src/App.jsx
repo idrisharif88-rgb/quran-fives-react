@@ -49,10 +49,17 @@ import {
   removeStoredState,
   saveStoredState
 } from './utils/persistence';
-import { pushLocal, authKhitma, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, getSyncMeta } from './utils/cloudSync';
+import { pushLocal, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, fetchMe } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
+import { getSyncMeta, deviceDataIsForeign, clearSyncMeta } from './utils/syncMeta';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
 import StartupSyncPrompt from './components/StartupSyncPrompt';
+import AccountPanel from './components/AccountPanel';
+import WelcomeToast from './components/WelcomeToast';
+import AccountBadge from './components/AccountBadge';
+import AccountPending from './components/AccountPending';
+import AdminUsersSheet from './components/AdminUsersSheet';
+import useAccount from './hooks/useAccount';
 import HomeButton from './components/HomeButton';
 import QuranFal from './components/QuranFal';
 import QuranSearch from './components/QuranSearch';
@@ -80,8 +87,6 @@ import './styles/themes.css';
 const KHATMA_DELETE_PASSWORD = '27956';
 
 // كلمة سر تفعيل المزامنة السحابية — معطّلة افتراضياً للجميع، تُفعَّل يدوياً بهذه الكلمة فقط
-const CLOUD_SYNC_PASSWORD = '27956';
-const SYNC_UNLOCK_KEY = 'quran-fives-sync-unlocked-v1';
 
 // مصفوفة بأسماء السور الـ 114
 const SURAH_NAMES ="الفاتحة,البقرة,آل عمران,النساء,المائدة,الأنعام,الأعراف,الأنفال,التوبة,يونس,هود,يوسف,الرعد,إبراهيم,الحجر,النحل,الإسراء,الكهف,مريم,طه,الأنبياء,الحج,المؤمنون,النور,الفرقان,الشعراء,النمل,القصص,العنكبوت,الروم,لقمان,السجدة,الأحزاب,سبأ,فاطر,يس,الصافات,ص,الزمر,غافر,فصلت,الشورى,الزخرف,الدخان,الجاثية,الأحقاف,محمد,الفتح,الحجرات,ق,الذاريات,الطور,النجم,القمر,الرحمن,الواقعة,الحديد,المجادلة,الحشر,الممتحنة,الصف,الجمعة,المنافقون,التغابن,الطلاق,التحريم,الملك,القلم,الحاقة,المعارج,نوح,الجن,المزمل,المدثر,القيامة,الإنسان,المرسلات,النبأ,النازعات,عبس,التكوير,الانفطار,المطففين,الانشقاق,البروج,الطارق,الأعلى,الغاشية,الفجر,البلد,الشمس,الليل,الضحى,الشرح,التين,العلق,القدر,البينة,الزلزلة,العاديات,القارعة,التكاثر,العصر,الهمزة,الفيل,قريش,الماعون,الكوثر,الكافرون,النصر,المسد,الإخلاص,الفلق,الناس".split(",");
@@ -274,10 +279,8 @@ function App() {
   const [hijriIndex, setHijriIndex] = useState(0);
   // سجلّ الختمات خاص الآن: لا يُحفظ في الحالة المشتركة بل يُحمَّل من الخادم بعد الدخول
   const [khatmaList, setKhatmaList] = useState([]);
-  // قفل الختمات: بيانات الدخول (user + code) وحالة الفتح
+  // قفل الختمات: يُفتح بحساب المستخدم (useAccount) بعد تحميل سجلّه
   const [khitmaUnlocked, setKhitmaUnlocked] = useState(false);
-  const [khitmaUserInput, setKhitmaUserInput] = useState('');
-  const [khitmaCodeInput, setKhitmaCodeInput] = useState('');
   const [khitmaAuthError, setKhitmaAuthError] = useState('');
   const [khitmaLoading, setKhitmaLoading] = useState(false);
   const khitmaCredsRef = useRef(null);      // بيانات الدخول المعتمدة للجلسة
@@ -384,9 +387,14 @@ function App() {
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [syncFailed, setSyncFailed] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncUnlocked, setSyncUnlocked] = useState(() => {
-    try { return localStorage.getItem(SYNC_UNLOCK_KEY) === '1'; } catch { return false; }
-  });
+  // حساب واحد يفتح المزامنة وسجلّ الختمات معاً؛ المزامنة تعمل ما دام المستخدم داخلاً
+  const auth = useAccount();
+  const { account, signOut } = auth;
+  // حالة الحساب على الخادم: { approved, admin }. الحساب الجديد لا يزامن قبل موافقة المشرف.
+  const [accountStatus, setAccountStatus] = useState(null);
+  const [syncCheckNonce, setSyncCheckNonce] = useState(0);   // يعيد فحص الفتح («تحقّق الآن»)
+  const [isAdminUsersOpen, setIsAdminUsersOpen] = useState(false);
+  const syncUnlocked = Boolean(account);
   const [isSyncPanelOpen, setIsSyncPanelOpen] = useState(false);
   // المزامنة اليدوية بخطوتين: تأكيد قبل التنفيذ، ونتيجة صريحة بعده
   const [manualSyncBusy, setManualSyncBusy] = useState(null);      // 'push' | 'pull' | null
@@ -397,8 +405,6 @@ function App() {
   const [startupSyncChoice, setStartupSyncChoice] = useState(null); // { remoteUpdatedAt, localUpdatedAt }
   const [startupSyncBusy, setStartupSyncBusy] = useState(null);     // 'push' | 'pull' | null
   const [startupSyncError, setStartupSyncError] = useState('');
-  const [syncPasswordInput, setSyncPasswordInput] = useState('');
-  const [syncPasswordError, setSyncPasswordError] = useState(false);
   const [counterConfirm, setCounterConfirm] = useState({ type: null, id: null });
   const [surahToast, setSurahToast] = useState(null);
   const [isKhRevealed, setIsKhRevealed] = useState(false);
@@ -663,37 +669,67 @@ function App() {
   // لا يبدأ الرفع التلقائي إلا بعد أن يصير cloudSyncReadyRef صحيحاً: إمّا لأن
   // النسختين متطابقتان، أو لأن المستخدم اختار صراحةً.
   useEffect(() => {
-    // المزامنة معطّلة افتراضياً، ولا تعمل إلا بعد تفعيلها بكلمة السر (syncUnlocked)
+    // المزامنة لا تعمل إلا بعد دخول المستخدم بحسابه (syncUnlocked)
     if (!SYNC_ENABLED || !syncUnlocked) {
       cloudSyncReadyRef.current = false;
       setStartupSyncChoice(null);
+      setSyncFailed(false);
+      setAccountStatus(null);
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        const info = await fetchRemoteInfo();
+        const me = await fetchMe();
         if (cancelled) return;
-        // السحابة فارغة أو مطابقة لآخر نسخة رآها الجهاز: لا قرار مطلوب
-        if (!info.hasState || info.inSync) {
-          cloudSyncReadyRef.current = true;
+        setAccountStatus(me);
+        // بانتظار موافقة المشرف: لا مزامنة ولا علامة فشل — التطبيق يعمل محلياً
+        if (!me.approved) {
+          cloudSyncReadyRef.current = false;
           setSyncFailed(false);
           return;
         }
-        setStartupSyncChoice({
-          remoteUpdatedAt: info.updatedAt,
-          localUpdatedAt: getSyncMeta().updatedAt,
-        });
-      } catch {
+        const info = await fetchRemoteInfo();
+        if (cancelled) return;
+        const choice = startupChoiceFor(info);
+        if (choice) { setStartupSyncChoice(choice); return; }
+        // السحابة فارغة أو مطابقة لآخر نسخة رآها الجهاز: لا قرار مطلوب
+        cloudSyncReadyRef.current = true;
+        setSyncFailed(false);
+        // حساب سحابته فارغة (جديد): نرفع حالة هذا الجهاز الآن بدل انتظار أوّل تغيير
+        if (!info.hasState) runCloudPush(lastSnapshotRef.current);
+      } catch (e) {
+        if (cancelled) return;
+        // الخادم رفض بيانات الدخول: نُخرج الحساب ليُطلب الدخول من جديد (401 وحده)
+        if (e?.status === 401) { signOut(); return; }
         // فشل الفحص: لا نُفعّل الرفع إطلاقاً. الجهاز لم يعرف حالة الخادم بعد،
         // ورفع حالته المحلية هنا يكتب نسخة قديمة فوق الأحدث من جهاز آخر.
-        if (!cancelled) setSyncFailed(true);
+        setSyncFailed(true);
       }
     })();
     return () => { cancelled = true; };
-  }, [syncUnlocked]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [syncUnlocked, syncCheckNonce]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // هل يحتاج الفتح قراراً من المستخدم؟ يعيد وصف القرار أو null.
+  // - السحابة تختلف عن آخر نسخة رآها الجهاز: أيّ النسختين تبقى.
+  // - السحابة فارغة وبيانات الجهاز زامنها حساب آخر (تبديل مستخدم): لا تُرفع بيانات
+  //   غيره إلى حسابه بلا سؤال.
+  const startupChoiceFor = (info) => {
+    if (info.hasState && !info.inSync) {
+      return { remoteUpdatedAt: info.updatedAt, localUpdatedAt: getSyncMeta().updatedAt };
+    }
+    if (!info.hasState && deviceDataIsForeign()) return { emptyCloud: true };
+    return null;
+  };
 
   // ─── تنفيذ قرار المزامنة عند الفتح ───
+
+  // «ابدأ حسابي فارغاً»: تُمسح بيانات الحساب السابق من هذا الجهاز وحده ثم يُعاد التحميل
+  const handleStartupFresh = () => {
+    removeStoredState(APP_STORAGE_KEY);
+    clearSyncMeta();
+    window.location.reload();
+  };
 
   const handleStartupPull = async () => {
     if (startupSyncBusy) return;
@@ -708,7 +744,7 @@ function App() {
       }
       window.location.reload();   // إعادة التحميل تطبّق الحالة المنزّلة
     } catch (e) {
-      setStartupSyncError(e?.status === 401 ? 'رمز المزامنة غير مقبول' : 'تعذّر التنزيل — تحقّق من الاتصال');
+      setStartupSyncError(e?.status === 401 ? 'بيانات الدخول غير مقبولة' : 'تعذّر التنزيل — تحقّق من الاتصال');
       setStartupSyncBusy(null);
     }
   };
@@ -728,7 +764,7 @@ function App() {
       setRemoteSyncInfo({ updatedAt, hasState: true, inSync: true });
       setStartupSyncChoice(null);
     } catch (e) {
-      setStartupSyncError(e?.status === 401 ? 'رمز المزامنة غير مقبول' : 'تعذّر الرفع — تحقّق من الاتصال');
+      setStartupSyncError(e?.status === 401 ? 'بيانات الدخول غير مقبولة' : 'تعذّر الرفع — تحقّق من الاتصال');
     } finally {
       setStartupSyncBusy(null);
     }
@@ -757,6 +793,8 @@ function App() {
       .catch((e) => {
         // تعارض: جهاز آخر كتب بعدنا. نوقف الرفع حتى يسحب المستخدم الأحدث بزر إعادة المحاولة
         if (e?.status === 409) cloudSyncReadyRef.current = false;
+        if (e?.status === 401) signOut();   // الخادم رفض بيانات الدخول
+        if (e?.status === 403) setSyncCheckNonce(n => n + 1);   // سُحبت الموافقة: أعد فحص الحالة
         if (token === cloudPushSeqRef.current) setSyncFailed(true);
         cloudPushPendingRef.current = null; // بعد الفشل لا نكرّر تلقائياً — المعالجة يدوية
       })
@@ -779,13 +817,8 @@ function App() {
       setIsSyncing(true);
       try {
         const info = await fetchRemoteInfo();
-        if (info.hasState && !info.inSync) {
-          setStartupSyncChoice({
-            remoteUpdatedAt: info.updatedAt,
-            localUpdatedAt: getSyncMeta().updatedAt,
-          });
-          return;
-        }
+        const choice = startupChoiceFor(info);
+        if (choice) { setStartupSyncChoice(choice); return; }
         cloudSyncReadyRef.current = true;
         setSyncFailed(false);
       } catch {
@@ -798,31 +831,17 @@ function App() {
     runCloudPush(lastSnapshotRef.current);
   };
 
-  // تفعيل/إيقاف المزامنة بكلمة السر (للاستخدام الشخصي فقط)
-  const handleSyncUnlock = () => {
-    if (syncPasswordInput !== CLOUD_SYNC_PASSWORD) {
-      setSyncPasswordError(true);
-      setSyncPasswordInput('');
-      return;
-    }
-    try { localStorage.setItem(SYNC_UNLOCK_KEY, '1'); } catch { /* تجاهل */ }
-    setSyncUnlocked(true);
-    setSyncPasswordInput('');
-    setSyncPasswordError(false);
-    mainKeyboard.closeKeyboard();
-  };
-
-  const handleSyncDisable = () => {
-    try { localStorage.setItem(SYNC_UNLOCK_KEY, '0'); } catch { /* تجاهل */ }
-    cloudSyncReadyRef.current = false;
-    setSyncUnlocked(false);
-  };
+  // بعد الدخول تُغلق لوحة المزامنة ليظهر الترحيب (WelcomeToast) على الشاشة الرئيسية
+  const wasSignedInRef = useRef(Boolean(account));
+  useEffect(() => {
+    if (account && !wasSignedInRef.current) setIsSyncPanelOpen(false);
+    wasSignedInRef.current = Boolean(account);
+  }, [account]);
 
   const closeSyncPanel = () => {
     mainKeyboard.closeKeyboard();
     setIsSyncPanelOpen(false);
-    setSyncPasswordInput('');
-    setSyncPasswordError(false);
+    auth.cancelPending();
     setManualSyncConfirm(null);
     setManualSyncResult(null);
   };
@@ -846,7 +865,7 @@ function App() {
       setRemoteSyncInfo({ updatedAt, hasState: true, inSync: true });
       setManualSyncResult({ ok: true, text: `تمّ الرفع • ${formatHijriTimestamp(updatedAt)}` });
     } catch (e) {
-      setManualSyncResult({ ok: false, text: e?.status === 401 ? 'رمز المزامنة غير مقبول' : 'تعذّر الرفع — تحقّق من الاتصال' });
+      setManualSyncResult({ ok: false, text: e?.status === 401 ? 'بيانات الدخول غير مقبولة' : 'تعذّر الرفع — تحقّق من الاتصال' });
     } finally {
       setManualSyncBusy(null);
     }
@@ -868,7 +887,7 @@ function App() {
       setManualSyncResult({ ok: true, text: 'تمّ التنزيل — جارٍ إعادة التحميل…' });
       window.location.reload();
     } catch (e) {
-      setManualSyncResult({ ok: false, text: e?.status === 401 ? 'رمز المزامنة غير مقبول' : 'تعذّر التنزيل — تحقّق من الاتصال' });
+      setManualSyncResult({ ok: false, text: e?.status === 401 ? 'بيانات الدخول غير مقبولة' : 'تعذّر التنزيل — تحقّق من الاتصال' });
       setManualSyncBusy(null);
     }
   };
@@ -1840,16 +1859,6 @@ function App() {
       closeOnSubmit: false,
       onSubmit: () => confirmDeleteKhatma(),
     },
-    syncPassword: {
-      value: syncPasswordInput,
-      setValue: (updater) => { setSyncPasswordInput(updater); setSyncPasswordError(false); },
-      allowColon: false,
-      maxLength: 12,
-      label: 'كلمة سر المزامنة',
-      submitLabel: 'تفعيل',
-      closeOnSubmit: false,
-      onSubmit: () => handleSyncUnlock(),
-    },
   });
 
   const handleHardwareBack = () => {
@@ -2041,16 +2050,8 @@ function App() {
     setViewMode('khmasiyat');
   };
 
-  // ─── قفل الختمات: الدخول وتحميل/مزامنة القائمة من الخادم ───
-  const KHITMA_CREDS_KEY = 'quran-fives-khitma-creds-v1';
+  // ─── قفل الختمات: تحميل/مزامنة قائمة الحساب من الخادم ───
   const KHITMA_CACHE_KEY = 'quran-fives-khitma-cache-v1';
-
-  const readSavedKhitmaCreds = () => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(KHITMA_CREDS_KEY));
-      return saved?.user && saved?.code ? saved : null;
-    } catch { return null; }
-  };
 
   // نسخة محلية من السجلّ: تفتح القفل فوراً عند بدء التطبيق فيظهر عدّاد «ختماتي»
   // وقائمة الختمات بلا انتظار الشبكة، ثمّ تُحدَّث من الخادم في الخلفية.
@@ -2088,55 +2089,53 @@ function App() {
       setKhatmaList(merged);
       writeKhitmaCache(merged);
       setKhitmaUnlocked(true);
-      try { localStorage.setItem(KHITMA_CREDS_KEY, JSON.stringify(creds)); } catch { /* تجاهل */ }
       if (hadPending) khitmaSyncReadyRef.current = true;   // ادفع المدموج للخادم فوراً
       return true;
     } catch (e) {
       const msg = String(e?.message || '');
       const isAuthFailure = msg.includes('401');
+      const isPending = msg.includes('403');   // الحساب بانتظار موافقة المشرف
       // بيانات الدخول تُمسح عند رفض الخادم لها وحده. مسحها عند انقطاع الشبكة
       // كان يُخرِج المستخدم ويطلب الدخول من جديد في كل مرّة.
-      if (isAuthFailure) {
-        try { localStorage.removeItem(KHITMA_CREDS_KEY); } catch { /* تجاهل */ }
-        khitmaCredsRef.current = null;
-        setKhitmaUnlocked(false);
-      }
-      if (!silent) setKhitmaAuthError(isAuthFailure ? 'بيانات الدخول غير صحيحة' : 'تعذّر الاتصال بالخادم');
+      // الخروج من الحساب يُغلق القفل ويمسح النسخة المحلية (انظر أثر account أدناه)
+      if (isAuthFailure) signOut();
+      if (!silent) setKhitmaAuthError(isAuthFailure ? 'بيانات الدخول غير صحيحة' : isPending ? 'حسابك بانتظار موافقة المشرف' : 'تعذّر الاتصال بالخادم');
       return false;
     } finally {
       if (!silent) setKhitmaLoading(false);
     }
-  }, []);
+  }, [signOut]);
 
-  const handleKhitmaLogin = () => {
-    const user = khitmaUserInput.trim();
-    const code = khitmaCodeInput.trim();
-    if (!user || !code) { setKhitmaAuthError('أدخل اسم المستخدم والرمز'); return; }
-    loadKhitmaWithCreds({ user, code });
-  };
-
-  // دخول واحد يكفي: عند بدء التطبيق، إن وُجدت بيانات محفوظة نفتح القفل فوراً من
-  // النسخة المحلية (بلا شبكة)، ثمّ نحدّث من الخادم بصمت. لا تظهر شاشة الدخول
-  // إلّا إن لم تكن هناك بيانات محفوظة أصلاً أو رفضها الخادم بـ401.
+  // دخول واحد يكفي: عند بدء التطبيق أو بعد الدخول، نفتح القفل فوراً من النسخة
+  // المحلية إن وُجدت (بلا شبكة)، ثمّ نحدّث من الخادم بصمت. وعند الخروج من الحساب
+  // يُغلق القفل وتُمسح النسخة المحلية حتى لا يراها الحساب التالي على هذا الجهاز.
   useEffect(() => {
-    const saved = readSavedKhitmaCreds();
-    if (!saved) return;
-    khitmaCredsRef.current = saved;
+    if (!account) {
+      khitmaCredsRef.current = null;
+      khitmaSyncReadyRef.current = false;
+      khitmaBaseVerifiedRef.current = false;
+      khitmaBaseRef.current = 0;
+      khitmaPendingRef.current = [];
+      try { localStorage.removeItem(KHITMA_CACHE_KEY); } catch { /* تجاهل */ }
+      setKhitmaUnlocked(false);
+      setKhatmaList(prev => (prev.length ? [] : prev));
+      return;
+    }
+    khitmaCredsRef.current = account;
     const cached = readKhitmaCache();
     if (cached) {
       khitmaSyncReadyRef.current = false;
       setKhatmaList(cached);
       setKhitmaUnlocked(true);
     }
-    loadKhitmaWithCreds(saved, { silent: true });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    loadKhitmaWithCreds(account, { silent: true });
+  }, [account]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // فتح قسم الختمات دون قفل مفتوح: محاولة دخول أخيرة ببيانات محفوظة (شبكة عادت)
+  // فتح قسم الختمات دون قفل مفتوح: محاولة تحميل أخيرة بالحساب المحفوظ (شبكة عادت)
   useEffect(() => {
-    if (!isKhatmaListOpen || khitmaUnlocked) return;
-    const saved = readSavedKhitmaCreds();
-    if (saved) loadKhitmaWithCreds(saved);
-  }, [isKhatmaListOpen, khitmaUnlocked, loadKhitmaWithCreds]);
+    if (!isKhatmaListOpen || khitmaUnlocked || !account) return;
+    loadKhitmaWithCreds(account);
+  }, [isKhatmaListOpen, khitmaUnlocked, account, loadKhitmaWithCreds]);
 
   // رفع أي تغيير على القائمة للخادم (بعد التحميل الأولي) — تأخير بسيط لتجميع التعديلات
   useEffect(() => {
@@ -3477,6 +3476,7 @@ function App() {
               {currentIndex + 1} / {TOTAL_GROUPS}
             </div>
           </div>
+          <AccountBadge account={account} onOpen={() => setIsSyncPanelOpen(true)} />
         </>
       )}
 
@@ -3866,11 +3866,16 @@ function App() {
             <h2 className="audio-settings-title">المزامنة السحابية</h2>
             {syncUnlocked ? (
               <>
+                <p className="account-welcome">مرحباً، {account.name || account.user}</p>
+                {accountStatus && !accountStatus.approved ? (
+                  <AccountPending onRecheck={() => setSyncCheckNonce(n => n + 1)} />
+                ) : (
+                  <>
                 <p style={{ fontSize: '15px', color: 'var(--app-accent)', fontWeight: 800, margin: '0 0 6px' }}>
                   المزامنة مفعّلة ✓
                 </p>
                 <p style={{ fontSize: '13px', color: 'var(--app-muted)', margin: '0 0 16px', lineHeight: 1.7 }}>
-                  بياناتك تُرفع وتُسحب تلقائياً مع خادمك. وبالأسفل خطوتان يدويّتان تحسمان أيّ اختلاف.
+                  بياناتك تُرفع تلقائياً إلى حسابك «{account.user}». وبالأسفل خطوتان يدويّتان تحسمان أيّ اختلاف.
                 </p>
 
                 {/* ─── المزامنة اليدوية: خطوة رفع وخطوة تنزيل ─── */}
@@ -3951,34 +3956,28 @@ function App() {
                     <p className={`manual-sync-result${manualSyncResult.ok ? ' is-ok' : ''}`}>{manualSyncResult.text}</p>
                   )}
                 </div>
+                  </>
+                )}
 
-                <button type="button" className="khmasiyat-quiz-btn" onClick={handleSyncDisable} style={{ width: '100%', marginBottom: '10px' }}>
-                  إيقاف المزامنة
+                {accountStatus?.admin && (
+                  <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => setIsAdminUsersOpen(true)} style={{ width: '100%', marginBottom: '10px' }}>
+                    إدارة المستخدمين
+                  </button>
+                )}
+                {/* تبديل الحساب: خروج يُبقي اللوحة مفتوحة على نموذج الدخول */}
+                <button type="button" className="khmasiyat-quiz-btn secondary" onClick={signOut} style={{ width: '100%', marginBottom: '10px' }}>
+                  الدخول بحساب آخر
+                </button>
+                <button type="button" className="khmasiyat-quiz-btn" onClick={() => { signOut(); closeSyncPanel(); }} style={{ width: '100%', marginBottom: '10px' }}>
+                  تسجيل الخروج
                 </button>
               </>
             ) : (
               <>
                 <p style={{ fontSize: '13px', color: 'var(--app-muted)', margin: '0 0 16px', lineHeight: 1.7 }}>
-                  المزامنة معطّلة. أدخل كلمة السر لتفعيلها على هذا الجهاز (للاستخدام الشخصي).
+                  ادخل بحسابك أو أنشئ حساباً جديداً لتُحفظ بياناتك في السحابة وتنتقل بين أجهزتك.
                 </p>
-                <input
-                  {...mainKeyboard.getInputProps('syncPassword')}
-                  type="password"
-                  value={syncPasswordInput}
-                  placeholder="اضغط للإدخال"
-                  style={{
-                    width: '100%', boxSizing: 'border-box', padding: '11px', borderRadius: '10px',
-                    border: `1.5px solid ${syncPasswordError ? 'var(--app-danger)' : 'var(--app-border)'}`,
-                    background: 'var(--app-surface-2)', color: 'var(--app-text)',
-                    fontSize: '16px', fontFamily: 'inherit', outline: 'none', textAlign: 'center', cursor: 'pointer',
-                  }}
-                />
-                {syncPasswordError && (
-                  <p style={{ margin: '8px 0 0', fontSize: '12px', color: 'var(--app-danger)' }}>كلمة السر غير صحيحة</p>
-                )}
-                <button type="button" className="khmasiyat-quiz-btn" onClick={handleSyncUnlock} style={{ width: '100%', marginTop: '14px' }}>
-                  تفعيل
-                </button>
+                <AccountPanel auth={auth} />
               </>
             )}
             <div className="audio-settings-actions" style={{ marginTop: '12px' }}>
@@ -3998,6 +3997,10 @@ function App() {
         </div>
       )}
       <SyncStatusIndicator failed={syncFailed} syncing={isSyncing} onRetry={handleSyncRetry} />
+      <WelcomeToast account={account} />
+      {isAdminUsersOpen && (
+        <AdminUsersSheet onClose={() => setIsAdminUsersOpen(false)} formatTime={formatHijriTimestamp} />
+      )}
       <CustomKeyboard
         visible={mainKeyboard.showKeyboard}
         label={mainKeyboard.activeConfig?.label}
@@ -4223,53 +4226,29 @@ function App() {
             {!khitmaUnlocked ? (
               <div style={{ maxWidth: '320px', margin: '40px auto 0', textAlign: 'center' }}>
                 <div style={{ fontSize: '48px', marginBottom: '8px' }}>🔒</div>
-                <p style={{ fontSize: '14px', color: 'var(--app-muted)', margin: '0 0 20px' }}>
-                  سجلّ الختمات خاص. أدخل بيانات الدخول لعرضه.
-                </p>
-                <input
-                  type="text"
-                  value={khitmaUserInput}
-                  onChange={e => { setKhitmaUserInput(e.target.value); setKhitmaAuthError(''); }}
-                  placeholder="اسم المستخدم"
-                  autoComplete="off"
-                  dir="ltr"
-                  style={{
-                    width: '100%', boxSizing: 'border-box', padding: '11px 13px', marginBottom: '10px',
-                    borderRadius: '10px', border: '1.5px solid var(--app-border)',
-                    background: 'var(--app-surface-2)', color: 'var(--app-text)',
-                    fontSize: '14px', fontFamily: 'inherit', outline: 'none', textAlign: 'center',
-                  }}
-                />
-                <input
-                  type="password"
-                  value={khitmaCodeInput}
-                  onChange={e => { setKhitmaCodeInput(e.target.value); setKhitmaAuthError(''); }}
-                  onKeyDown={e => { if (e.key === 'Enter') handleKhitmaLogin(); }}
-                  placeholder="الرمز"
-                  autoComplete="off"
-                  inputMode="numeric"
-                  dir="ltr"
-                  style={{
-                    width: '100%', boxSizing: 'border-box', padding: '11px 13px', marginBottom: '10px',
-                    borderRadius: '10px', border: '1.5px solid var(--app-border)',
-                    background: 'var(--app-surface-2)', color: 'var(--app-text)',
-                    fontSize: '14px', fontFamily: 'inherit', outline: 'none', textAlign: 'center',
-                  }}
-                />
-                {khitmaAuthError && (
-                  <p style={{ color: 'var(--app-danger)', fontSize: '13px', margin: '0 0 10px' }}>{khitmaAuthError}</p>
+                {!account ? (
+                  <>
+                    <p style={{ fontSize: '14px', color: 'var(--app-muted)', margin: '0 0 20px' }}>
+                      سجلّ الختمات خاص بحسابك. ادخل أو أنشئ حساباً لعرضه.
+                    </p>
+                    <AccountPanel auth={auth} />
+                  </>
+                ) : (
+                  <>
+                    <p style={{ fontSize: '14px', color: khitmaAuthError ? 'var(--app-danger)' : 'var(--app-muted)', margin: '0 0 20px' }}>
+                      {khitmaLoading ? 'جارٍ تحميل السجلّ…' : khitmaAuthError || 'تعذّر تحميل السجلّ'}
+                    </p>
+                    <button
+                      type="button"
+                      className="khmasiyat-quiz-btn"
+                      onClick={() => loadKhitmaWithCreds(account)}
+                      disabled={khitmaLoading}
+                      style={{ width: '100%' }}
+                    >
+                      أعد المحاولة
+                    </button>
+                  </>
                 )}
-                <button
-                  type="button"
-                  onClick={handleKhitmaLogin}
-                  disabled={khitmaLoading}
-                  style={{
-                    width: '100%', padding: '12px', borderRadius: '10px', border: 'none',
-                    background: 'var(--app-accent)', color: 'var(--app-accent-contrast)',
-                    fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit',
-                    opacity: khitmaLoading ? 0.6 : 1,
-                  }}
-                >{khitmaLoading ? '...جارٍ الدخول' : 'دخول'}</button>
               </div>
             ) : khatmaList.length === 0 ? (
               <div style={{ textAlign: 'center', color: 'var(--app-muted)', marginTop: '80px', fontSize: '16px' }}>
@@ -4383,6 +4362,7 @@ function App() {
 
       {startupSyncChoice && (
         <StartupSyncPrompt
+          emptyCloud={Boolean(startupSyncChoice.emptyCloud)}
           remoteUpdatedAt={startupSyncChoice.remoteUpdatedAt}
           localUpdatedAt={startupSyncChoice.localUpdatedAt}
           busy={startupSyncBusy}
@@ -4390,6 +4370,7 @@ function App() {
           formatTime={formatHijriTimestamp}
           onPull={handleStartupPull}
           onPush={handleStartupPush}
+          onFresh={handleStartupFresh}
           onLater={handleStartupLater}
         />
       )}
