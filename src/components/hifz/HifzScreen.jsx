@@ -61,6 +61,7 @@ function HifzStart({ onStart, canCustomStart }) {
 export default function HifzScreen({ hifz, reciter, contacts, onClose, backRef, canTakeExtra = false, canCustomStart = false }) {
   const { program, plan, today, celebrate, actions } = hifz;
   const [confirmReset, setConfirmReset] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);   // إعدادات الحفظ: تغيير ورد اليوم بلا إعادة ضبط
   const recordings = useHifzRecordings();
   const [listening, setListening] = useState(null);   // التسجيل المفتوح في شاشة الاستماع
 
@@ -130,9 +131,40 @@ export default function HifzScreen({ hifz, reciter, contacts, onClose, backRef, 
                   <button type="button" className="hifz-btn" onClick={() => setConfirmReset(false)}>إلغاء</button>
                 </>
               ) : (
-                <button type="button" className="hifz-link" onClick={() => setConfirmReset(true)}>إعادة ضبط البرنامج</button>
+                <>
+                  <button type="button" className="hifz-link" onClick={() => setSettingsOpen((v) => !v)} aria-expanded={settingsOpen}>إعدادات الحفظ</button>
+                  <button type="button" className="hifz-link" onClick={() => setConfirmReset(true)}>إعادة ضبط البرنامج</button>
+                </>
               )}
             </div>
+
+            {settingsOpen && !confirmReset && (
+              <div className="hifz-settings">
+                <h3>كم آية تحفظ في اليوم؟</h3>
+                <div className="hifz-start-perday" role="radiogroup" aria-label="عدد آيات اليوم">
+                  {VERSES_PER_DAY_CHOICES.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      role="radio"
+                      aria-checked={program.rules.versesPerDay === n}
+                      className={`hifz-start-chip ${program.rules.versesPerDay === n ? 'active' : ''}`.trim()}
+                      onClick={() => actions.setVersesPerDay(n)}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <p className="hifz-start-note">
+                  ما حفظته يبقى كما هو، والعدد الجديد يسري من أوّل ورد لم يُنجَز. تغييره أثناء ورد اليوم يعيد خطواته من أوّلها.
+                </p>
+                {program.memorizedOn.length === 0 && (
+                  <button type="button" className="hifz-btn" onClick={() => { actions.reset(); setSettingsOpen(false); }}>
+                    العودة إلى اختيار نقطة البداية
+                  </button>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>

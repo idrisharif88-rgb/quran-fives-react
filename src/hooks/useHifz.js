@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { dayKey } from '../utils/hifzSchedule';
 import {
   startProgram, loadProgram, rollDay, dailyPlan, countStep, confirmStep, tickStep, recordStep, checkBox,
-  shouldCelebrate, markCelebrated, openExtraPortion,
+  shouldCelebrate, markCelebrated, openExtraPortion, changeVersesPerDay,
 } from '../utils/hifzState';
 
 // اليوم الحالي، يتجدّد عند منتصف الليل وعند عودة التطبيق من الخلفية
@@ -44,6 +44,7 @@ export default function useHifz(persisted) {
     checkBox: (box, done) => apply((p) => checkBox(p, today, box, done)),
     celebrated: () => apply((p) => markCelebrated(p, today)),
     extraPortion: () => apply((p) => openExtraPortion(p, today)),
+    setVersesPerDay: (n) => apply((p) => changeVersesPerDay(p, today, n)),
   }), [apply, today]);
 
   const plan = useMemo(() => (program ? dailyPlan(program, today) : null), [program, today]);

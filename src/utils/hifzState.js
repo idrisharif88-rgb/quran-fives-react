@@ -1,5 +1,5 @@
 import {
-  TOTAL_VERSES, DIRECTIONS, DEFAULT_RULES, withDefaultRules,
+  TOTAL_VERSES, DIRECTIONS, DEFAULT_RULES, VERSES_PER_DAY_CHOICES, withDefaultRules,
   boxesFor, verseAt, daysBetween,
 } from './hifzSchedule';
 import { STEP_DEFS, freshProgress, normalizeProgress, currentStep, stepTarget, stepCount } from './hifzSteps';
@@ -189,6 +189,19 @@ export function openExtraPortion(state, today) {
   if (state.status !== STATUS.ACTIVE || !verseDoneToday(state, today)) return state;
   if (state.memorizedOn.length >= TOTAL_VERSES) return state;
   return { ...state, extra: { day: today, at: state.memorizedOn.length } };
+}
+
+// تغيير ورد اليوم (1/3/5/7) دون إعادة ضبط البرنامج: ما حُفظ وصناديقه لا تُمسّ، والعدد
+// الجديد يسري من أوّل ورد لم يُنجَز. ورد اليوم إن كان جارياً تتغيّر آياته، فيُصفَّر تقدّم
+// خطواته وحده (لا يصحّ أن يُحتسب سماعٌ أو تكرار لآيات غير التي ستُحفظ).
+export function changeVersesPerDay(state, today, versesPerDay) {
+  if (!VERSES_PER_DAY_CHOICES.includes(versesPerDay) || versesPerDay === state.rules.versesPerDay) return state;
+  const rules = { ...state.rules, versesPerDay };
+  return {
+    ...state,
+    rules,
+    progress: verseDoneToday(state, today) ? state.progress : freshProgress(rules),
+  };
 }
 
 // تنبيه الإتمام يُعرض مرة واحدة في اليوم

@@ -5,7 +5,7 @@ import {
 } from './hifzSchedule';
 import {
   startProgram, loadProgram, dailyPlan, rollDay, countStep, confirmStep, tickStep, recordStep, checkBox,
-  verseDoneToday, shouldCelebrate, markCelebrated, portionOf, openExtraPortion,
+  verseDoneToday, shouldCelebrate, markCelebrated, portionOf, openExtraPortion, changeVersesPerDay,
 } from './hifzState';
 import { currentStep } from './hifzSteps';
 
@@ -412,6 +412,37 @@ describe('hifz starting from a chosen verse (supervisor permission)', () => {
     const stored = { ...startProgram('forward', day(1)) };
     delete stored.origin;
     expect(dailyPlan(loadProgram(stored), day(1)).verse.ref).toEqual({ s: 1, a: 1 });
+  });
+});
+
+describe('hifz: changing the daily portion without resetting', () => {
+  it('keeps everything memorised and applies from the next portion', () => {
+    let s = memorizeVerse(startProgram('forward', day(1), { versesPerDay: 3 }), day(1));
+    s = memorizeVerse(s, day(2));
+    const changed = changeVersesPerDay(s, day(2), 7);
+    expect(changed.memorizedOn).toEqual(s.memorizedOn);                 // ما حُفظ كما هو
+    expect(changed.startedOn).toBe(s.startedOn);
+    expect(dailyPlan(changed, day(2)).verse).toMatchObject({ indices: [3, 4, 5], done: true });   // ورد اليوم المنجز لا يتغيّر
+    expect(dailyPlan(changed, day(3)).verse.indices).toEqual([6, 7, 8, 9, 10, 11, 12]);
+    // صناديق الغد كما كانت
+    expect(dailyPlan(changed, day(3)).boxItems.map((i) => [i.box, i.indices.length])).toEqual(dailyPlan(s, day(3)).boxItems.map((i) => [i.box, i.indices.length]));
+  });
+
+  it('a portion in progress changes its verses, so only its step progress restarts', () => {
+    let s = memorizeVerse(startProgram('forward', day(1), { versesPerDay: 5 }), day(1));
+    s = countStep(rollDay(s, day(2)), day(2), 'listen', 1);
+    expect(s.progress.listen).toBe(1);
+    const changed = changeVersesPerDay(s, day(2), 3);
+    expect(changed.progress.listen).toBe(0);
+    expect(changed.memorizedOn).toHaveLength(5);
+    expect(dailyPlan(changed, day(2)).verse).toMatchObject({ indices: [5, 6, 7], done: false });
+  });
+
+  it('ignores the same value and values that are not offered', () => {
+    const s = startProgram('forward', day(1), { versesPerDay: 3 });
+    expect(changeVersesPerDay(s, day(1), 3)).toBe(s);
+    expect(changeVersesPerDay(s, day(1), 4)).toBe(s);
+    expect(changeVersesPerDay(s, day(1), '5')).toBe(s);
   });
 });
 
