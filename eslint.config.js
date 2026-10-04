@@ -26,4 +26,9 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  {
+    // خادم المزامنة يعمل على Node لا في المتصفّح
+    files: ['server/**/*.{js,mjs}'],
+    languageOptions: { globals: globals.node },
+  },
 ])

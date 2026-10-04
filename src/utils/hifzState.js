@@ -1,5 +1,5 @@
 import {
-  TOTAL_VERSES, DIRECTIONS, DEFAULT_RULES, withDefaultRules,
+  TOTAL_VERSES, DIRECTIONS, DEFAULT_RULES, VERSES_PER_DAY_CHOICES, withDefaultRules,
   boxesFor, verseAt, daysBetween,
 } from './hifzSchedule';
 import { STEP_DEFS, freshProgress, normalizeProgress, currentStep, stepTarget, stepCount } from './hifzSteps';
@@ -16,13 +16,18 @@ export const BOXES = ['five', 'daily', 'review'];
 
 const freshChecks = (day) => ({ day, five: false, daily: false, review: false });
 
-export function startProgram(direction, today, rules = DEFAULT_RULES) {
+// موضع صالح لآية البداية، وإلا صفر (أول الترتيب)
+const validOrigin = (origin) => (Number.isInteger(origin) && origin > 0 && origin < TOTAL_VERSES ? origin : 0);
+
+// origin: فهرس آية البداية في ترتيب الحفظ (صفر = أول المصحف أو آخره حسب الاتجاه)
+export function startProgram(direction, today, rules = DEFAULT_RULES, origin = 0) {
   const fullRules = withDefaultRules(rules);
   return {
     version: HIFZ_VERSION,
     status: STATUS.ACTIVE,
     rules: fullRules,
     direction: direction === DIRECTIONS.BACKWARD ? DIRECTIONS.BACKWARD : DIRECTIONS.FORWARD,
+    origin: validOrigin(origin),
     startedOn: today,
     memorizedOn: [],                     // يوم حفظ كل آية بترتيب الحفظ
     progress: freshProgress(fullRules),  // تقدّم الآية الجارية — يبقى إن لم تُنجَز في يومها
@@ -39,6 +44,7 @@ export function loadProgram(raw) {
   return {
     ...raw,
     rules,
+    origin: validOrigin(raw.origin),   // برنامج خُزّن قبل الإضافة يبدأ من طرف المصحف
     progress: normalizeProgress(raw.progress, rules),
     checks: { ...freshChecks(raw.startedOn), ...raw.checks },
     celebratedOn: raw.celebratedOn ?? null,
@@ -46,8 +52,29 @@ export function loadProgram(raw) {
   };
 }
 
-// آية جديدة واحدة في اليوم على الأكثر
-export const verseDoneToday = (state, today) => state.memorizedOn[state.memorizedOn.length - 1] === today;
+// فتح ورد إضافي في اليوم نفسه (للمشرف، للتجربة): extra = { day, at } يُبطل قفل «ورد
+// واحد في اليوم» ما دام عدد المحفوظ at لم يتغيّر — إتمام الورد الإضافي يعيد القفل.
+const extraOpen = (state, today) => (
+  state.extra?.day === today && state.extra.at === state.memorizedOn.length
+);
+
+// ورد جديد واحد في اليوم على الأكثر (آية أو أكثر حسب rules.versesPerDay)
+export const verseDoneToday = (state, today) => (
+  state.memorizedOn[state.memorizedOn.length - 1] === today && !extraOpen(state, today)
+);
+
+// ورد اليوم: آياته المتتالية في ترتيب الحفظ. يُحفظ وحدةً واحدة بالخطوات نفسها،
+// ويُسجَّل لكل آية منه يومُ حفظها فتدخل الصناديق كلٌّ بساعتها.
+//   start فهرس أول آية — count عدد الآيات (يقصر عند آخر المصحف) — done حُفظ اليوم
+export function portionOf(state, today) {
+  const total = state.memorizedOn.length;
+  let doneCount = 0;
+  if (!extraOpen(state, today)) {
+    while (doneCount < total && state.memorizedOn[total - 1 - doneCount] === today) doneCount++;
+  }
+  if (doneCount > 0) return { start: total - doneCount, count: doneCount, done: true };
+  return { start: total, count: Math.min(state.rules.versesPerDay, TOTAL_VERSES - total), done: false };
+}
 
 /**
  * خطة اليوم: ما يظهر في الخط الزمني.
@@ -58,7 +85,8 @@ export function dailyPlan(state, today) {
   const boxes = boxesFor(state.memorizedOn, state.startedOn, today, state.rules);
   const finished = state.memorizedOn.length >= TOTAL_VERSES;
   const doneToday = verseDoneToday(state, today);
-  const index = doneToday ? state.memorizedOn.length - 1 : state.memorizedOn.length;
+  const portion = portionOf(state, today);
+  const indices = Array.from({ length: portion.count }, (_, i) => portion.start + i);
 
   const boxItems = BOXES
     .filter((box) => boxes[box].length > 0)
@@ -67,7 +95,14 @@ export function dailyPlan(state, today) {
   const verseNeeded = !finished || doneToday;
 
   return {
-    verse: verseNeeded ? { index, ref: verseAt(state.direction, index), done: doneToday } : null,
+    // index/ref أول آية الورد؛ indices/refs آياته كلّها (واحدة حين versesPerDay = 1)
+    verse: verseNeeded ? {
+      index: portion.start,
+      ref: verseAt(state.direction, portion.start, state.origin),
+      indices,
+      refs: indices.map((i) => verseAt(state.direction, i, state.origin)),
+      done: doneToday,
+    } : null,
     openStep: doneToday || finished ? null : currentStep(state.progress, state.rules),
     boxItems,
     boxesDone,
@@ -96,9 +131,10 @@ function updateStep(state, today, id, change) {
   if (currentStep(state.progress, state.rules) !== id) return state;
   const progress = { ...state.progress, [id]: change(state.progress[id]) };
   const next = { ...state, progress };
-  // إنجاز آخر خطوة يُتمّ حفظ الآية: تُسجَّل بيومها وتبدأ ساعتها
+  // إنجاز آخر خطوة يُتمّ حفظ ورد اليوم: كل آية منه تُسجَّل بيومها وتبدأ ساعتها
   if (currentStep(progress, state.rules) !== null) return next;
-  return logDay({ ...next, memorizedOn: [...state.memorizedOn, today], progress: freshProgress(state.rules) }, today);
+  const learned = Array(portionOf(state, today).count).fill(today);
+  return logDay({ ...next, memorizedOn: [...state.memorizedOn, ...learned], progress: freshProgress(state.rules) }, today);
 }
 
 // خطوة عدّاد: زيادة أو نقص أو تصفير ('reset')، بين 0 والهدف
@@ -145,6 +181,27 @@ export function checkBox(state, today, box, done = true) {
   if (!BOXES.includes(box)) return rolled;
   if (boxesFor(rolled.memorizedOn, rolled.startedOn, today, rolled.rules)[box].length === 0) return rolled;
   return logDay({ ...rolled, checks: { ...rolled.checks, [box]: done } }, today);
+}
+
+// ورد إضافي اليوم بعد إتمام ورده — لا يُفتح إلا وورد اليوم منجز والمصحف لم يُختم.
+// الآيات تُسجَّل بيومها كغيرها، فتدخل صناديق الغد مع ورد اليوم الأوّل.
+export function openExtraPortion(state, today) {
+  if (state.status !== STATUS.ACTIVE || !verseDoneToday(state, today)) return state;
+  if (state.memorizedOn.length >= TOTAL_VERSES) return state;
+  return { ...state, extra: { day: today, at: state.memorizedOn.length } };
+}
+
+// تغيير ورد اليوم (1/3/5/7) دون إعادة ضبط البرنامج: ما حُفظ وصناديقه لا تُمسّ، والعدد
+// الجديد يسري من أوّل ورد لم يُنجَز. ورد اليوم إن كان جارياً تتغيّر آياته، فيُصفَّر تقدّم
+// خطواته وحده (لا يصحّ أن يُحتسب سماعٌ أو تكرار لآيات غير التي ستُحفظ).
+export function changeVersesPerDay(state, today, versesPerDay) {
+  if (!VERSES_PER_DAY_CHOICES.includes(versesPerDay) || versesPerDay === state.rules.versesPerDay) return state;
+  const rules = { ...state.rules, versesPerDay };
+  return {
+    ...state,
+    rules,
+    progress: verseDoneToday(state, today) ? state.progress : freshProgress(rules),
+  };
 }
 
 // تنبيه الإتمام يُعرض مرة واحدة في اليوم

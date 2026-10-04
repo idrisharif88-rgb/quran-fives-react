@@ -1,144 +1,54 @@
-import express from 'express';
-import cors from 'cors';
-import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createApp } from './app.js';
+import { migrateLegacyOwner, validateEmail } from './accounts.js';
+import { createMailer } from './mailer.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PORT = process.env.PORT || 3001;
-const SYNC_CODE = process.env.SYNC_CODE || '';
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
-const DATA_FILE = path.join(DATA_DIR, 'state.json');
-const KHITMA_FILE = path.join(DATA_DIR, 'khitma.json');
+// سقف عدد الحسابات — يُرفع بتغيير المتغيّر وإعادة التشغيل، بلا إصدار جديد للتطبيق
+const MAX_USERS = Number(process.env.MAX_USERS) || 100;
 
-// بيانات دخول مالك سجلّ الختمات الخاص — تُضبط عبر البيئة فقط، لا قيم افتراضية في الكود
-const KHITMA_USER = process.env.KHITMA_USER || '';
-const KHITMA_CODE = process.env.KHITMA_CODE || '';
-
-// رفض التشغيل بدون الأسرار حتى لا يبقى الخادم مفتوحاً للعلن
-if (!SYNC_CODE) {
-  console.error('SYNC_CODE غير مضبوط. عيّن متغيّر البيئة SYNC_CODE قبل التشغيل.');
+// رموز التأكيد والاسترجاع تُرسل بالبريد عبر Resend. MAIL_FROM عنوان على نطاق موثّق هناك.
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+const MAIL_FROM = process.env.MAIL_FROM || '';
+if (!RESEND_API_KEY || !MAIL_FROM) {
+  console.warn('تنبيه: RESEND_API_KEY أو MAIL_FROM غير مضبوط — رموز التأكيد تُطبع في السجلّ ولا تُرسل.');
+}
+// المرسِل: «اسم <بريد@نطاق>» أو بريد مجرّد. بلا القوسين يرفض Resend كل رسالة (422)
+// فلا يدخل أحد — نوقف التشغيل برسالة واضحة بدل فشل صامت عند أوّل دخول.
+if (MAIL_FROM && !/^([^<>]*<[^<>\s@]+@[^<>\s@]+>|[^<>\s@]+@[^<>\s@]+)$/.test(MAIL_FROM.trim())) {
+  console.error(`MAIL_FROM غير صالح: «${MAIL_FROM}» — الصيغة: خماسيات <no-reply@example.com>`);
   process.exit(1);
 }
-if (!KHITMA_USER || !KHITMA_CODE) {
-  console.error('KHITMA_USER أو KHITMA_CODE غير مضبوط. عيّنهما عبر البيئة قبل التشغيل.');
+const sendMail = createMailer({ apiKey: MAIL_FROM && RESEND_API_KEY, from: MAIL_FROM });
+
+// بيانات المالك القديمة (KHITMA_USER/KHITMA_CODE) تُستعمل لنقل بياناته إلى حسابه
+// مرّة واحدة فقط؛ بعدها لا حاجة إليها. OWNER_EMAIL يجعل حسابه بريدياً كغيره
+// (يدخل به وبكلمة سرّه القديمة KHITMA_CODE)، و OWNER_NAME اسم الترحيب.
+// والمالك هو المشرف: يوافق على الحسابات الجديدة قبل أن تزامن.
+const OWNER_EMAIL = (process.env.OWNER_EMAIL || '').trim();
+if (OWNER_EMAIL && validateEmail(OWNER_EMAIL)) {
+  console.error('OWNER_EMAIL ليس بريداً صالحاً — صحّحه ثم أعد التشغيل.');
   process.exit(1);
 }
+const owner = OWNER_EMAIL || process.env.KHITMA_USER || '';
+if (!owner) console.warn('تنبيه: لا OWNER_EMAIL ولا KHITMA_USER — لا مشرف يوافق على الحسابات الجديدة.');
 
-const app = express();
-app.use(cors());
-app.use(express.json({ limit: '4mb' }));
+const { app, store, accounts } = createApp({ dataDir: DATA_DIR, maxUsers: MAX_USERS, sendMail, adminUser: owner });
 
-// التحقق من رمز المزامنة في كل طلب على /api
-app.use('/api', (req, res, next) => {
-  const code = req.get('X-Sync-Code');
-  if (code !== SYNC_CODE) {
-    return res.status(401).json({ error: 'رمز مزامنة غير صحيح' });
-  }
-  next();
+const migrated = await migrateLegacyOwner({
+  store,
+  accounts,
+  dataDir: DATA_DIR,
+  user: owner,
+  code: process.env.KHITMA_CODE,
+  name: process.env.OWNER_NAME || process.env.KHITMA_USER,
 });
-
-async function readState() {
-  try {
-    const raw = await fs.readFile(DATA_FILE, 'utf8');
-    return JSON.parse(raw);
-  } catch {
-    return { updatedAt: 0, state: null };
-  }
-}
-
-// كتابة ذرّية: نكتب لملف مؤقت ثم نعيد تسميته لتفادي تلف الملف عند انقطاع
-async function writeState(record) {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  const tmp = DATA_FILE + '.tmp';
-  await fs.writeFile(tmp, JSON.stringify(record), 'utf8');
-  await fs.rename(tmp, DATA_FILE);
-}
-
-// ─── سجلّ الختمات الخاص (محمي ببيانات المالك user + code) ───
-function khitmaAuthorized(req) {
-  return req.get('X-Khitma-User') === KHITMA_USER && req.get('X-Khitma-Code') === KHITMA_CODE;
-}
-
-async function readKhitma() {
-  try {
-    return JSON.parse(await fs.readFile(KHITMA_FILE, 'utf8'));
-  } catch {
-    return { updatedAt: 0, list: [] };
-  }
-}
-
-async function writeKhitma(record) {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  const tmp = KHITMA_FILE + '.tmp';
-  await fs.writeFile(tmp, JSON.stringify(record), 'utf8');
-  await fs.rename(tmp, KHITMA_FILE);
-}
-
-// تحقّق من بيانات الدخول فقط (لشاشة القفل)
-app.post('/api/khitma/auth', (req, res) => {
-  if (!khitmaAuthorized(req)) return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
-  res.json({ ok: true });
-});
-
-app.get('/api/khitma', async (req, res) => {
-  if (!khitmaAuthorized(req)) return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
-  res.json(await readKhitma());
-});
-
-app.put('/api/khitma', async (req, res) => {
-  if (!khitmaAuthorized(req)) return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
-  const { list, baseUpdatedAt, writeId } = req.body || {};
-  if (!Array.isArray(list) || typeof baseUpdatedAt !== 'number') {
-    return res.status(400).json({ error: 'حمولة غير صالحة' });
-  }
-  const current = await readKhitma();
-  // إعادة إرسال لكتابة قبِلناها سلفاً (ضاع ردّها): نجاح مكرّر لا تعارض
-  if (writeId && writeId === current.writeId) {
-    return res.json({ ok: true, updatedAt: current.updatedAt });
-  }
-  // تزامن متفائل كما في /api/state: الجهاز يرفع مستنداً إلى النسخة التي سحبها.
-  // اختلافها يعني أن جهازاً آخر كتب بعده — نرفض بدل أن نفقد ختمات.
-  if (baseUpdatedAt !== current.updatedAt) {
-    return res.status(409).json({ error: 'تعارض: سجلّ الختمات تغيّر على الخادم', updatedAt: current.updatedAt });
-  }
-  // ساعة الخادم وحدها — لا نثق بساعات الأجهزة
-  const updatedAt = Date.now();
-  await writeKhitma({ updatedAt, list, writeId });
-  res.json({ ok: true, updatedAt });
-});
-
-app.get('/api/health', (req, res) => res.json({ ok: true }));
-
-app.get('/api/state', async (req, res) => {
-  const record = await readState();
-  res.json(record);
-});
-
-app.put('/api/state', async (req, res) => {
-  const { state, baseUpdatedAt, writeId } = req.body || {};
-  if (typeof state !== 'object' || state === null || typeof baseUpdatedAt !== 'number') {
-    return res.status(400).json({ error: 'حمولة غير صالحة' });
-  }
-  const current = await readState();
-  // إعادة إرسال لكتابة قبِلناها سلفاً (ضاع ردّها على شبكة بطيئة): نجاح مكرّر لا تعارض.
-  // بدون هذا، إعادة المحاولة كانت تصطدم بـ409 من كتابتها هي نفسها وتُعطّل المزامنة.
-  if (writeId && writeId === current.writeId) {
-    return res.json({ ok: true, updatedAt: current.updatedAt });
-  }
-  // تزامن متفائل: الجهاز يرفع مستنداً إلى النسخة التي رآها آخر مرّة.
-  // إن تغيّرت الحالة على الخادم منذ ذلك الحين فهذا تعارض حقيقي — نرفض الرفع
-  // ونطلب من الجهاز السحب أوّلاً، بدل أن يكتب حالته القديمة فوق الأحدث.
-  if (baseUpdatedAt !== current.updatedAt) {
-    return res.status(409).json({ error: 'تعارض: الحالة تغيّرت على الخادم', updatedAt: current.updatedAt });
-  }
-  // ساعة الخادم وحدها هي المرجع — لا نثق بساعات الأجهزة (اختلافها يكسر «آخر تعديل يفوز»)
-  const updatedAt = Date.now();
-  await writeState({ updatedAt, state, writeId });
-  res.json({ ok: true, updatedAt });
-});
+if (migrated) console.log(`نُقلت بيانات المالك إلى حسابه: ${owner}`);
 
 app.listen(PORT, () => {
-  console.log(`خادم المزامنة يعمل على المنفذ ${PORT}`);
+  console.log(`خادم المزامنة يعمل على المنفذ ${PORT} — الحدّ الأقصى ${MAX_USERS} مستخدم`);
 });

@@ -16,14 +16,16 @@ async function resolveSource(url) {
 }
 
 /**
- * تشغيل تلاوة آية واحدة بصوت مقرئ.
- * @param onFinished يُستدعى عند انتهاء التلاوة كاملةً (لا عند الإيقاف)
+ * تشغيل تلاوة آية أو آيات متتالية (ورد اليوم) بصوت مقرئ، واحدة بعد الأخرى.
+ * @param verses     [{ s, a }] بترتيب التلاوة
+ * @param onFinished يُستدعى عند انتهاء التلاوة كاملةً — بعد آخر آية (لا عند الإيقاف)
  * @returns { status: 'idle' | 'loading' | 'playing' | 'error', play, stop }
  */
-export default function useVerseAudio({ surah, ayah, reciter, onFinished }) {
+export default function useVerseAudio({ verses, reciter, onFinished }) {
   const [status, setStatus] = useState('idle');
   const audioRef = useRef(null);
   const finishedRef = useRef(onFinished);
+  const versesKey = verses.map((v) => `${v.s}:${v.a}`).join(',');
 
   useEffect(() => { finishedRef.current = onFinished; }, [onFinished]);
 
@@ -33,26 +35,35 @@ export default function useVerseAudio({ surah, ayah, reciter, onFinished }) {
     setStatus('idle');
   }, []);
 
-  // تغيّر الآية أو إغلاق الشاشة يوقف التلاوة
-  useEffect(() => () => { audioRef.current?.pause(); audioRef.current = null; }, [surah, ayah, reciter]);
+  // تغيّر الآيات أو إغلاق الشاشة يوقف التلاوة
+  useEffect(() => () => { audioRef.current?.pause(); audioRef.current = null; }, [versesKey, reciter]);
 
-  const play = useCallback(async () => {
+  const play = useCallback(() => {
     audioRef.current?.pause();
     setStatus('loading');
-    const audio = new Audio();
-    audioRef.current = audio;
-    audio.onended = () => {
+    const queue = versesKey.split(',').map((key) => key.split(':').map(Number));
+
+    // يشغّل الآية رقم position ثم التي بعدها؛ audioRef يحمل المشغّل الجاري وحده،
+    // فأي تشغيل أحدث أو إيقاف يُبطل هذه السلسلة.
+    const playAt = async (position) => {
+      const [surah, ayah] = queue[position];
+      const audio = new Audio();
+      audioRef.current = audio;
+      audio.onended = () => {
+        if (audioRef.current !== audio) return;
+        if (position + 1 < queue.length) { playAt(position + 1); return; }
+        audioRef.current = null;
+        setStatus('idle');
+        finishedRef.current?.();
+      };
+      audio.onerror = () => { if (audioRef.current === audio) { audioRef.current = null; setStatus('error'); } };
+      audio.onplaying = () => { if (audioRef.current === audio) setStatus('playing'); };
+      audio.src = await resolveSource(getAudioUrl(surah, ayah, reciter));
       if (audioRef.current !== audio) return;
-      audioRef.current = null;
-      setStatus('idle');
-      finishedRef.current?.();
+      audio.play().catch(() => { if (audioRef.current === audio) { audioRef.current = null; setStatus('error'); } });
     };
-    audio.onerror = () => { if (audioRef.current === audio) { audioRef.current = null; setStatus('error'); } };
-    audio.onplaying = () => { if (audioRef.current === audio) setStatus('playing'); };
-    audio.src = await resolveSource(getAudioUrl(surah, ayah, reciter));
-    if (audioRef.current !== audio) return;
-    audio.play().catch(() => { if (audioRef.current === audio) { audioRef.current = null; setStatus('error'); } });
-  }, [surah, ayah, reciter]);
+    playAt(0);
+  }, [versesKey, reciter]);
 
   return { status, play, stop };
 }

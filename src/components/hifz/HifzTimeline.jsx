@@ -2,7 +2,7 @@ import { QURAN_VERSES } from '../../data/quranVerses';
 import { verseRanges } from '../../utils/hifzSchedule';
 import { isStepDone } from '../../utils/hifzSteps';
 import HifzStepTool from './HifzStepTool';
-import { STEP_TEXT, BOX_TEXT, boxTitle, surahName, rangesText } from './hifzText';
+import { STEP_TEXT, BOX_TEXT, boxTitle, rangesText, refsText, isMulti } from './hifzText';
 
 const CheckIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7" /></svg>
@@ -28,23 +28,32 @@ function Item({ state, number, title, hint, children }) {
 /**
  * الخط الزمني ليوم واحد: خطوات الآية الجديدة (مقفلة بالتسلسل) ثم صناديق المراجعة
  * (مفتوحة في أي وقت، شكّ واحد لكل صندوق بلا أدوات).
+ * @param canTakeExtra للمشرف: بعد إتمام ورد اليوم يُعرض زرّ يفتح ورداً آخر في اليوم نفسه (للتجربة)
  */
-export default function HifzTimeline({ program, plan, reciter, actions, extras }) {
+export default function HifzTimeline({ program, plan, reciter, actions, extras, canTakeExtra = false }) {
   const { rules } = program;
   const verse = plan.verse;
-  const verseText = verse?.ref ? QURAN_VERSES.find((v) => v.s === verse.ref.s && v.a === verse.ref.a)?.t : null;
+  const multi = isMulti(rules);
+  // نصّ ورد اليوم: الآية وحدها، أو الآيات متتالية وبعد كلٍّ رقمها
+  const texts = (verse?.refs ?? []).filter(Boolean).map((ref) => ({
+    ref,
+    text: QURAN_VERSES.find((v) => v.s === ref.s && v.a === ref.a)?.t,
+  }));
+  const verseText = texts.length > 1
+    ? texts.map(({ ref, text }) => `${text} ﴿${ref.a}﴾`).join(' ')
+    : texts[0]?.text ?? null;
 
   return (
     <div className="hifz-timeline">
       {verse && (
         <section className="hifz-section">
           <h3 className="hifz-section-title">
-            {verse.done ? 'آية اليوم — تم حفظها' : 'آية اليوم'}
-            <span>{surahName(verse.ref.s)} {verse.ref.a}</span>
+            {multi ? 'آيات اليوم' : 'آية اليوم'}{verse.done ? ' — تم حفظها' : ''}
+            <span>{refsText(verse.refs.filter(Boolean))}</span>
           </h3>
           {/* التكرار من الحفظ: نصّ الآية يختفي فور إتمام خطوة التسجيل */}
           {plan.openStep === 'repeat'
-            ? <p className="hifz-verse hidden">الآية مخفية — كرّرها من حفظك</p>
+            ? <p className="hifz-verse hidden">{multi ? 'الآيات مخفية — كرّرها من حفظك' : 'الآية مخفية — كرّرها من حفظك'}</p>
             : <p className="hifz-verse">{verseText}</p>}
           {!verse.done && (
             <ol className="hifz-list">
@@ -54,14 +63,19 @@ export default function HifzTimeline({ program, plan, reciter, actions, extras }
                 return (
                   <Item key={id} state={state} number={i + 1} title={STEP_TEXT[id].title} hint={state === 'done' ? null : STEP_TEXT[id].hint(rules)}>
                     {state === 'open' && (
-                      <HifzStepTool id={id} value={program.progress[id]} rules={rules} verse={verse.ref} reciter={reciter} actions={actions} extras={extras} />
+                      <HifzStepTool id={id} value={program.progress[id]} rules={rules} verses={verse.refs} reciter={reciter} actions={actions} extras={extras} />
                     )}
                   </Item>
                 );
               })}
             </ol>
           )}
-          {verse.done && <p className="hifz-done-note">الآية التالية تُفتح غداً.</p>}
+          {verse.done && <p className="hifz-done-note">{multi ? 'الورد التالي يُفتح غداً.' : 'الآية التالية تُفتح غداً.'}</p>}
+          {verse.done && canTakeExtra && (
+            <button type="button" className="hifz-btn hifz-extra" onClick={actions.extraPortion}>
+              افتح ورداً آخر الآن (للمشرف — للتجربة)
+            </button>
+          )}
         </section>
       )}
 
@@ -77,7 +91,7 @@ export default function HifzTimeline({ program, plan, reciter, actions, extras }
                 title={`${boxTitle(item.box, rules)} (${item.indices.length})`}
                 hint={BOX_TEXT[item.box].hint(rules)}
               >
-                <div className="hifz-ranges">{rangesText(verseRanges(program.direction, item.indices))}</div>
+                <div className="hifz-ranges">{rangesText(verseRanges(program.direction, item.indices, program.origin))}</div>
                 <button
                   type="button"
                   className={`hifz-btn ${item.done ? '' : 'primary'}`.trim()}

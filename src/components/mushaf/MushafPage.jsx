@@ -48,7 +48,7 @@ function withWidths(lines, widths) {
 }
 
 // سطر بقي أعرض من العمود يُوسَّط ويُضغط أفقياً بقدره
-function TextLine({ words, family, justified, squeeze, highlightVerse }) {
+function TextLine({ words, family, justified, squeeze, highlight }) {
   const squeezed = squeeze < 1;
   const style = { fontFamily: `"${family}"` };
   if (squeezed) style.transform = `scaleX(${squeeze})`;
@@ -57,7 +57,7 @@ function TextLine({ words, family, justified, squeeze, highlightVerse }) {
       {words.map((word, i) => (
         <span
           key={i}
-          className={`mushaf-word ${highlightVerse && word.verse === highlightVerse ? 'highlight' : ''}`.trim()}
+          className={`mushaf-word ${highlight.has(word.verse) ? 'highlight' : ''}`.trim()}
           data-verse={word.verse}
         >
           {word.glyph}
@@ -70,10 +70,13 @@ function TextLine({ words, family, justified, squeeze, highlightVerse }) {
 /**
  * صفحة واحدة من المصحف بأسطرها كما في المطبوع.
  * @param width,height أبعاد المساحة المتاحة للأسطر بالبكسل
- * @param highlightVerse مفتاح آية «سورة:آية» تُبرَز كلماتها (اختياري)
+ * @param highlightVerse مفتاح آية «سورة:آية» أو قائمة مفاتيح تُبرَز كلماتها (اختياري)
  */
 export default function MushafPage({ page, width, height, highlightVerse }) {
   const { status, data } = useMushafPage(page);
+  // مفتاح واحد أو عدّة (ورد من آيات متتالية) ← مجموعة تُفحص لكل كلمة
+  const highlightKey = [].concat(highlightVerse || []).join(',');
+  const highlight = useMemo(() => new Set(highlightKey ? highlightKey.split(',') : []), [highlightKey]);
 
   // القياس وتصحيح الكلمات الموضوعة في غير سطرها: مرة واحدة لكل صفحة
   const lines = useMemo(() => {
@@ -130,7 +133,7 @@ export default function MushafPage({ page, width, height, highlightVerse }) {
             </div>
           );
         }
-        return <TextLine key={i} words={line.words} family={data.family} justified={fit.justify[i]} squeeze={fit.squeeze[i]} highlightVerse={highlightVerse} />;
+        return <TextLine key={i} words={line.words} family={data.family} justified={fit.justify[i]} squeeze={fit.squeeze[i]} highlight={highlight} />;
       })}
         </div>
       </div>

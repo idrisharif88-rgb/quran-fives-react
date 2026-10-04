@@ -1,0 +1,193 @@
+/* واجهة الحساب (AccountPanel): النموذج وخطوة رمز التأكيد. */
+
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+}
+
+.account-form-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-2);
+}
+
+.account-form-tab {
+  flex: 1;
+  padding: 8px 6px;
+  border: 1.5px solid transparent;
+  border-radius: 9px;
+  background: none;
+  color: var(--app-muted);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.account-form-tab.is-active {
+  border-color: var(--app-accent-ink);
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+}
+
+.account-form-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1.5px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  font-family: inherit;
+  font-size: 15px;
+  text-align: center;
+  outline: none;
+}
+
+.account-form-input:focus {
+  border-color: var(--app-accent-ink);
+}
+
+.account-form-hint {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--app-muted);
+}
+
+.account-form-error {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-danger);
+}
+
+.account-form-submit {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.account-form-submit:disabled,
+.account-form-link:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.account-form-link {
+  padding: 4px;
+  border: none;
+  background: none;
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.account-form-lead {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--app-text);
+}
+
+.account-form-email {
+  display: block;
+  font-weight: 800;
+  color: var(--app-accent-ink);
+  overflow-wrap: anywhere;
+}
+
+.account-form-input--otp {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 6px;
+}
+
+/* ترحيب بعد الدخول (لوحة المزامنة) — يؤكّد للمستخدم أنّه داخل وبأيّ حساب */
+.account-welcome {
+  margin: 0 0 4px;
+  font-size: 19px;
+  font-weight: 900;
+  color: var(--app-accent-ink);
+  overflow-wrap: anywhere;
+}
+
+/* حساب ينتظر موافقة المشرف (AccountPending) */
+.account-pending {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0 14px;
+  padding: 12px;
+  border: 1.5px solid var(--app-warn);
+  border-radius: 12px;
+  background: var(--app-surface-2);
+}
+
+.account-pending-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--app-warn);
+}
+
+/* بُرُد دُخل بها على هذا الجهاز (نموذج الدخول) */
+.account-form-known {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.account-form-known-item {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border: 1.5px solid var(--app-border);
+  border-radius: 999px;
+  background: var(--app-surface-2);
+}
+
+.account-form-known-item.is-active {
+  border-color: var(--app-accent-ink);
+}
+
+.account-form-known-pick,
+.account-form-known-forget {
+  border: none;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.account-form-known-pick {
+  min-width: 0;
+  padding: 6px 4px 6px 12px;
+  color: var(--app-accent-ink);
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-form-known-forget {
+  padding: 4px 10px 4px 4px;
+  color: var(--app-muted);
+  font-size: 17px;
+  line-height: 1;
+}

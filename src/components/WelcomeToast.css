@@ -1,0 +1,42 @@
+/* ترحيب المستخدم في الركن السفلي الأيمن (فوق موضع شارة الحساب)، فوق كل اللوحات.
+   الوسط السفلي محجوز لمؤشّر المزامنة (sync-status-*). */
+
+/* ظهور، بقاء ~3 ثوانٍ، ثم اختفاء — ويبقى مخفياً بعدها (forwards) */
+@keyframes welcomeToast {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  8%,
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+}
+
+.welcome-toast {
+  position: fixed;
+  right: 12px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  z-index: 12000;
+  /* داكن في التشكيلات الأربع، فيبقى النصّ الأبيض الثابت مقروءاً */
+  background: var(--app-accent-deep);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 24px;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.3);
+  max-width: calc(100vw - 24px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  animation: welcomeToast 3.6s ease forwards;
+}

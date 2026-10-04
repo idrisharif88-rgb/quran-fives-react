@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SURAH_METADATA } from '../data/quranConstants';
 import { STEP_SIZES, STEP_LABELS, groupCountOfSurah } from '../utils/stepNavigation';
 import ModalDialog from './ModalDialog';
@@ -21,10 +21,20 @@ const normalizeArabic = (text) => text
  * تُعاد كـ Fragment لتصير أبناءً مباشرين لشبكة الصفّ. أمّا القوائم فتُعرض في
  * ModalDialog: نافذة حاجبة تمنع التفاعل مع بقيّة التطبيق حتى يختار المستخدم،
  * وتَعرض عبر portal إلى <body> لأن .verse-card تقصّ ما يتجاوزها.
+ *
+ * @param backRef يُملأ بدالّة تغلق القائمة المفتوحة، ليغلقها زرّ الرجوع في الهاتف أوّلاً.
+ *                بدونه كان الزرّ يتخطّاها (حالتها هنا لا في App) فيعرض تأكيد الخروج.
  */
-export default function CornerNav({ surahNumber, surahName, step, onSelectSurah, onSelectStep }) {
+export default function CornerNav({ surahNumber, surahName, step, onSelectSurah, onSelectStep, backRef }) {
   const [openPanel, setOpenPanel] = useState(null); // 'surah' | 'step' | null
   const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    if (!backRef || !openPanel) return undefined;
+    const closeTop = () => setOpenPanel(null);
+    backRef.current = closeTop;
+    return () => { if (backRef.current === closeTop) backRef.current = null; };
+  }, [backRef, openPanel]);
 
   const surahs = useMemo(() => SURAH_METADATA.map(s => ({
     ...s,
