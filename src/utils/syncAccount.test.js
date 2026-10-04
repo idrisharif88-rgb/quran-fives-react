@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { authHeaders, validateName, validateEmail, validateCode } from './syncAccount';
+import { authHeaders, validateName, validateEmail, validateCode, readKnownEmails, rememberEmail, forgetEmail } from './syncAccount';
+
+const mem = new Map();
+globalThis.localStorage = {
+  getItem: k => (mem.has(k) ? mem.get(k) : null),
+  setItem: (k, v) => mem.set(k, String(v)),
+  removeItem: k => mem.delete(k),
+};
 
 // الخادم يفكّ الترويسة هكذا (server/app.js)
 const decode = (headers) => new TextDecoder().decode(
@@ -43,5 +50,23 @@ describe('شروط الحساب الجديد', () => {
   it('كلمة السر: 6 أحرف على الأقل', () => {
     expect(validateCode('123456')).toBeNull();
     expect(validateCode('12345')).toBeTruthy();
+  });
+});
+
+describe('البُرُد المحفوظة للدخول السريع', () => {
+  it('الأحدث أوّلاً، بلا تكرار، وخمسة على الأكثر', () => {
+    mem.clear();
+    expect(readKnownEmails()).toEqual([]);
+    for (const n of [1, 2, 3, 4, 5, 6]) rememberEmail(`u${n}@example.com`);
+    rememberEmail('u3@example.com');
+    expect(readKnownEmails()).toEqual(['u3@example.com', 'u6@example.com', 'u5@example.com', 'u4@example.com', 'u2@example.com']);
+  });
+
+  it('نسيان بريد يُبقي غيره', () => {
+    mem.clear();
+    rememberEmail('a@example.com');
+    rememberEmail('b@example.com');
+    expect(forgetEmail('b@example.com')).toEqual(['a@example.com']);
+    expect(readKnownEmails()).toEqual(['a@example.com']);
   });
 });

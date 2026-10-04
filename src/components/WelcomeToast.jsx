@@ -1,24 +1,26 @@
 import { useState } from 'react';
+import { welcomePendingFor, clearWelcome } from '../utils/syncAccount';
 import './WelcomeToast.css';
 
 /**
- * ترحيب بالمستخدم باسمه على الشاشة الرئيسية: عند فتح التطبيق وهو داخل، وعند
- * الدخول بحساب. يؤكّد له أنّه داخل وبأيّ حساب، ثمّ يختفي وحده.
- * الظهور والاختفاء بحركة CSS واحدة؛ المفتاح (key) يعيدها عند كل دخول جديد.
+ * ترحيب بالمستخدم باسمه في ركن الشاشة: مرّة واحدة بعد الدخول بحساب، لا عند كل فتح
+ * للتطبيق. شارة الحساب (AccountBadge) هي ما يبقى ليعرف المستخدم بأيّ حساب هو داخل.
+ * الظهور والاختفاء بحركة CSS واحدة؛ نهايتها تمسح علامة الترحيب فلا يتكرّر.
  */
 export default function WelcomeToast({ account }) {
   const user = account?.user;
-  // الحساب الذي فُتح به التطبيق: ترحيبه «بعودتك»، وما عداه دخول جديد
-  const [openedAs] = useState(user);
+  const [shownFor, setShownFor] = useState(null);   // الحساب الذي اكتمل ترحيبه في هذه الجلسة
 
-  if (!user) return null;
+  if (!user || shownFor === user || !welcomePendingFor(user)) return null;
 
-  const name = account.name || user;
-  const text = user === openedAs ? `مرحباً بعودتك، ${name}` : `مرحباً، ${name} — تمّ الدخول`;
+  const finish = () => {
+    clearWelcome();
+    setShownFor(user);
+  };
 
   return (
-    <div key={user} className="welcome-toast" dir="rtl" role="status">
-      {text}
+    <div key={user} className="welcome-toast" dir="rtl" role="status" onAnimationEnd={finish}>
+      مرحباً، {account.name || user}
     </div>
   );
 }

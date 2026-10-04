@@ -87,3 +87,51 @@ export function validateName(name) {
 export function validateCode(code) {
   return code.length >= MIN_CODE_LENGTH ? null : `كلمة السر ${MIN_CODE_LENGTH} أحرف على الأقل`;
 }
+
+// ─── البُرُد التي دُخل بها على هذا الجهاز ───
+// تُعرض في نموذج الدخول ليُختار منها بضغطة. تبقى بعد تسجيل الخروج عمداً (بريد فقط،
+// بلا كلمة سر)، وللمستخدم أن ينسى أيّاً منها.
+const KNOWN_EMAILS_KEY = 'quran-fives-known-emails-v1';
+const MAX_KNOWN_EMAILS = 5;
+
+export function readKnownEmails() {
+  try {
+    const list = JSON.parse(localStorage.getItem(KNOWN_EMAILS_KEY));
+    return Array.isArray(list) ? list.filter(e => typeof e === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+const writeKnownEmails = (list) => {
+  try {
+    localStorage.setItem(KNOWN_EMAILS_KEY, JSON.stringify(list));
+  } catch {
+    // تجاهل فشل التخزين
+  }
+  return list;
+};
+
+// الأحدث أوّلاً، بلا تكرار
+export const rememberEmail = (email) => writeKnownEmails(
+  [email, ...readKnownEmails().filter(e => e !== email)].slice(0, MAX_KNOWN_EMAILS),
+);
+
+export const forgetEmail = (email) => writeKnownEmails(readKnownEmails().filter(e => e !== email));
+
+// ─── ترحيب الدخول ───
+// يُعرض مرّة واحدة بعد كل دخول، لا عند كل فتح للتطبيق. العلامة في تخزين الجلسة
+// لأن الدخول قد يتبعه إعادة تحميل (تنزيل نسخة السحابة) تقطع الترحيب قبل أن يُرى.
+const WELCOME_KEY = 'quran-fives-welcome';
+
+export function markWelcome(user) {
+  try { sessionStorage.setItem(WELCOME_KEY, user); } catch { /* تجاهل */ }
+}
+
+export function welcomePendingFor(user) {
+  try { return Boolean(user) && sessionStorage.getItem(WELCOME_KEY) === user; } catch { return false; }
+}
+
+export function clearWelcome() {
+  try { sessionStorage.removeItem(WELCOME_KEY); } catch { /* تجاهل */ }
+}

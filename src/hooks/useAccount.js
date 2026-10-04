@@ -1,6 +1,9 @@
 import { useCallback, useState } from 'react';
 import { SYNC_ENABLED } from '../utils/syncConfig';
-import { readAccount, saveAccount, clearAccount, validateName, validateEmail, validateCode } from '../utils/syncAccount';
+import {
+  readAccount, saveAccount, clearAccount, validateName, validateEmail, validateCode,
+  readKnownEmails, rememberEmail, forgetEmail, markWelcome,
+} from '../utils/syncAccount';
 import { registerAccount, verifyAccount, loginAccount, confirmLogin, requestReset, confirmReset } from '../utils/cloudSync';
 
 // رسالة لكل ردّ من الخادم؛ ما عداها عطل شبكة
@@ -25,6 +28,7 @@ export default function useAccount() {
   const [pending, setPending] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [knownEmails, setKnownEmails] = useState(readKnownEmails);   // بُرُد دُخل بها على هذا الجهاز
 
   // ينفّذ طلباً ويترجم فشله إلى رسالة؛ يعيد ردّ الخادم عند النجاح و null عند الفشل
   const run = useCallback(async (request, otpStep = false) => {
@@ -43,9 +47,14 @@ export default function useAccount() {
 
   const enter = useCallback((creds) => {
     saveAccount(creds);
+    // الحسابات الأقدم (اسم لا بريد) لا تُحفظ في قائمة البُرُد
+    if (validateEmail(creds.user) === null) setKnownEmails(rememberEmail(creds.user));
+    markWelcome(creds.user);
     setAccount(creds);
     setPending(null);
   }, []);
+
+  const forgetKnownEmail = useCallback((email) => setKnownEmails(forgetEmail(email)), []);
 
   const login = useCallback(async ({ user, code }) => {
     const creds = { user: user.trim(), code: code.trim() };
@@ -103,5 +112,8 @@ export default function useAccount() {
 
   const clearError = useCallback(() => setError(''), []);
 
-  return { account, pending, busy, error, login, register, startReset, confirm, cancelPending, signOut, clearError };
+  return {
+    account, pending, busy, error, knownEmails,
+    login, register, startReset, confirm, cancelPending, signOut, clearError, forgetKnownEmail,
+  };
 }

@@ -5,7 +5,7 @@ import { MIN_CODE_LENGTH } from '../utils/syncAccount';
  * دخول أو طلب حساب جديد بالبريد. الحالة والشبكة في useAccount؛ هنا الحقول فقط.
  */
 export default function AccountForm({ auth }) {
-  const { busy, error, login, register, startReset, clearError } = auth;
+  const { busy, error, knownEmails, login, register, startReset, clearError, forgetKnownEmail } = auth;
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [name, setName] = useState('');
   const [user, setUser] = useState('');
@@ -84,6 +84,21 @@ export default function AccountForm({ auth }) {
         spellCheck={false}
         maxLength={254}
       />
+      {/* بُرُد دُخل بها على هذا الجهاز: ضغطة تملأ الحقل، و× تنسى البريد */}
+      {!isRegister && knownEmails.length > 0 && (
+        <div className="account-form-known" dir="ltr">
+          {knownEmails.map((email) => (
+            <span key={email} className={`account-form-known-item${user === email ? ' is-active' : ''}`}>
+              <button type="button" className="account-form-known-pick" onClick={() => { setUser(email); clearError(); }}>
+                {email}
+              </button>
+              <button type="button" className="account-form-known-forget" aria-label={`انسَ ${email}`} onClick={() => forgetKnownEmail(email)}>
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
       <input
         className="account-form-input"
         type="password"

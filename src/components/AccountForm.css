@@ -144,3 +144,50 @@
   font-weight: 900;
   color: var(--app-warn);
 }
+
+/* بُرُد دُخل بها على هذا الجهاز (نموذج الدخول) */
+.account-form-known {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.account-form-known-item {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border: 1.5px solid var(--app-border);
+  border-radius: 999px;
+  background: var(--app-surface-2);
+}
+
+.account-form-known-item.is-active {
+  border-color: var(--app-accent-ink);
+}
+
+.account-form-known-pick,
+.account-form-known-forget {
+  border: none;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.account-form-known-pick {
+  min-width: 0;
+  padding: 6px 4px 6px 12px;
+  color: var(--app-accent-ink);
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-form-known-forget {
+  padding: 4px 10px 4px 4px;
+  color: var(--app-muted);
+  font-size: 17px;
+  line-height: 1;
+}
