@@ -138,6 +138,12 @@
   flex: 0 0 auto;
 }
 
+/* آية مُبرَزة (الاستماع في برنامج الحفظ): لون السِّمة فوق خلفية خفيفة */
+.mushaf-word.highlight {
+  color: var(--app-accent-ink);
+  background: var(--app-accent-deep-soft);
+}
+
 /* عنوان السورة: شريط مؤطَّر بلون السِّمة */
 .mushaf-surah-title span {
   width: 100%;

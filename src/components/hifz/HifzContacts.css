@@ -1,0 +1,165 @@
+/* ── خطّ التواصل مع الشيخ ── */
+.hifz-contacts {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.hifz-contact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.hifz-contact-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 12px;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: right;
+  cursor: pointer;
+}
+
+/* ألوان التطبيقين معتّمة قليلاً كي يبقى النصّ الأبيض فوقها مقروءاً */
+.hifz-contact-open.whatsapp { background: #128c4a; }
+.hifz-contact-open.telegram { background: #1f7fb8; }
+
+.hifz-contact-open span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hifz-contact-remove {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--app-border);
+  border-radius: 50%;
+  background: var(--app-surface);
+  color: var(--app-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.hifz-waiting {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--hifz-gold);
+  background: var(--hifz-gold-soft);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--app-text-strong);
+}
+
+/* ── نموذج الإضافة: في أعلى الشاشة ── */
+.hifz-contact-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 13200;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: max(28px, calc(env(safe-area-inset-top, 0px) + 10px)) 12px 12px;
+  box-sizing: border-box;
+}
+
+.hifz-contact-form {
+  width: 100%;
+  max-width: 480px;
+  padding: 12px 14px 14px;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #1f2937;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hifz-contact-form-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F6E56;
+}
+
+.hifz-contact-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ألوان مصمتة صريحة (docs/fixes/android-webview-black-input.md) */
+.hifz-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1.5px solid #0F6E56;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1f2937;
+  -webkit-text-fill-color: #1f2937;
+  caret-color: #0F6E56;
+  color-scheme: light;
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+  font-size: 17px;
+}
+
+.hifz-input::placeholder {
+  color: #9ca3af;
+  -webkit-text-fill-color: #9ca3af;
+}
+
+.hifz-contact-apps {
+  display: flex;
+  gap: 8px;
+}
+
+.hifz-contact-app {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 0;
+  border: 1.5px solid #d7e2dd;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #374151;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.hifz-contact-app.active {
+  border-color: #0F6E56;
+  background: #0F6E56;
+  color: #ffffff;
+}
+
+.hifz-contact-error {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #b91c1c;
+}

@@ -1,0 +1,278 @@
+/* ── أداة التسجيل ── */
+.hifz-recorder {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 2px;
+}
+
+.hifz-record-btn {
+  flex: 0 0 68px;
+  width: 68px;
+  height: 68px;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid #b91c1c;
+  background: var(--app-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* الدائرة الحمراء = سجّل، والمربّع = أوقف */
+.hifz-record-btn i {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #dc2626;
+  transition: all 0.15s ease;
+}
+
+.hifz-record-btn.recording i {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  animation: hifz-record-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes hifz-record-pulse {
+  50% { opacity: 0.55; }
+}
+
+.hifz-recorder-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hifz-recorder-info strong {
+  font-size: 18px;
+  color: var(--app-text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.hifz-recorder-info span {
+  font-size: 13px;
+  color: var(--app-muted);
+}
+
+/* ── تسجيلاتي ── */
+.hifz-recordings-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--app-text-strong);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.hifz-recordings-toggle span:last-child {
+  font-size: 11px;
+  color: var(--app-muted);
+}
+
+.hifz-recordings {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hifz-recording {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-2);
+}
+
+.hifz-recording-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hifz-recording-info strong {
+  font-size: 15px;
+  color: var(--app-text-strong);
+}
+
+.hifz-recording-info span {
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+.hifz-recording .hifz-btn {
+  align-self: center;
+  padding: 7px 12px;
+}
+
+.hifz-icon-btn {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.hifz-icon-btn.danger {
+  color: #dc2626;
+}
+
+/* ── الاستماع والعين على المصحف: شاشة كاملة فوق برنامج الحفظ ── */
+.hifz-listen {
+  position: fixed;
+  inset: 0;
+  z-index: 11600;
+  display: flex;
+  flex-direction: column;
+  background: var(--app-surface);
+  color: var(--app-text-strong);
+  padding-top: max(28px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.hifz-listen-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px 8px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.hifz-listen-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.hifz-listen-title strong {
+  font-size: 17px;
+  color: var(--app-accent-ink);
+}
+
+.hifz-listen-title span {
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+.hifz-listen-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 14px;
+  box-sizing: border-box;
+}
+
+.hifz-listen-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px 4px;
+  border-top: 1px solid var(--app-border);
+}
+
+.hifz-listen-play {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--app-accent-deep);
+  color: var(--app-accent-deep-contrast, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.hifz-listen-play:disabled {
+  opacity: 0.5;
+}
+
+.hifz-listen-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--app-border);
+  overflow: hidden;
+}
+
+.hifz-listen-progress {
+  height: 100%;
+  background: var(--app-accent-deep);
+}
+
+.hifz-listen-time {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* الحكم على التسجيل بعد سماعه */
+.hifz-verdict {
+  padding: 10px 14px 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.hifz-verdict p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--app-text-strong);
+}
+
+.hifz-verdict-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.hifz-verdict-actions .hifz-btn {
+  align-self: center;
+}
+
+.hifz-listen-note {
+  margin: 0;
+  padding: 2px 14px 0;
+  font-size: 13px;
+  text-align: center;
+  color: var(--app-muted);
+}
+
+.hifz-listen-note.error {
+  color: var(--app-danger);
+}
