@@ -18,6 +18,10 @@
   padding: 24px;
   width: 90%;
   max-width: 400px;
+  /* محتوى أطول من الشاشة (قائمة «ما الذي يُزامَن؟» مفتوحة) يُمرَّر داخل البطاقة بدل أن يخرج فوق الشاشة */
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
