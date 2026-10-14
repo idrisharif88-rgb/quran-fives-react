@@ -57,7 +57,7 @@ Establish a baseline first, scope checks to changed files, and grep for orphaned
 - **The numbers are the owner's rules** (3 listens, 40 repeats, 5 times, 25 days, 6-day cycle, runs of 5). Do not tune them.
 - **A recording carries all its verses.** `refs` is stored with each take so the listen view highlights the whole portion (`hifzRecordingRefs.js`); a portion can span two pages. Dropping `refs` in `writeRecording` silently highlighted only the first verse. The mushaf page view belongs to the record step; «تسجيلاتي» plays in place (`useRecordingPlayer`).
 - **`origin` shifts where memorising starts.** `verseAt(direction, index, origin)` wraps around the mushaf, so indices and boxes stay untouched. Choosing a start verse needs the `hifzCustomStart` permission, granted per user by the owner (who always has it).
-- **The owner may open another portion the same day** (`openExtraPortion`, for testing). `state.extra` lifts the one-portion-a-day lock until that portion is done.
+- **The owner may open another portion the same day** (`openExtraPortion`). It adds one to `state.shift`, and reviews follow what was memorised, not the calendar: the programme's day is `effectiveDay(state, calendarDay)`, so the portion just finished becomes «آيات الأمس» and every box advances a day. Every function in `hifzState.js` takes that programme day as `today` — never pass the raw calendar day. It opens only when the current day is complete (portion and all boxes).
 - **Supervision is specified but not built** (stop after 3 unfinished days in a 30-day cycle, supervisor reopens, excused freeze for new verses only, reviews always allowed). `status` and `dayLog` in `hifzState.js` are the hooks left for it.
 
 # Theming Rules
@@ -78,6 +78,12 @@ The APK must work with no network. Only recitation audio may hit the internet.
 - **No CDN references in CSS or `index.html`.** `src/App.css` opened with an `@import` from `fonts.googleapis.com`; offline it silently failed and every font — Tajawal, Amiri, Amiri Quran, Noto Naskh, Scheherazade — fell back to the system font. Fonts are now self-hosted in `src/assets/fonts/` with `@font-face` rules in `src/styles/fonts.css`.
 - **`src/styles/fonts.css` is generated — don't hand-edit it.** Re-run `scripts/fetch-fonts.sh src/assets/fonts src/styles/fonts.css` to add a family or weight. It keeps the `arabic` + `latin` subsets only and drops the rest.
 - **A failing network request must never look like a styling bug.** Test any new asset with the device in airplane mode before shipping.
+
+# Hijri Calendar Rules
+
+- **The owner's moon table is the calendar for every user.** `src/constants/hijriMonths.js` holds each month's moon (date + time); `monthStart` in `src/utils/hijriDate.js` turns it into day 1 by the dawn rule: before 04:00 the same day, from 05:00 the next day, between 04:00 and 05:00 the owner decides (written as `start`). Every Hijri date in the app goes through `hijriFromTable` first; Umm al-Qura is only the fallback past the table's end.
+- **No calendar request to the internet.** The header date once fetched `api.aladhan.com`, which broke the offline rule and overrode the owner's table. Keep it local.
+- **The owner wants 12 months ahead.** `useHijriReminder` shows the owner (only) a small bar once per Hijri month while fewer remain, and asks three days before any moon between 04:00 and 05:00. New moons arrive from the owner and are added to the table by hand.
 
 # Back Button Rules
 

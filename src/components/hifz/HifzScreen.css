@@ -242,12 +242,34 @@
   text-align: center;
 }
 
+/* ورد اليوم بأسطر المصحف (HifzMushafVerses): الحجم تحدّده الأسطر لا الصندوق */
+.hifz-verse.mushaf {
+  padding: 8px 10px;
+  font-size: 0;
+  line-height: 1;
+}
+
+.hifz-mushaf .mushaf-page-message {
+  min-height: 48px;
+  font-size: 14px;
+}
+
 .hifz-verse.hidden {
   font-family: inherit;
   font-size: 14px;
   line-height: 1.8;
   color: var(--app-muted);
   border-style: dashed;
+}
+
+/* إظهار/إخفاء نصّ الورد أثناء التسجيل (HifzVerseText) */
+.hifz-verse-toggle {
+  display: block;
+  margin: 6px auto 0;
+}
+
+.hifz-verse-toggle.shown {
+  margin: -6px auto 14px;
 }
 
 /* للمشرف: ورد إضافي في اليوم نفسه */
@@ -457,6 +479,29 @@
   color: var(--hifz-gold-ink);
 }
 
+/* طريقة الخماسيات (HifzMethodTool): ما يُقرأ الآن والمرحلة */
+.hifz-method-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 8px;
+}
+
+.hifz-method-stage strong {
+  font-size: 17px;
+  color: var(--app-accent-ink);
+}
+
+.hifz-method-stage span {
+  font-size: 13px;
+  color: var(--app-muted);
+}
+
+.hifz-method-close {
+  display: block;
+  margin: 8px auto 0;
+}
+
 .hifz-confirm {
   align-self: stretch;
   margin-top: 4px;
@@ -631,6 +676,32 @@
   margin: 0;
   font-size: 15px;
   color: var(--app-text-strong);
+}
+
+.hifz-listen-choices {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  font-size: 13px;
+  color: var(--app-muted);
+}
+
+.hifz-listen-choices .hifz-start-chip {
+  flex: 0 0 auto;
+  min-width: 44px;
+  padding: 6px 10px;
+}
+
+.hifz-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  font-family: inherit;
+  font-size: 14px;
 }
 
 .hifz-settings .hifz-start-perday {

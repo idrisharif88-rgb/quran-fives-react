@@ -1,7 +1,7 @@
-import { QURAN_VERSES } from '../../data/quranVerses';
 import { verseRanges } from '../../utils/hifzSchedule';
 import { isStepDone } from '../../utils/hifzSteps';
 import HifzStepTool from './HifzStepTool';
+import HifzVerseText from './HifzVerseText';
 import { STEP_TEXT, BOX_TEXT, boxTitle, rangesText, refsText, isMulti } from './hifzText';
 
 const CheckIcon = () => (
@@ -28,20 +28,14 @@ function Item({ state, number, title, hint, children }) {
 /**
  * الخط الزمني ليوم واحد: خطوات الآية الجديدة (مقفلة بالتسلسل) ثم صناديق المراجعة
  * (مفتوحة في أي وقت، شكّ واحد لكل صندوق بلا أدوات).
+ * @param cover 'recording' | 'method' | null — تسجيل جارٍ أو طريقة الخماسيات مفتوحة: نصّ الورد يُغطّى
+ * @param trial وضع التجربة: زرّ «تخطَّ» في الخطوة المفتوحة يُتمّها فوراً
  * @param canTakeExtra للمشرف: بعد إتمام ورد اليوم يُعرض زرّ يفتح ورداً آخر في اليوم نفسه (للتجربة)
  */
-export default function HifzTimeline({ program, plan, reciter, actions, extras, canTakeExtra = false }) {
+export default function HifzTimeline({ program, plan, reciter, actions, extras, cover = null, trial = false, canTakeExtra = false }) {
   const { rules } = program;
   const verse = plan.verse;
   const multi = isMulti(rules);
-  // نصّ ورد اليوم: الآية وحدها، أو الآيات متتالية وبعد كلٍّ رقمها
-  const texts = (verse?.refs ?? []).filter(Boolean).map((ref) => ({
-    ref,
-    text: QURAN_VERSES.find((v) => v.s === ref.s && v.a === ref.a)?.t,
-  }));
-  const verseText = texts.length > 1
-    ? texts.map(({ ref, text }) => `${text} ﴿${ref.a}﴾`).join(' ')
-    : texts[0]?.text ?? null;
 
   return (
     <div className="hifz-timeline">
@@ -51,10 +45,8 @@ export default function HifzTimeline({ program, plan, reciter, actions, extras, 
             {multi ? 'آيات اليوم' : 'آية اليوم'}{verse.done ? ' — تم حفظها' : ''}
             <span>{refsText(verse.refs.filter(Boolean))}</span>
           </h3>
-          {/* التكرار من الحفظ: نصّ الآية يختفي فور إتمام خطوة التسجيل */}
-          {plan.openStep === 'repeat'
-            ? <p className="hifz-verse hidden">{multi ? 'الآيات مخفية — كرّرها من حفظك' : 'الآية مخفية — كرّرها من حفظك'}</p>
-            : <p className="hifz-verse">{verseText}</p>}
+          {/* التكرار من الحفظ: نصّ الآية يختفي فور إتمام خطوة التسجيل. وكذلك أثناء التسجيل. */}
+          <HifzVerseText key={cover || 'idle'} refs={verse.refs.filter(Boolean)} multi={multi} repeat={plan.openStep === 'repeat'} cover={cover} />
           {!verse.done && (
             <ol className="hifz-list">
               {rules.steps.map((id, i) => {
@@ -65,6 +57,9 @@ export default function HifzTimeline({ program, plan, reciter, actions, extras, 
                     {state === 'open' && (
                       <HifzStepTool id={id} value={program.progress[id]} rules={rules} verses={verse.refs} reciter={reciter} actions={actions} extras={extras} />
                     )}
+                    {state === 'open' && trial && (
+                      <button type="button" className="hifz-skip" onClick={actions.skip}>تخطَّ ←</button>
+                    )}
                   </Item>
                 );
               })}
@@ -72,8 +67,8 @@ export default function HifzTimeline({ program, plan, reciter, actions, extras, 
           )}
           {verse.done && <p className="hifz-done-note">{multi ? 'الورد التالي يُفتح غداً.' : 'الآية التالية تُفتح غداً.'}</p>}
           {verse.done && canTakeExtra && (
-            <button type="button" className="hifz-btn hifz-extra" onClick={actions.extraPortion}>
-              افتح ورداً آخر الآن (للمشرف — للتجربة)
+            <button type="button" className="hifz-btn hifz-extra" onClick={actions.extraPortion} disabled={!plan.complete}>
+              {plan.complete ? 'افتح الورد التالي الآن (يوم جديد بمراجعته)' : 'أتمّ مراجعة اليوم لفتح الورد التالي'}
             </button>
           )}
         </section>

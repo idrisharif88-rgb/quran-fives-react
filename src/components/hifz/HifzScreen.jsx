@@ -6,6 +6,11 @@ import HifzRecorder from './HifzRecorder';
 import HifzRecordingsList from './HifzRecordingsList';
 import HifzListenView from './HifzListenView';
 import HifzCustomStart from './HifzCustomStart';
+import HifzFooter from './HifzFooter';
+import HifzSettings from './HifzSettings';
+import HifzReciterSelect from './HifzReciterSelect';
+import HifzMethodTool from './HifzMethodTool';
+import HifzTrialBar from './HifzTrialBar';
 import useHifzRecordings from '../../hooks/useHifzRecordings';
 import { DIRECTIONS, VERSES_PER_DAY_CHOICES, daysBetween } from '../../utils/hifzSchedule';
 import './HifzScreen.css';
@@ -14,7 +19,7 @@ const perDayLabel = (n) => (n === 1 ? 'آية واحدة' : `${n} آيات`);
 
 // بدء البرنامج: ورد اليوم (آية أو 3 أو 5 أو 7) ثم نقطة البداية (أول المصحف أو آخره،
 // أو آية يختارها من أذن له المشرف)
-function HifzStart({ onStart, canCustomStart }) {
+function HifzStart({ onStart, canCustomStart, onTrialStart }) {
   const [perDay, setPerDay] = useState(VERSES_PER_DAY_CHOICES[0]);
   return (
     <div className="hifz-start">
@@ -44,6 +49,7 @@ function HifzStart({ onStart, canCustomStart }) {
       </button>
       {canCustomStart && <HifzCustomStart onStart={(origin) => onStart(DIRECTIONS.FORWARD, perDay, origin)} />}
       <p className="hifz-start-note">{perDayLabel(perDay)} في اليوم، ثم مراجعة ما حُفظ.</p>
+      {onTrialStart && <button type="button" className="hifz-link" onClick={onTrialStart}>وضع التجربة (للمشرف)</button>}
     </div>
   );
 }
@@ -51,19 +57,23 @@ function HifzStart({ onStart, canCustomStart }) {
 /**
  * شاشة برنامج الحفظ: شاشة كاملة فيها الخط الزمني لليوم.
  * @param hifz    ما يعيده useHifz
- * @param reciter  المقرئ المختار في التطبيق
+ * @param reciter  المقرئ المختار في التطبيق، و onReciterChange يغيّره (بجانب زرّ التلاوة)
  * @param contacts ما يعيده useHifzContacts (شيوخ خطوة تأكيد الحافظ)
  * @param backRef  يُملأ بدالّة تغلق ما فُتح فوق الشاشة (الاستماع، نموذج الشيخ، تنبيه الإتمام)
  *                 ليغلقه زرّ الرجوع أولاً قبل الشاشة نفسها
  * @param canTakeExtra حساب المشرف: يسمح بأكثر من ورد في اليوم الواحد (للتجربة)
  * @param canCustomStart أذن المشرف لهذا الحساب أن يبدأ الحفظ من آية يختارها
+ * @param trial   وضع التجربة جارٍ (hifz عندها برنامج التجربة): شريطه، و«تخطَّ» في كل خطوة
+ * @param onTrialStart / onTrialEnd للمشرف: الدخول إلى وضع التجربة والخروج منه
  */
-export default function HifzScreen({ hifz, reciter, contacts, onClose, backRef, canTakeExtra = false, canCustomStart = false }) {
-  const { program, plan, today, celebrate, actions } = hifz;
-  const [confirmReset, setConfirmReset] = useState(false);
+export default function HifzScreen({ hifz, reciter, onReciterChange, contacts, onClose, backRef, canTakeExtra = false, canCustomStart = false, trial = false, onTrialStart, onTrialEnd }) {
+  const { program, plan, today, celebrate, inSession, methodTaps, actions } = hifz;
+  const [confirming, setConfirming] = useState(null);       // سؤال مفتوح أسفل الشاشة: 'reset' | 'cancel'
   const [settingsOpen, setSettingsOpen] = useState(false);   // إعدادات الحفظ: تغيير ورد اليوم بلا إعادة ضبط
   const recordings = useHifzRecordings();
   const [listening, setListening] = useState(null);   // التسجيل المفتوح في شاشة الاستماع
+  const [recording, setRecording] = useState(false);  // تسجيل جارٍ: يُغطّى نصّ الورد
+  const [methodOpen, setMethodOpen] = useState(false); // طريقة الخماسيات مفتوحة: يُغطّى كذلك
 
   // الآية الجارية وأحدث تسجيل محفوظ لها
   const verse = plan?.verse && !plan.verse.done ? plan.verse : null;
@@ -82,23 +92,25 @@ export default function HifzScreen({ hifz, reciter, contacts, onClose, backRef, 
     setListening(null);
   };
 
-  // زرّ الرجوع: يغلق شاشة الاستماع أو تنبيه الإتمام أو تأكيد إعادة الضبط قبل الشاشة
+  // زرّ الرجوع: يغلق شاشة الاستماع أو تنبيه الإتمام أو سؤال التأكيد قبل الشاشة
   const showCelebration = Boolean(program && celebrate && !listening);
   useEffect(() => {
     if (!backRef) return undefined;
     let closeTop = null;
     if (listening) closeTop = () => setListening(null);
     else if (showCelebration) closeTop = actions.celebrated;
-    else if (confirmReset) closeTop = () => setConfirmReset(false);
+    else if (confirming) closeTop = () => setConfirming(null);
     if (!closeTop) return undefined;
     backRef.current = closeTop;
     return () => { if (backRef.current === closeTop) backRef.current = null; };
-  }, [backRef, listening, showCelebration, confirmReset, actions]);
+  }, [backRef, listening, showCelebration, confirming, actions]);
 
   // أدوات تُحقن في الخطوات المفتوحة
   const extras = verse ? {
+    reciterSelect: <HifzReciterSelect reciter={reciter} onChange={onReciterChange} />,
+    method: <HifzMethodTool refs={verse.refs.filter(Boolean)} taps={methodTaps} open={methodOpen} onOpenChange={setMethodOpen} onTap={actions.methodTap} onDone={() => actions.tick('memorize')} />,
     hafizContacts: <HifzContacts contacts={contacts} verse={verse} backRef={backRef} />,
-    recorder: <HifzRecorder value={program.progress.record} latest={latestTake} onSave={saveTake} onListen={setListening} />,
+    recorder: <HifzRecorder value={program.progress.record} latest={latestTake} onSave={saveTake} onListen={setListening} onRecordingChange={setRecording} />,
   } : {};
 
   return (
@@ -110,9 +122,10 @@ export default function HifzScreen({ hifz, reciter, contacts, onClose, backRef, 
         <h2>برنامج الحفظ</h2>
         <span className="hifz-header-spacer" />
       </div>
+      {trial && <HifzTrialBar canAdvance={Boolean(program)} onNextDay={actions.nextDay} onEnd={onTrialEnd} />}
 
       <div className="hifz-body">
-        {!program ? <HifzStart onStart={actions.start} canCustomStart={canCustomStart} /> : (
+        {!program ? <HifzStart onStart={actions.start} canCustomStart={canCustomStart || trial} onTrialStart={canTakeExtra && !trial ? onTrialStart : undefined} /> : (
           <>
             <div className="hifz-summary">
               <div><strong>{daysBetween(program.startedOn, today) + 1}</strong><span>اليوم</span></div>
@@ -120,50 +133,28 @@ export default function HifzScreen({ hifz, reciter, contacts, onClose, backRef, 
               <div className={plan.complete ? 'complete' : ''}><strong>{plan.complete ? '✓' : '…'}</strong><span>{plan.complete ? 'اكتمل اليوم' : 'مهام اليوم'}</span></div>
             </div>
 
-            <HifzTimeline program={program} plan={plan} reciter={reciter} actions={actions} extras={extras} canTakeExtra={canTakeExtra} />
+            <HifzTimeline program={program} plan={plan} reciter={reciter} actions={actions} extras={extras} cover={recording ? 'recording' : methodOpen ? 'method' : null} trial={trial} canTakeExtra={canTakeExtra} />
             <HifzRecordingsList recordings={recordings} />
 
-            <div className="hifz-footer">
-              {confirmReset ? (
-                <>
-                  <span>يُمحى تقدّم الحفظ كله. متأكد؟</span>
-                  <button type="button" className="hifz-btn danger" onClick={() => { actions.reset(); setConfirmReset(false); }}>نعم، ابدأ من جديد</button>
-                  <button type="button" className="hifz-btn" onClick={() => setConfirmReset(false)}>إلغاء</button>
-                </>
-              ) : (
-                <>
-                  <button type="button" className="hifz-link" onClick={() => setSettingsOpen((v) => !v)} aria-expanded={settingsOpen}>إعدادات الحفظ</button>
-                  <button type="button" className="hifz-link" onClick={() => setConfirmReset(true)}>إعادة ضبط البرنامج</button>
-                </>
-              )}
-            </div>
+            <HifzFooter
+              confirming={confirming}
+              onConfirming={setConfirming}
+              canCancel={inSession}
+              onReset={actions.reset}
+              onCancel={actions.cancelSession}
+              settingsOpen={settingsOpen}
+              onToggleSettings={() => setSettingsOpen((v) => !v)}
+            />
 
-            {settingsOpen && !confirmReset && (
-              <div className="hifz-settings">
-                <h3>كم آية تحفظ في اليوم؟</h3>
-                <div className="hifz-start-perday" role="radiogroup" aria-label="عدد آيات اليوم">
-                  {VERSES_PER_DAY_CHOICES.map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      role="radio"
-                      aria-checked={program.rules.versesPerDay === n}
-                      className={`hifz-start-chip ${program.rules.versesPerDay === n ? 'active' : ''}`.trim()}
-                      onClick={() => actions.setVersesPerDay(n)}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-                <p className="hifz-start-note">
-                  ما حفظته يبقى كما هو، والعدد الجديد يسري من أوّل ورد لم يُنجَز. تغييره أثناء ورد اليوم يعيد خطواته من أوّلها.
-                </p>
-                {program.memorizedOn.length === 0 && (
-                  <button type="button" className="hifz-btn" onClick={() => { actions.reset(); setSettingsOpen(false); }}>
-                    العودة إلى اختيار نقطة البداية
-                  </button>
-                )}
-              </div>
+            {settingsOpen && !confirming && (
+              <HifzSettings
+                program={program}
+                reciter={reciter}
+                surah={plan.verse?.ref?.s ?? null}
+                onVersesPerDay={actions.setVersesPerDay}
+                onBackToStart={() => { actions.reset(); setSettingsOpen(false); }}
+                onTrialStart={canTakeExtra && !trial ? () => { setSettingsOpen(false); onTrialStart(); } : undefined}
+              />
             )}
           </>
         )}

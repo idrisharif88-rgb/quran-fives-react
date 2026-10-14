@@ -70,8 +70,8 @@ describe('juz result cards', () => {
     expect(cards.reduce((n, c) => n + c.session.pageTimes.length, 0)).toBe(604);
   });
 
-  it('re-reading a page replaces its time instead of adding a page', () => {
-    const laps = upsertLap(upsertLap([{ page: 1, ms: 10 }], 2, 20), 1, 99);
-    expect(laps).toEqual([{ page: 1, ms: 99 }, { page: 2, ms: 20 }]);
+  it('returning to a page adds to its time instead of replacing it or adding a page', () => {
+    const laps = upsertLap(upsertLap([{ page: 1, ms: 60000 }], 2, 20), 1, 5000);
+    expect(laps).toEqual([{ page: 1, ms: 65000 }, { page: 2, ms: 20 }]);
   });
 });

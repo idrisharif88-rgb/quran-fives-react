@@ -6,7 +6,9 @@ import {
 import {
   startProgram, loadProgram, dailyPlan, rollDay, countStep, confirmStep, tickStep, recordStep, checkBox,
   verseDoneToday, shouldCelebrate, markCelebrated, portionOf, openExtraPortion, changeVersesPerDay,
+  cancelSession, sessionStarted, effectiveDay, tapMethod, methodTaps, changeListenTarget,
 } from './hifzState';
+import { methodStages, methodTotal, methodPosition } from './hifzMethod';
 import { currentStep } from './hifzSteps';
 
 // اليوم رقم n من البرنامج (اليوم 1 = 2026-01-01)
@@ -338,40 +340,65 @@ describe('hifz daily portion (3, 5, 7 verses a day)', () => {
   });
 });
 
-describe('hifz extra portion on the same day (supervisor, for testing)', () => {
-  it('opens only after today’s portion is done', () => {
+describe('hifz extra portion on the same day: reviews follow what was memorised, not the calendar', () => {
+  // يوم البرنامج في يوم التقويم الأوّل
+  const now = (s) => effectiveDay(s, day(1));
+
+  it('opens only after the day is complete: its portion and every box', () => {
     const fresh = startProgram('forward', day(1), { versesPerDay: 3 });
-    expect(openExtraPortion(fresh, day(1))).toBe(fresh);
+    expect(openExtraPortion(fresh, now(fresh))).toBe(fresh);
+
+    let s = memorizeVerse(fresh, now(fresh));
+    s = openExtraPortion(s, now(s));                       // اليوم الأوّل بلا صناديق: يُفتح
+    s = memorizeVerse(s, now(s));
+    expect(openExtraPortion(s, now(s))).toBe(s);           // «آيات الأمس» لم تُقرأ بعد
+    s = checkBox(s, now(s), 'five');
+    expect(openExtraPortion(s, now(s)).shift).toBe(2);
   });
 
-  it('a second and third portion can be memorised on the same day, each starting where the last ended', () => {
+  it('the portion just memorised becomes yesterday\'s verses, on the same calendar day', () => {
     let s = memorizeVerse(startProgram('forward', day(1), { versesPerDay: 3 }), day(1));
-    expect(countStep(s, day(1), 'listen', 1)).toBe(s);                    // مقفل بلا فتح
-    s = openExtraPortion(s, day(1));
-    expect(dailyPlan(s, day(1)).verse).toMatchObject({ indices: [3, 4, 5], done: false });
-    s = memorizeVerse(s, day(1));
-    expect(s.memorizedOn).toEqual(Array(6).fill(day(1)));
-    expect(verseDoneToday(s, day(1))).toBe(true);                          // القفل يعود بعد الإتمام
-    expect(countStep(s, day(1), 'listen', 1)).toBe(s);
-    s = memorizeVerse(openExtraPortion(s, day(1)), day(1));
-    expect(s.memorizedOn).toHaveLength(9);
-    expect(dailyPlan(s, day(1)).verse).toMatchObject({ done: true });
+    expect(countStep(s, now(s), 'listen', 1)).toBe(s);     // مقفل بلا فتح
+    s = openExtraPortion(s, now(s));
+    expect(now(s)).toBe(day(2));
+    const plan = dailyPlan(s, now(s));
+    expect(plan.verse).toMatchObject({ indices: [3, 4, 5], done: false });
+    expect(plan.boxItems.map((item) => [item.box, item.indices])).toEqual([['five', [0, 1, 2]]]);
+    expect(plan.complete).toBe(false);
   });
 
-  it('extra portions enter tomorrow’s boxes with the rest, and tomorrow starts after them', () => {
+  it('three portions in one day bring three days of repetition, linking and review', () => {
+    let s = startProgram('forward', day(1), { versesPerDay: 3 });
+    for (let n = 0; n < 3; n++) {
+      if (n > 0) s = openExtraPortion(s, now(s));
+      s = memorizeVerse(s, now(s));
+      for (const item of dailyPlan(s, now(s)).boxItems) s = checkBox(s, now(s), item.box);
+      expect(dailyPlan(s, now(s)).complete).toBe(true);
+    }
+    expect(s.memorizedOn).toEqual([day(1), day(1), day(1), day(2), day(2), day(2), day(3), day(3), day(3)]);
+    // في اليوم الثالث من البرنامج: ورد الثاني «آيات الأمس»، وورد الأوّل في صندوق الربط
+    const boxes = Object.fromEntries(dailyPlan(s, now(s)).boxItems.map((item) => [item.box, item.indices]));
+    expect(boxes).toEqual({ five: [3, 4, 5], daily: [0, 1, 2] });
+  });
+
+  it('the next calendar day carries on from where the programme reached', () => {
     let s = memorizeVerse(startProgram('forward', day(1), { versesPerDay: 3 }), day(1));
-    s = memorizeVerse(openExtraPortion(s, day(1)), day(1));
-    const plan = dailyPlan(s, day(2));
-    expect(plan.boxItems.find((item) => item.box === 'five').indices).toEqual([0, 1, 2, 3, 4, 5]);
+    s = openExtraPortion(s, now(s));
+    s = memorizeVerse(s, now(s));
+    const tomorrow = effectiveDay(s, day(2));
+    expect(tomorrow).toBe(day(3));
+    const plan = dailyPlan(s, tomorrow);
     expect(plan.verse).toMatchObject({ indices: [6, 7, 8], done: false });
+    expect(plan.boxItems.find((item) => item.box === 'five').indices).toEqual([3, 4, 5]);
+    expect(plan.boxItems.find((item) => item.box === 'daily').indices).toEqual([0, 1, 2]);
   });
 
-  it('an opened extra portion left unfinished continues the next day as that day’s portion', () => {
-    let s = memorizeVerse(startProgram('forward', day(1)), day(1));
-    s = countStep(openExtraPortion(s, day(1)), day(1), 'listen', 1);
-    expect(dailyPlan(s, day(2)).verse).toMatchObject({ index: 1, done: false });
-    s = memorizeVerse(s, day(2));
-    expect(s.memorizedOn).toEqual([day(1), day(2)]);
+  it('a programme stored before this has no shift and follows the calendar', () => {
+    const old = { ...memorizeVerse(startProgram('forward', day(1)), day(1)) };
+    delete old.shift;
+    const loaded = loadProgram(old);
+    expect(loaded.shift).toBe(0);
+    expect(effectiveDay(loaded, day(2))).toBe(day(2));
   });
 });
 
@@ -446,3 +473,105 @@ describe('hifz: changing the daily portion without resetting', () => {
   });
 });
 
+describe('cancelling today\'s session', () => {
+  it('restarts the steps of the portion in progress and keeps everything else', () => {
+    let s = memorizeVerse(startProgram('forward', day(1), { versesPerDay: 3 }), day(1));
+    s = checkBox(s, day(2), 'five');
+    s = countStep(s, day(2), 'listen', 1);
+    s = countStep(s, day(2), 'listen', 1);
+    expect(sessionStarted(s, day(2))).toBe(true);
+
+    const cancelled = cancelSession(s, day(2));
+    expect(cancelled.progress.listen).toBe(0);
+    expect(currentStep(cancelled.progress, cancelled.rules)).toBe('listen');
+    expect(sessionStarted(cancelled, day(2))).toBe(false);
+    expect(cancelled.memorizedOn).toEqual(s.memorizedOn);
+    expect(cancelled.checks).toEqual(s.checks);
+    expect(dailyPlan(cancelled, day(2)).verse.indices).toEqual([3, 4, 5]);
+  });
+
+  it('does nothing before the first step or after the portion is done', () => {
+    const fresh = startProgram('forward', day(1));
+    expect(sessionStarted(fresh, day(1))).toBe(false);
+    expect(cancelSession(fresh, day(1))).toBe(fresh);
+
+    const done = memorizeVerse(fresh, day(1));
+    expect(sessionStarted(done, day(1))).toBe(false);
+    expect(cancelSession(done, day(1))).toBe(done);
+    expect(done.memorizedOn).toHaveLength(1);
+  });
+});
+
+describe('طريقة الخماسيات', () => {
+  it('each verse alone, then joined with those before it', () => {
+    expect(methodStages(1)).toEqual([{ from: 0, to: 0 }]);
+    expect(methodStages(3)).toEqual([
+      { from: 0, to: 0 }, { from: 1, to: 1 }, { from: 0, to: 1 }, { from: 2, to: 2 }, { from: 0, to: 2 },
+    ]);
+    expect(methodStages(7)).toHaveLength(13);
+    expect(methodTotal(3)).toBe(25);
+  });
+
+  it('moves to the next stage after five repetitions', () => {
+    expect(methodPosition(3, 0)).toMatchObject({ stageIndex: 0, rep: 0, done: false, stageCount: 5 });
+    expect(methodPosition(3, 4)).toMatchObject({ stageIndex: 0, rep: 4 });
+    expect(methodPosition(3, 5)).toMatchObject({ stageIndex: 1, rep: 0, stage: { from: 1, to: 1 } });
+    expect(methodPosition(3, 10)).toMatchObject({ stageIndex: 2, stage: { from: 0, to: 1 } });
+    expect(methodPosition(3, 25)).toMatchObject({ done: true, stageIndex: 4, rep: 5 });
+  });
+
+  // يصل إلى خطوة الحفظ: سماع المقرئ ثم تأكيد الحافظ
+  const atMemorize = (perDay) => {
+    let s = startProgram('forward', day(1), { versesPerDay: perDay });
+    for (let i = 0; i < 3; i++) s = countStep(s, day(1), 'listen', 1);
+    return tickStep(s, day(1), 'hafiz');
+  };
+
+  it('counts only in the memorise step, within its total, and does not finish the step by itself', () => {
+    const early = startProgram('forward', day(1), { versesPerDay: 3 });
+    expect(tapMethod(early, day(1), 1)).toBe(early);
+
+    let s = atMemorize(3);
+    for (let i = 0; i < 40; i++) s = tapMethod(s, day(1), 1);
+    expect(methodTaps(s)).toBe(25);
+    expect(currentStep(s.progress, s.rules)).toBe('memorize');
+    s = tapMethod(s, day(1), -1);
+    expect(methodTaps(s)).toBe(24);
+    expect(methodTaps(tapMethod(s, day(1), 'reset'))).toBe(0);
+  });
+
+  it('starts from zero for the next portion, after a cancel, and when the portion size changes', () => {
+    let s = atMemorize(1);
+    s = tapMethod(s, day(1), 1);
+    expect(methodTaps(cancelSession(s, day(1)))).toBe(0);
+    expect(methodTaps(changeVersesPerDay(s, day(1), 3))).toBe(0);
+
+    s = tickStep(s, day(1), 'memorize');
+    s = recordStep(s, day(1), 'record', 'recorded');
+    s = recordStep(s, day(1), 'record', 'reviewed');
+    for (let i = 0; i < 40; i++) s = countStep(s, day(1), 'repeat', 1);
+    s = confirmStep(s, day(1), 'repeat');
+    expect(s.memorizedOn).toHaveLength(1);
+    expect(methodTaps(s)).toBe(0);
+  });
+});
+
+describe('listening 3, 5 or 7 times', () => {
+  it('changes how many listens the first step needs, keeping those already done', () => {
+    let s = startProgram('forward', day(1));
+    s = countStep(s, day(1), 'listen', 1);
+    s = changeListenTarget(s, 7);
+    expect(s.rules.listenTarget).toBe(7);
+    expect(s.progress.listen).toBe(1);
+    for (let i = 0; i < 2; i++) s = countStep(s, day(1), 'listen', 1);
+    expect(currentStep(s.progress, s.rules)).toBe('listen');   // 3 لا تكفي من 7
+    for (let i = 0; i < 4; i++) s = countStep(s, day(1), 'listen', 1);
+    expect(currentStep(s.progress, s.rules)).toBe('hafiz');
+  });
+
+  it('ignores values that are not offered', () => {
+    const s = startProgram('forward', day(1));
+    expect(changeListenTarget(s, 4)).toBe(s);
+    expect(changeListenTarget(s, 3)).toBe(s);
+  });
+});

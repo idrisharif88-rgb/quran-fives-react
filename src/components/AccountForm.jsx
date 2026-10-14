@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MIN_CODE_LENGTH } from '../utils/syncAccount';
+import PasswordInput from './PasswordInput';
 
 /**
  * دخول أو طلب حساب جديد بالبريد. الحالة والشبكة في useAccount؛ هنا الحقول فقط.
@@ -99,30 +100,10 @@ export default function AccountForm({ auth }) {
           ))}
         </div>
       )}
-      <input
-        className="account-form-input"
-        type="password"
-        dir="ltr"
-        value={code}
-        onChange={edit(setCode)}
-        placeholder="كلمة السر"
-        aria-label="كلمة السر"
-        autoComplete="new-password"
-        maxLength={128}
-      />
+      <PasswordInput value={code} onChange={edit(setCode)} placeholder="كلمة السر" aria-label="كلمة السر" />
       {isRegister && (
         <>
-          <input
-            className="account-form-input"
-            type="password"
-            dir="ltr"
-            value={confirm}
-            onChange={edit(setConfirm)}
-            placeholder="أعد كتابة كلمة السر"
-            aria-label="أعد كتابة كلمة السر"
-            autoComplete="new-password"
-            maxLength={128}
-          />
+          <PasswordInput value={confirm} onChange={edit(setConfirm)} placeholder="أعد كتابة كلمة السر" aria-label="أعد كتابة كلمة السر" />
           <p className="account-form-hint">
             كلمة السر {MIN_CODE_LENGTH} أحرف على الأقل. سنرسل رمز تأكيد إلى بريدك.
           </p>

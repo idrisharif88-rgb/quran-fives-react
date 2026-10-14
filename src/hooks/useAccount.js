@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { SYNC_ENABLED } from '../utils/syncConfig';
 import {
   readAccount, saveAccount, clearAccount, validateName, validateEmail, validateCode,
-  readKnownEmails, rememberEmail, forgetEmail, markWelcome,
+  readKnownEmails, rememberEmail, forgetEmail, markWelcome, latinDigits,
 } from '../utils/syncAccount';
 import { registerAccount, verifyAccount, loginAccount, confirmLogin, requestReset, confirmReset } from '../utils/cloudSync';
 
@@ -59,15 +59,27 @@ export default function useAccount() {
   const login = useCallback(async ({ user, code }) => {
     const creds = { user: user.trim(), code: code.trim() };
     if (!creds.user || !creds.code) { setError('أدخل البريد وكلمة السر'); return; }
-    const result = await run(() => loginAccount(creds));
-    if (!result) return;
-    if (result.pending) setPending({ kind: 'login', ...creds });   // رمز أُرسل إلى البريد
-    else enter({ ...creds, name: result.name });
+    // الكلمة كما كُتبت أوّلاً (حساب قديم قد تكون كلمته بأرقام عربية)؛ فإن رُفضت وفيها
+    // أرقام عربية أُعيدت بأرقام لاتينية — وهي ما يُحفظ به كل حساب جديد.
+    const attempt = async () => {
+      try {
+        return { used: creds, result: await loginAccount(creds) };
+      } catch (e) {
+        const latin = { ...creds, code: latinDigits(creds.code) };
+        if (e?.status !== 401 || latin.code === creds.code) throw e;
+        return { used: latin, result: await loginAccount(latin) };
+      }
+    };
+    const outcome = await run(attempt);
+    if (!outcome) return;
+    const { used, result } = outcome;
+    if (result.pending) setPending({ kind: 'login', ...used });   // رمز أُرسل إلى البريد
+    else enter({ ...used, name: result.name });
   }, [run, enter]);
 
   // حساب جديد، الخطوة 1: يُرسل رمز التأكيد إلى البريد
   const register = useCallback(async ({ name, user, code }) => {
-    const creds = { user: user.trim().toLowerCase(), code: code.trim() };
+    const creds = { user: user.trim().toLowerCase(), code: latinDigits(code.trim()) };
     const displayName = name.trim();
     const invalid = validateName(displayName) || validateEmail(creds.user) || validateCode(creds.code);
     if (invalid) { setError(invalid); return; }
@@ -86,7 +98,7 @@ export default function useAccount() {
   const confirm = useCallback(async (otp, newCode = '') => {
     if (!pending) return;
     const { kind, user } = pending;
-    const code = kind === 'reset' ? newCode.trim() : pending.code;
+    const code = kind === 'reset' ? latinDigits(newCode.trim()) : pending.code;
     if (kind === 'reset') {
       const invalid = validateCode(code);
       if (invalid) { setError(invalid); return; }

@@ -199,6 +199,31 @@
   border-top: 1px solid var(--app-border);
 }
 
+.hifz-rate-btn {
+  flex: 0 0 auto;
+  min-width: 52px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--app-border);
+  border-radius: 999px;
+  background: var(--app-surface-2);
+  color: var(--app-text-strong);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.hifz-recordings-speed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0 4px;
+  font-size: 13px;
+  color: var(--app-muted);
+}
+
 .hifz-listen-play {
   flex: 0 0 52px;
   width: 52px;

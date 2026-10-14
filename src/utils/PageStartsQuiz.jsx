@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { PAGE_STARTS } from '../data/pageStarts';
 import CustomKeyboard, { useCustomKeyboard } from '../components/CustomKeyboard';
 import TextDisplay from '../components/TextDisplay';
-import { buildShuffledIndices } from './quizUtils';
+import { buildShuffledIndices, quizNotice } from './quizUtils';
+import QuizNotice from '../components/QuizNotice';
 import { PAGE_STARTS_QUIZ_STORAGE_KEY, loadStoredState, saveStoredState } from './persistence';
 
-export default function PageStartsQuiz({ onClose }) {
+export default function PageStartsQuiz({ onClose, backRef }) {
   const [persistedQuizState] = useState(() => loadStoredState(PAGE_STARTS_QUIZ_STORAGE_KEY) || {});
   const [rangeStart, setRangeStart] = useState(() => (
     typeof persistedQuizState.rangeStart === 'string' ? persistedQuizState.rangeStart : '1'
@@ -43,6 +44,7 @@ export default function PageStartsQuiz({ onClose }) {
   ));
   const [isGuessShaking, setIsGuessShaking] = useState(false);
   const audioCtxRef = useRef(null);
+  const [notice, setNotice] = useState(null);   // نتيجة آخر المدى، أو تهنئة محطّة (كل 100 سؤال)
 
   const applyRange = (forceNewCycle = false) => {
     const start = Number(rangeStart);
@@ -54,6 +56,11 @@ export default function PageStartsQuiz({ onClose }) {
     }
 
     const rangeChanged = orderRange.start !== start || orderRange.end !== end;
+    const nextNotice = quizNotice({ forced: forceNewCycle, rangeChanged, orderLength: order.length, pointer: nextPointer });
+    setNotice(nextNotice);
+    // انتهى المدى: تُعرض النتيجة، ولا يبدأ اختبار جديد إلا بطلب صاحبه
+    if (nextNotice?.kind === 'finished') return;
+
     const needsNewCycle = forceNewCycle || rangeChanged || order.length === 0 || nextPointer >= order.length;
 
     if (needsNewCycle) {
@@ -272,6 +279,7 @@ export default function PageStartsQuiz({ onClose }) {
         onSubmit={keyboard.handleKeyboardSubmit}
         onClose={keyboard.closeKeyboard}
       />
+      <QuizNotice notice={notice} correct={correctCount} incorrect={incorrectCount} onRestart={() => applyRange(true)} onClose={() => setNotice(null)} backRef={backRef} />
     </div>
   );
 }

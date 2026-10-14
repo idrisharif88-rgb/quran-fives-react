@@ -191,8 +191,9 @@ export default function useStopwatch({ onJuzComplete } = {}) {
     }
     // الصفحات دون الحدّ الأدنى (وكذلك الصفحة الافتتاحية غير الموقّتة) لا تُسجَّل:
     // نُبقي الجولة الحالية تُصفَّر وتبدأ الصفحة التالية من الصفر، لكن لا نضيف جولة.
-    if (ms >= MIN_PAGE_MS) {
-      // إعادة قراءة صفحة تستبدل جولتها القديمة بدل إضافة جولة مكرّرة
+    // صفحة لها جولة سابقة (عاد إليها بزرّ الطرح): زمنها الجديد يُضاف مهما قصر.
+    const hasLap = lapsRef.current.some((l) => l.page === finishedPage);
+    if (ms >= MIN_PAGE_MS || (hasLap && ms > 0)) {
       lapsRef.current = upsertLap(lapsRef.current, finishedPage, ms);
       setLaps(lapsRef.current);
     }

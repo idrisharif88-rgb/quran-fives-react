@@ -5,6 +5,8 @@ import { MUSHAF } from '../../utils/mushafEdition';
 import { wordsOfLine, computePageFit, rebalanceLines, BASMALA_SCALE } from '../../utils/mushafLayout';
 
 const BASE_SIZE = 100;
+// المقتطف (onlyVerses) لا ارتفاع يحدّه: ارتفاع سطره نسبة ثابتة من حجم الخط
+const EXCERPT_LINE_RATIO = 2;
 
 // عرض كل كلمة عند BASE_SIZE، مقيساً في DOM مخفيّ بالخط نفسه.
 // الصفحة تُرسم عند BASE_SIZE نفسه ثم تُصغَّر كلها هندسياً (transform: scale)، فالقياس
@@ -48,7 +50,12 @@ function withWidths(lines, widths) {
 }
 
 // سطر بقي أعرض من العمود يُوسَّط ويُضغط أفقياً بقدره
-function TextLine({ words, family, justified, squeeze, highlight }) {
+function TextLine({ words, family, justified, squeeze, highlight, onlyVerses }) {
+  // في المقتطف: كلمات الآيات المطلوبة كما هي، وغيرها يبقى مكانه فارغاً فلا يتحرّك شيء
+  const wordClass = (word) => {
+    if (onlyVerses) return highlight.has(word.verse) ? '' : 'blank';
+    return highlight.has(word.verse) ? 'highlight' : '';
+  };
   const squeezed = squeeze < 1;
   const style = { fontFamily: `"${family}"` };
   if (squeezed) style.transform = `scaleX(${squeeze})`;
@@ -57,7 +64,7 @@ function TextLine({ words, family, justified, squeeze, highlight }) {
       {words.map((word, i) => (
         <span
           key={i}
-          className={`mushaf-word ${highlight.has(word.verse) ? 'highlight' : ''}`.trim()}
+          className={`mushaf-word ${wordClass(word)}`.trim()}
           data-verse={word.verse}
         >
           {word.glyph}
@@ -71,8 +78,10 @@ function TextLine({ words, family, justified, squeeze, highlight }) {
  * صفحة واحدة من المصحف بأسطرها كما في المطبوع.
  * @param width,height أبعاد المساحة المتاحة للأسطر بالبكسل
  * @param highlightVerse مفتاح آية «سورة:آية» أو قائمة مفاتيح تُبرَز كلماتها (اختياري)
+ * @param onlyVerses مقتطف: تُرسم أسطر آيات highlightVerse وحدها، كل كلمة في موضعها من
+ *                   السطر المطبوع، وكلمات غيرها فارغة. يُقاس بالعرض وحده (بلا height).
  */
-export default function MushafPage({ page, width, height, highlightVerse }) {
+export default function MushafPage({ page, width, height, highlightVerse, onlyVerses = false }) {
   const { status, data } = useMushafPage(page);
   // مفتاح واحد أو عدّة (ورد من آيات متتالية) ← مجموعة تُفحص لكل كلمة
   const highlightKey = [].concat(highlightVerse || []).join(',');
@@ -87,8 +96,8 @@ export default function MushafPage({ page, width, height, highlightVerse }) {
 
   // تغيّر أبعاد الشاشة يعيد حساب الحجم فقط
   const fit = useMemo(() => {
-    if (!lines || width <= 0 || height <= 0) return null;
-    return computePageFit({
+    if (!lines || width <= 0 || (!onlyVerses && height <= 0)) return null;
+    const pageFit = computePageFit({
       lineWidths: lines.map((line) => {
         if (line.k === 't') return line.words.reduce((sum, w) => sum + w.width, 0);
         return line.k === 'b' ? line.width : null;
@@ -96,19 +105,27 @@ export default function MushafPage({ page, width, height, highlightVerse }) {
       textLines: lines.map((line) => line.k === 't'),
       baseSize: BASE_SIZE,
       width,
-      height,
+      height: onlyVerses ? Infinity : height,
       fullLineCount: MUSHAF.linesPerPage,
     });
-  }, [lines, width, height]);
+    return onlyVerses ? { ...pageFit, lineHeight: pageFit.fontSize * EXCERPT_LINE_RATIO } : pageFit;
+  }, [lines, width, height, onlyVerses]);
 
   if (status === 'error') return <div className="mushaf-page-message">تعذّر تحميل الصفحة</div>;
   if (!fit) return <div className="mushaf-page-message">…</div>;
+
+  // المقتطف: أسطر النص التي فيها كلمة مطلوبة، ومعها البسملة إن سبقت أول آية السورة
+  const wanted = (line) => line?.k === 't' && line.words.some((w) => highlight.has(w.verse));
+  const startsSurah = (line) => wanted(line) && highlight.has(line.words[0].verse) && line.words[0].verse.endsWith(':1');
+  const shown = lines
+    .map((line, i) => ({ line, i }))
+    .filter(({ line, i }) => !onlyVerses || wanted(line) || (line.k === 'b' && startsSurah(lines[i + 1])));
 
   // الورقة بحجمها النهائي، وداخلها الأسطر مرسومة عند BASE_SIZE ومصغَّرة بنسبة scale
   const scale = fit.fontSize / BASE_SIZE;
   return (
     <div className="mushaf-lines">
-      <div className="mushaf-sheet" style={{ width: `${fit.contentWidth}px`, height: `${fit.lineHeight * lines.length}px` }}>
+      <div className="mushaf-sheet" style={{ width: `${fit.contentWidth}px`, height: `${fit.lineHeight * shown.length}px` }}>
         <div
           className="mushaf-sheet-scaled"
           style={{
@@ -118,7 +135,7 @@ export default function MushafPage({ page, width, height, highlightVerse }) {
             '--mushaf-line-height': `${fit.lineHeight / scale}px`,
           }}
         >
-      {lines.map((line, i) => {
+      {shown.map(({ line, i }) => {
         if (line.k === 's') {
           return (
             <div key={i} className="mushaf-line mushaf-surah-title">
@@ -133,7 +150,7 @@ export default function MushafPage({ page, width, height, highlightVerse }) {
             </div>
           );
         }
-        return <TextLine key={i} words={line.words} family={data.family} justified={fit.justify[i]} squeeze={fit.squeeze[i]} highlight={highlight} />;
+        return <TextLine key={i} words={line.words} family={data.family} justified={fit.justify[i]} squeeze={fit.squeeze[i]} highlight={highlight} onlyVerses={onlyVerses} />;
       })}
         </div>
       </div>

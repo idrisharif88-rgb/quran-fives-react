@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import MushafPage from '../mushaf/MushafPage';
 import { recordingRefs, verseKeys, pagesOfRefs } from '../../utils/hifzRecordingRefs';
 import { recordingText } from './hifzText';
+import usePlaybackRate, { applyRate } from '../../hooks/usePlaybackRate';
+import PlaybackRateButton from './PlaybackRateButton';
 import '../mushaf/MushafReader.css';
 import './HifzRecorder.css';
 
@@ -30,6 +32,10 @@ export default function HifzListenView({ recording, loadUrl, onVerdict, onClose 
   const [position, setPosition] = useState(0);
   const [finished, setFinished] = useState(false);
   const [pageAt, setPageAt] = useState(0);
+  const speed = usePlaybackRate();
+
+  // تغيير السرعة يسري فوراً على التشغيل الجاري
+  useEffect(() => { applyRate(audioRef.current, speed.rate); }, [speed.rate, url]);
 
   const refs = recordingRefs(recording);
   const pages = pagesOfRefs(refs);
@@ -113,6 +119,7 @@ export default function HifzListenView({ recording, loadUrl, onVerdict, onClose 
           <div className="hifz-listen-progress" style={{ width: `${Math.min(100, (position / Math.max(1, recording.durationMs)) * 100)}%` }} />
         </div>
         <span className="hifz-listen-time">{clock(position)} / {clock(recording.durationMs)}</span>
+        <PlaybackRateButton rate={speed.rate} onCycle={speed.cycle} />
       </div>
       {failed && <p className="hifz-listen-note error" dir="rtl">تعذّر تشغيل التسجيل.</p>}
       {finished && !failed && !onVerdict && <p className="hifz-listen-note" dir="rtl">انتهى التسجيل.</p>}
@@ -131,6 +138,7 @@ export default function HifzListenView({ recording, loadUrl, onVerdict, onClose 
           ref={audioRef}
           src={url}
           autoPlay
+          onLoadedMetadata={(e) => applyRate(e.currentTarget, speed.rate)}
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
           onTimeUpdate={(e) => setPosition(e.currentTarget.currentTime * 1000)}

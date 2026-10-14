@@ -89,6 +89,29 @@
   cursor: pointer;
 }
 
+/* مصباح التفسير على زرّ «i» (للبطاقة تفسير على ظهرها). ذهبي داكن ثابت: ظاهر على
+   السطحين (4.6:1 نهاراً، 3.9:1 ليلاً) والمصباح الأبيض فيه 4.6:1 */
+.verse-flip-btn {
+  position: relative;
+}
+
+.verse-flip-lamp {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 17px;
+  height: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--app-surface);
+  border-radius: 50%;
+  background: #a16207;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
 .verse-flip-i {
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 21px;

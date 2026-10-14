@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import VerseNotesBack from './VerseNotesBack';
+import { noteKey } from '../utils/verseNotesFile';
 import './TextDisplay.css';
 
 function Verse({ verse }) {
@@ -52,6 +53,8 @@ export default function TextDisplay({ verses, cornerNumber, cornerAction, cardCl
   // The row also hosts the flip button, so it stays on the back with that button alone.
   const hasCornerRow = Boolean(notesFlip) || cornerNumber != null || cornerAction != null;
   const faceClass = hasFlipped ? (isBack ? 'is-back' : 'is-front') : '';
+  // علامة التفسير: مصباح على زرّ «i» إن كان لآية من آيات البطاقة تفسير على ظهرها
+  const hasNotes = Boolean(notesFlip) && verses.some((verse) => notesFlip.notes?.[noteKey(verse)]?.trim());
 
   return (
     <div className={`verse-card ${cardClassName} ${faceClass}`.trim()}>
@@ -83,13 +86,18 @@ export default function TextDisplay({ verses, cornerNumber, cornerAction, cardCl
               type="button"
               className={`verse-flip-btn ${isBack ? 'active' : ''}`.trim()}
               onClick={() => { setHasFlipped(true); notesFlip.onFlip(); }}
-              title={isBack ? 'عرض الآيات' : 'عرض الملاحظات'}
-              aria-label={isBack ? 'عرض الآيات' : 'عرض الملاحظات'}
+              title={isBack ? 'عرض الآيات' : hasNotes ? 'عرض التفسير' : 'عرض الملاحظات'}
+              aria-label={isBack ? 'عرض الآيات' : hasNotes ? 'عرض التفسير — لهذه البطاقة تفسير' : 'عرض الملاحظات'}
             >
               {/* الوجه: «i» للمعلومات. الظهر: دائرة خضراء داكنة مصمتة للرجوع إلى الآيات */}
               {isBack
                 ? <span className="verse-flip-dot" aria-hidden="true" />
                 : <span className="verse-flip-i" aria-hidden="true">i</span>}
+              {!isBack && hasNotes && (
+                <span className="verse-flip-lamp" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M9 21h6v-1.5H9V21zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z" /></svg>
+                </span>
+              )}
             </button>
           )}
           {!isBack && cornerAction}
