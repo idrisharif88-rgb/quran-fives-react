@@ -22,6 +22,7 @@ export default function MushafPager({ page, onPageChange, onTap }) {
   const pagerRef = useRef(null);
   const frameRef = useRef(0);
   const settleRef = useRef(0);
+  const swipedToRef = useRef(null);   // صفحة أبلغ عنها السحب نفسه: موضعها صحيح، فلا يُحرَّك
   const [size, setSize] = useState({ width: 0, height: 0 });
   const total = MUSHAF.totalPages;
 
@@ -63,9 +64,13 @@ export default function MushafPager({ page, onPageChange, onTap }) {
     return () => observer.disconnect();
   }, []);
 
-  // مزامنة موضع التمرير مع الصفحة: عند الفتح، وعند تغيّر الحجم، وعند القفز من نافذة الانتقال
+  // مزامنة موضع التمرير مع الصفحة: عند الفتح، وعند تغيّر الحجم، وعند القفز من نافذة الانتقال.
+  // صفحة جاءت من السحب لا تُحاذى: تتغيّر عند منتصف السحب والإصبع ما زال على الشاشة، فكانت
+  // المحاذاة تقفز بالصفحة نصف عرضها تحت الإصبع — هذا هو اهتزاز التقليب. التوسيط بعد السكون.
   useLayoutEffect(() => {
     if (size.width === 0) return;
+    if (swipedToRef.current === page) { swipedToRef.current = null; return; }
+    swipedToRef.current = null;
     if (shownPage() !== page) scrollToPage(page);
     else alignToPage(page);
   }, [page, size.width, size.height, shownPage, scrollToPage, alignToPage]);
@@ -79,7 +84,10 @@ export default function MushafPager({ page, onPageChange, onTap }) {
     cancelAnimationFrame(frameRef.current);
     frameRef.current = requestAnimationFrame(() => {
       const shown = shownPage();
-      if (shown != null && shown !== page && shown >= 1 && shown <= total) onPageChange(shown);
+      if (shown != null && shown !== page && shown >= 1 && shown <= total) {
+        swipedToRef.current = shown;
+        onPageChange(shown);
+      }
     });
     // بعد سكون التمرير: توسيط الصفحة تماماً إن توقّف الالتقاط دون حافّتها
     clearTimeout(settleRef.current);

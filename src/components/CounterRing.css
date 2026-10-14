@@ -4,7 +4,7 @@
 }
 
 .counter-ring-circle {
-  stroke: var(--app-font-color, darkgreen);
+  stroke: var(--counter-ring-color, var(--app-font-color, darkgreen)); /* البرتقالي يلوّن الحلقة بلونه */
 }
 
 .counter-ring-circle.orange {
@@ -19,6 +19,6 @@
   font-family: var(--app-font-family); /* Use the app's main font */
   font-size: 75px;
   font-weight: 900; /* Make it extra bold and clear */
-  fill: var(--app-font-color, darkgreen);
+  fill: var(--counter-ring-color, var(--app-font-color, darkgreen));
   text-shadow: 0 0 8px var(--app-accent-glow); /* Subtle background glow */
 }

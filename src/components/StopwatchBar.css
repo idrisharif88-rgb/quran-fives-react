@@ -4,7 +4,8 @@
   justify-content: space-between;
   direction: ltr;
   gap: 8px;
-  padding: 8px 0;
+  /* زرّا الإعادة والتشغيل (48px) في منتصف عمودَي زرّي الأعلى (الترس والرجوع) */
+  padding: 8px calc((var(--nc-top-btn, 48px) - 48px) / 2);
   width: 100%;
   box-sizing: border-box;
   user-select: none;
@@ -71,5 +72,39 @@
 }
 
 .stopwatch-side-btn:active {
+  transform: scale(0.94);
+}
+
+/* سطر اللاب: الزمن وبجانبه «احفظ اللاب» */
+.stopwatch-lap-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* «احفظ اللاب»: مفتاح صغير بجانب زمن اللاب — مفرّغ حين يُطفأ، ممتلئ بلون الثيم حين يعمل */
+.stopwatch-keep-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--app-accent-ink);
+  background: transparent;
+  color: var(--app-accent-ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.stopwatch-keep-btn.on {
+  border-color: transparent;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+}
+
+.stopwatch-keep-btn:active {
   transform: scale(0.94);
 }

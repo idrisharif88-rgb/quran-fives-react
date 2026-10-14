@@ -1,5 +1,5 @@
-/* تشكيلات ألوان التطبيق — الذهبي فقط، لأنّ الأخضر معرّف أصلاً في App.css.
-   اللون (أخضر/ذهبي) مستقلّ عن الوضع (نهاري/ليلي) => أربع تشكيلات.
+/* تشكيلات ألوان التطبيق — الذهبي والبرتقالي، لأنّ الأخضر معرّف أصلاً في App.css.
+   اللون (أخضر/ذهبي/برتقالي) مستقلّ عن الوضع (نهاري/ليلي) => ستّ تشكيلات.
 
    قاعدة التباين: الذهبي الفاتح #ffd700 يصلح على السطح الليلي الداكن،
    لكنّه على الخلفية النهارية الفاتحة لا يتجاوز 1.29:1 فلا يُرى الزرّ شكلاً أصلاً.
@@ -63,4 +63,73 @@ html:has(body[data-accent="yellow"]:not(.night-mode)),
 body[data-accent="yellow"]:not(.night-mode),
 body[data-accent="yellow"]:not(.night-mode) #root {
   background-color: #f8f6f0;
+}
+
+/* ===== البرتقالي المحروق (orange) =====
+   مثل الذهبي: درجة داكنة نهاراً وفاتحة ليلاً.
+     نهاراً  #c2410c → 4.77:1 مقابل الخلفية، و5.18:1 للنصّ الأبيض فوقه
+     ليلاً   #fb923c → 8.38:1 على السطح الأسود
+   حلقة العدّاد المقطّعة تأخذ البرتقالي، فإنذار الصفحة البطيئة (برتقالي في الأخضر والذهبي)
+   يصير أصفر هنا، وتجاوز الوقت أحمر وردياً كي لا يشتبه بالبرتقالي:
+     نهاراً  أصفر #a16207 → 4.53:1، أحمر #be123c → 5.79:1
+     ليلاً   أصفر #facc15 → 12.38:1، أحمر #f43f5e → 5.16:1 */
+
+/* ===== البرتقالي — نهاري ===== */
+.app-container[data-accent="orange"]:not(.night-mode) {
+  --app-bg: #f8f5f2;
+  --app-surface: #fffcfa;
+  --app-surface-2: #faf7f4;
+  --app-surface-3: #f5f0eb;
+
+  --app-accent: #c2410c;
+  --app-accent-strong: #a3360a;
+  --app-accent-contrast: #ffffff;
+  --app-accent-glow: rgba(194, 65, 12, 0.15);
+  --app-accent-shadow: rgba(154, 52, 18, 0.25);
+  --app-accent-border: rgba(194, 65, 12, 0.4);
+  --app-accent-ink: #a3360a;
+  --app-icon-border: #ffffff;
+  --app-accent-deep: #9a3412;
+  --app-accent-deep-hover: #b23c12;
+  --app-accent-deep-soft: rgba(154, 52, 18, 0.2);
+  --app-accent-deep-contrast: #ffffff;
+  --app-menu-grad-from: #c2410c;
+  --app-menu-grad-to: #9a3412;
+  /* أزرار الحفظ نصّها أبيض ثابت: 5.92:1 و8.47:1 */
+  --app-save-grad-from: #b23c12;
+  --app-save-grad-to: #8a2e0f;
+
+  --counter-ring-color: var(--app-accent-ink);
+  --sw-orange: #a16207;
+  --sw-red: #be123c;
+}
+
+/* ===== البرتقالي — ليلي ===== */
+.app-container[data-accent="orange"].night-mode {
+  --app-accent: #fb923c;
+  --app-accent-strong: #f97316;
+  --app-accent-contrast: #1a0d00;
+  --app-accent-glow: rgba(251, 146, 60, 0.25);
+  --app-accent-shadow: rgba(251, 146, 60, 0.25);
+  --app-accent-border: rgba(251, 146, 60, 0.35);
+  --app-accent-ink: #fb923c;
+  --app-icon-border: #1b222c;
+  --app-accent-deep: #9a3412;
+  --app-accent-deep-hover: #b23c12;
+  --app-accent-deep-soft: rgba(251, 146, 60, 0.2);
+  --app-accent-deep-contrast: #ffffff;
+  --app-menu-grad-from: #ea7a35;
+  --app-menu-grad-to: #9a3412;
+  --app-save-grad-from: #9a3412;
+  --app-save-grad-to: #7c2d12;
+
+  --counter-ring-color: var(--app-accent-ink);
+  --sw-orange: #facc15;
+  --sw-red: #f43f5e;
+}
+
+html:has(body[data-accent="orange"]:not(.night-mode)),
+body[data-accent="orange"]:not(.night-mode),
+body[data-accent="orange"]:not(.night-mode) #root {
+  background-color: #f8f5f2;
 }

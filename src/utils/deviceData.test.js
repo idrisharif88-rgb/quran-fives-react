@@ -23,6 +23,10 @@ const FRESH = {
 };
 
 describe('isPristineState', () => {
+  it('إجازة محفوظة محتوى: لا يُنزَّل فوقها بلا سؤال', () => {
+    expect(isPristineState({ ...FRESH, ijazat: [{ id: 'a', type: 'حفص', mojeez: 'الشيخ', chain: ['الشيخ'] }] })).toBe(false);
+    expect(isPristineState({ ...FRESH, ijazat: [] })).toBe(true);
+  });
   it('تطبيق جديد أو بلا حالة: بلا محتوى', () => {
     expect(isPristineState(null)).toBe(true);
     expect(isPristineState(FRESH)).toBe(true);

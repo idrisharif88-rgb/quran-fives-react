@@ -211,6 +211,8 @@ body.night-mode #root {
 }
 
 .night-counter-mode {
+  /* قطر أزرار الأعلى — يقرؤه شريط الساعة ليضع زرّيه تحتها على خطّ واحد */
+  --nc-top-btn: 70px; /* .action-icon (70px) يغلب .night-counter-top-btn في الشاشات الواسعة */
   width: min(100%, 920px);
   margin: 0 auto;
   display: flex;
@@ -331,8 +333,8 @@ body.night-mode #root {
 }
 
 .night-counter-top-btn {
-  width: 64px;
-  height: 64px;
+  width: var(--nc-top-btn);
+  height: var(--nc-top-btn);
 }
 
 /* الأزرار الأربعة أسفل العدّاد تأخذ نفس مظهر أيقونتَي الأعلى (.action-icon):
@@ -2003,9 +2005,8 @@ button.nc-khitma-circle:active {
   }
   .night-counter-actions {
   }
-  .night-counter-top-btn {
-    width: 56px;
-    height: 56px;
+  .night-counter-mode {
+    --nc-top-btn: 56px;
   }
   .night-counter-btn {
     width: 72px;

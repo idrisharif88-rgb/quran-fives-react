@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   formatSeconds,
   allTimeAverage,
-  previousJuzAverage,
+  previousCardAverage,
 } from '../utils/sessions';
 import DuaEditor from './DuaEditor';
 import './JuzResults.css';
@@ -39,7 +39,9 @@ function BarChart({ pageTimes }) {
   const yTicks = [];
   for (let s = 0; s <= yMax; s += yStep) yTicks.push(s);
   const xTicks = [];
-  for (let p = Math.ceil(minPage / 5) * 5; p <= maxPage; p += 5) xTicks.push(p);
+  // بطاقة العشر (حتى 13 صفحة): رقم تحت كل عمود؛ البطاقات القديمة (جزء كامل): كل خمس صفحات
+  const xStep = maxPage - minPage < 13 ? 1 : 5;
+  for (let p = Math.ceil(minPage / xStep) * xStep; p <= maxPage; p += xStep) xTicks.push(p);
 
   return (
     // direction: ltr — داخل بطاقة RTL ينعكس textAnchor="end" فتمتدّ أرقام المحور يميناً تحت الأعمدة
@@ -81,12 +83,12 @@ const JuzResults = ({ session, sessions, onSave, onDelete, onShare, onUpdateDua,
     return () => { backRef.current = null; };
   }, [backRef, editing]);
 
-  const prev = previousJuzAverage(sessions, session.juzNumber);
+  const prev = previousCardAverage(sessions, session.startPage);
   const all = allTimeAverage(sessions);
 
   const compareParts = [];
   if (prev != null) {
-    compareParts.push(session.avgSeconds < prev ? 'أسرع من الجزء السابق' : 'أبطأ من الجزء السابق');
+    compareParts.push(session.avgSeconds < prev ? 'أسرع من البطاقة السابقة' : 'أبطأ من البطاقة السابقة');
   }
   if (all != null) {
     compareParts.push(session.avgSeconds < all ? 'أسرع من متوسطك العام' : 'أبطأ من متوسطك العام');

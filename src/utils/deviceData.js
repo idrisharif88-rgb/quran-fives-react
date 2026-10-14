@@ -53,6 +53,7 @@ export function isPristineState(state) {
     && isEmpty(state.sessions)
     && !state.hifz
     && isEmpty(state.hifzContacts?.contacts)
+    && isEmpty(state.ijazat)
     && (state.nightCounters || []).every(c => !c.value)
     && state.stopwatchBestAvgMs == null
     && state.stopwatchBestJuzMs == null
