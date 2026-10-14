@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { juzOfPage, juzPageCount } from '../data/juzPages';
 import { upsertLap, closingJuz, summarizeJuz } from '../utils/juzSessions';
+import { closingBlock, lapsOfBlock } from '../data/pageBlocks';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -52,21 +53,35 @@ function deriveJuzTimes(laps) {
     .map((j) => ({ juz: j, ms: totals[j] }));
 }
 
-export default function useStopwatch({ onJuzComplete } = {}) {
+// زر «احفظ اللاب»: اختيار محفوظ على الجهاز
+const KEEP_LAP_KEY = 'quran-fives-keep-lap-v1';
+const readKeepLap = () => { try { return localStorage.getItem(KEEP_LAP_KEY) === '1'; } catch { return false; } };
+
+export default function useStopwatch({ onJuzComplete, onBlockComplete } = {}) {
   const [isRunning, setIsRunning] = useState(false);
+  const [keepLap, setKeepLap] = useState(readKeepLap);
+  const keepLapRef = useRef(keepLap);
   const [laps, setLaps] = useState([]);       // جولات مكتملة [{ page, ms }]
   const [currentLapMs, setCurrentLapMs] = useState(0); // زمن الجولة الحالية (بالمللي ثانية)
   const [carryMs, setCarryMs] = useState(0);           // زمن مُجمّد عند مغادرة العدّاد، يبقى ضمن الإجمالي
 
   const lapStartRef = useRef(null);           // performance.now() عند بدء الجولة الحالية
   const currentLapAccumRef = useRef(0);       // ما تراكم من الجولة قبل الإيقاف اليدوي
-  const sessionStartRef = useRef(null);       // طابع زمني لبداية جلسة الجزء (أول تشغيل)
+  const sessionStartRef = useRef(null);       // طابع زمني لبداية بطاقة العشر الجارية (أول تشغيل)
   const wakeLockRef = useRef(null);
   const onJuzCompleteRef = useRef(onJuzComplete);
+  const onBlockCompleteRef = useRef(onBlockComplete);
   const seenJuzRef = useRef(new Set());
+  const seenBlockRef = useRef(new Set());
   const lapsRef = useRef([]);                 // مرآة للجولات تُقرأ فوراً داخل recordLap
 
   useEffect(() => { onJuzCompleteRef.current = onJuzComplete; }, [onJuzComplete]);
+  useEffect(() => { onBlockCompleteRef.current = onBlockComplete; }, [onBlockComplete]);
+  useEffect(() => {
+    keepLapRef.current = keepLap;
+    try { localStorage.setItem(KEEP_LAP_KEY, keepLap ? '1' : '0'); } catch { /* تجاهل */ }
+  }, [keepLap]);
+  const toggleKeepLap = useCallback(() => setKeepLap(v => !v), []);
 
   // إبقاء الشاشة مستيقظة أثناء الحفظ (Wake Lock API للويب).
   // Android (Capacitor): أدخِل هنا مكوّن @capacitor-community/keep-awake
@@ -87,8 +102,19 @@ export default function useStopwatch({ onJuzComplete } = {}) {
   }, []);
 
   // مغادرة الشاشة (سهم الرجوع/الرئيسية/زر الرجوع/فقدان التركيز):
-  // إيقاف مؤقت + تصفير الجولة الحالية فقط — تبقى الجولات المحفوظة والإجمالي كما هما
+  // إيقاف مؤقت + تصفير الجولة الحالية فقط — تبقى الجولات المحفوظة والإجمالي كما هما.
+  // مع «احفظ اللاب»: إيقاف مؤقت فقط، فيكمل اللاب من حيث وقف عند التشغيل
   const leaveScreen = useCallback(() => {
+    if (keepLapRef.current) {
+      if (lapStartRef.current != null) {
+        currentLapAccumRef.current += performance.now() - lapStartRef.current;
+        lapStartRef.current = null;
+      }
+      setCurrentLapMs(currentLapAccumRef.current);
+      setIsRunning(false);
+      releaseWakeLock();
+      return;
+    }
     // جمّد زمن الجولة الحالية غير المكتملة في الإجمالي قبل تصفيرها، فلا ينقص الإجمالي عند المغادرة
     const nowMs = currentLapAccumRef.current
       + (lapStartRef.current != null ? performance.now() - lapStartRef.current : 0);
@@ -180,6 +206,7 @@ export default function useStopwatch({ onJuzComplete } = {}) {
     setLaps([]);
     sessionStartRef.current = null;
     seenJuzRef.current = new Set();
+    seenBlockRef.current = new Set();
     releaseWakeLock();
   }, [releaseWakeLock]);
 
@@ -197,15 +224,24 @@ export default function useStopwatch({ onJuzComplete } = {}) {
       lapsRef.current = upsertLap(lapsRef.current, finishedPage, ms);
       setLaps(lapsRef.current);
     }
-    // إنهاء آخر صفحة في الجزء = بدء الجزء التالي: تظهر بطاقة هذا الجزء وحده (مرة واحدة)
-    // بما وُقِّت من صفحاته ولو كانت أقل من الجزء كاملاً.
+    // إنهاء آخر صفحة في الجزء: الأرقام القياسية للجزء (مرة واحدة)
     const juz = closingJuz(finishedPage);
     if (juz != null && !seenJuzRef.current.has(juz)) {
       const summary = summarizeJuz(lapsRef.current, juz);
       if (summary) {
         seenJuzRef.current.add(juz);
-        onJuzCompleteRef.current?.({ ...summary, startedAt: sessionStartRef.current });
-        // الجزء التالي يبدأ الآن — لكل جزء وقت بدايته
+        onJuzCompleteRef.current?.(summary);
+      }
+    }
+    // إنهاء آخر صفحة في العشر (11، 21 … 591، 604) = بدء التالية: تظهر بطاقة هذه العشر وحدها
+    // (مرة واحدة) بما وُقِّت من صفحاتها ولو كانت أقل من عشر.
+    const block = closingBlock(finishedPage);
+    if (block != null && !seenBlockRef.current.has(block)) {
+      const blockLaps = lapsOfBlock(lapsRef.current, block);
+      if (blockLaps.length) {
+        seenBlockRef.current.add(block);
+        onBlockCompleteRef.current?.({ laps: blockLaps, startedAt: sessionStartRef.current });
+        // العشر التالية تبدأ الآن — لكل بطاقة وقت بدايتها
         sessionStartRef.current = Date.now();
       }
     }
@@ -230,5 +266,7 @@ export default function useStopwatch({ onJuzComplete } = {}) {
     recordLap,
     resetCurrentLap,
     leaveScreen,
+    keepLap,
+    toggleKeepLap,
   };
 }

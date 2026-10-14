@@ -1,0 +1,74 @@
+/* أيقونات آيات الخمسات في زوايا دائرة العدّاد (CounterFivesMarks).
+   الغلاف بحجم الدائرة، والزوايا هي المساحة الفارغة بين الدائرة ومربّعها */
+.counter-fives-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.counter-five-mark {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 50%;
+  /* أخضر داكن في كل الأوضاع (--app-accent-deep) بحلقة بيضاء داخلية وإطار داكن خارجها */
+  border: 2px solid #ffffff;
+  background: var(--app-accent-deep);
+  color: var(--app-accent-deep-contrast);
+  font-family: 'Tajawal', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px var(--app-accent-deep), 0 4px 10px var(--app-shadow);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 2;
+}
+
+/* عند المرور أو التركيز: حلقة بيضاء ثانية تتّسع حول الزرّ */
+.counter-five-mark:hover,
+.counter-five-mark:focus-visible {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 2px var(--app-accent-deep), 0 0 0 5px #ffffff, 0 0 0 7px var(--app-accent-deep), 0 6px 14px var(--app-shadow);
+  outline: none;
+}
+
+.counter-five-mark:active {
+  transform: scale(0.94);
+}
+
+.counter-five-mark.top-right { top: 0; right: 0; }
+.counter-five-mark.top-left { top: 0; left: 0; }
+.counter-five-mark.bottom-right { bottom: 0; right: 0; }
+.counter-five-mark.bottom-left { bottom: 0; left: 0; }
+
+.counter-five-mark.more {
+  font-size: 18px;
+}
+
+/* بقية الآيات: صفّ فوق أسفل الدائرة */
+.counter-fives-more {
+  position: absolute;
+  left: 50%;
+  bottom: 48px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 8px;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background: var(--app-surface);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  z-index: 3;
+}
+
+.counter-fives-more .counter-five-mark {
+  position: static;
+}

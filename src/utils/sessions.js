@@ -53,11 +53,12 @@ export function allTimeAverage(sessions) {
   return total / sessions.length;
 }
 
-// متوسط الجزء السابق (قبل رقم الجزء الحالي)
-export function previousJuzAverage(sessions, juzNumber) {
+// متوسط البطاقة السابقة في المصحف (أقرب بطاقة تبدأ قبل هذه). البطاقات كل عشر صفحات، فالمقارنة
+// بالجزء كانت تقارن النصف الثاني بالجزء الذي قبله وتتخطّى النصف الأول
+export function previousCardAverage(sessions, startPage) {
   const prev = sessions
-    .filter((s) => s.juzNumber < juzNumber)
-    .sort((a, b) => b.juzNumber - a.juzNumber)[0];
+    .filter((s) => s.startPage < startPage)
+    .sort((a, b) => b.startPage - a.startPage)[0];
   return prev ? prev.avgSeconds : null;
 }
 
@@ -79,4 +80,10 @@ export function bestTimeBucket(sessions, city) {
   if (!best) return null;
   const label = BUCKETS.find((b) => b.id === best.bucket)?.label || best.bucket;
   return { id: best.bucket, label, avg };
+}
+
+// هوية الجلسة: وقت انتهائها وأوّل صفحاتها. المقارنة بالمرجع كانت تنقطع بعد أوّل تعديل للدعاء
+// (كائن جديد)، فلا تجد بطاقة العداد نسختها في المحفوظات
+export function sameSession(a, b) {
+  return Boolean(a && b) && a.finishedAt === b.finishedAt && a.startPage === b.startPage;
 }

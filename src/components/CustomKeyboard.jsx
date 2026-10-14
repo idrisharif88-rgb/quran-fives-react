@@ -54,6 +54,19 @@ export function useCustomKeyboard(fields) {
     setActiveField(null);
   };
 
+  // ضغطة خارج اللوحة وخارج حقول الإدخال تغلقها — ومعها الانتقال إلى قسم آخر، وهو ضغطة أيضاً.
+  // كانت تبقى مفتوحة فوق القسم الجديد. الضغط على الحقل نفسه يعيد فتحها.
+  useEffect(() => {
+    if (!activeField || typeof document === 'undefined') return undefined;
+    const onPointerDown = (event) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest('.custom-keyboard-shell, .custom-keyboard-target')) return;
+      setActiveField(null);
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onPointerDown, true);
+  }, [activeField]);
+
   const setKeyboardValue = (nextValue) => {
     if (!activeConfig?.setValue) return;
 

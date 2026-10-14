@@ -1,5 +1,6 @@
 package com.shoaib.quranfives;
 
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.webkit.ValueCallback;
 import android.widget.Toast;
@@ -13,6 +14,9 @@ import android.webkit.JavascriptInterface;
 
 public class MainActivity extends BridgeActivity {
     private long lastBackPressTime = 0;
+    // آخر خلفية طلبها التطبيق: يُعاد تطبيقها (مع لون أيقونات أشرطة النظام) عند العودة إلى الشاشة
+    // وعند تغيّر وضع الهاتف، فقد يعيدها أندرويد إلى لون الثيم فتختفي أيقونات الوقت والبطارية
+    private volatile Integer windowBackground = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -38,16 +42,8 @@ public class MainActivity extends BridgeActivity {
             public void setWindowBackground(final String color) {
                 runOnUiThread(() -> {
                     try {
-                        int parsed = android.graphics.Color.parseColor(color);
-                        getWindow().getDecorView().setBackgroundColor(parsed);
-
-                        // مع edge-to-edge تصبح أشرطة النظام شفافة، فلوّن أيقوناتها
-                        // بما يناسب خلفية الوضع (داكنة فوق فاتح، فاتحة فوق داكن).
-                        boolean dark = isDarkColor(parsed);
-                        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
-                                .setAppearanceLightStatusBars(!dark);
-                        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
-                                .setAppearanceLightNavigationBars(!dark);
+                        windowBackground = android.graphics.Color.parseColor(color);
+                        applyWindowBackground();
                     } catch (Exception ignored) { }
                 });
             }
@@ -58,6 +54,37 @@ public class MainActivity extends BridgeActivity {
                 runOnUiThread(() -> MainActivity.this.finish());
             }
         }, "AndroidApp");
+    }
+
+    // مع edge-to-edge تصبح أشرطة النظام شفافة، فلوّن أيقوناتها بما يناسب خلفية الوضع
+    // (داكنة فوق فاتح، فاتحة فوق داكن).
+    private void applyWindowBackground() {
+        if (windowBackground == null) return;
+        int color = windowBackground;
+        getWindow().getDecorView().setBackgroundColor(color);
+        boolean dark = isDarkColor(color);
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightStatusBars(!dark);
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightNavigationBars(!dark);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        applyWindowBackground();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) applyWindowBackground();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        applyWindowBackground();
     }
 
     // يعيد true إن كان اللون داكناً (لتحديد لون أيقونات أشرطة النظام فوق خلفية الوضع)

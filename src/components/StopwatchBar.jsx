@@ -11,6 +11,8 @@ const StopwatchBar = ({
   onReset,
   onOpenLapSheet,
   onOpenResults,
+  keepLap,
+  onToggleKeepLap,
 }) => {
   const touchStartRef = useRef(null);
   const status = lapStatus(currentLapMs, targetMs);
@@ -61,7 +63,21 @@ const StopwatchBar = ({
         aria-label="فتح النتائج"
       >
         <div className="stopwatch-total">{formatTotal(totalMs)}</div>
-        <div className={`stopwatch-lap ${status}`}>{formatLap(currentLapMs)}</div>
+        <div className="stopwatch-lap-row">
+          <div className={`stopwatch-lap ${status}`}>{formatLap(currentLapMs)}</div>
+          <button
+            type="button"
+            className={`stopwatch-keep-btn ${keepLap ? 'on' : ''}`.trim()}
+            onClick={(e) => { e.stopPropagation(); onToggleKeepLap(); }}
+            aria-pressed={keepLap}
+            aria-label="احفظ اللاب عند الخروج"
+            title={keepLap ? 'اللاب محفوظ عند الخروج' : 'احفظ اللاب عند الخروج'}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+              <path d="M16 3H8v2h1v6l-2 3v2h4.2v5l.8 1 .8-1v-5H17v-2l-2-3V5h1z"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <button

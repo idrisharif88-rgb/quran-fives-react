@@ -15,6 +15,9 @@ import { SURAH_METADATA } from './data/quranConstants';
 import { SURAH_PAGE_COUNTS } from './data/surahPageCounts';
 import CounterRing from './components/CounterRing';
 import StopwatchBar from './components/StopwatchBar';
+import CounterFivesMarks from './components/CounterFivesMarks';
+import IjazatScreen from './components/ijazat/IjazatScreen';
+import useIjazat from './hooks/useIjazat';
 import LapSheet from './components/LapSheet';
 import SavedSessionsSheet from './components/SavedSessionsSheet';
 import JuzResults from './components/JuzResults';
@@ -63,6 +66,7 @@ import { dayKey } from './utils/hifzSchedule';
 import { hijriFromTable } from './utils/hijriDate';
 import HijriMonthsReminder from './components/HijriMonthsReminder';
 import useHijriReminder from './hooks/useHijriReminder';
+import useTafsirReminder from './hooks/useTafsirReminder';
 import { MUSHAF } from './utils/mushafEdition';
 import AccountPanel from './components/AccountPanel';
 import WelcomeToast from './components/WelcomeToast';
@@ -74,10 +78,10 @@ import HomeButton from './components/HomeButton';
 import QuranFal from './components/QuranFal';
 import QuranSearch from './components/QuranSearch';
 import useAccentTheme from './hooks/useAccentTheme';
-import { ACCENT_THEMES, ACCENT_THEME_LABEL, getPageBg } from './constants/themes';
+import { ACCENT_THEME_LABEL, ACCENT_THEME_NAMES, nextAccentTheme, getPageBg } from './constants/themes';
 import { shareCounterResultsPdf } from './utils/counterPdf';
-import { buildSessionFromLaps } from './utils/sessions';
-import { juzOfPage, lapsOfJuz } from './data/juzPages';
+import { buildSessionFromLaps, sameSession } from './utils/sessions';
+import { blockEndOf, lapsOfBlock } from './data/pageBlocks';
 import useVerseNotes, { cardKeyOf } from './hooks/useVerseNotes';
 import useHifz from './hooks/useHifz';
 import useHifzTrial from './hooks/useHifzTrial';
@@ -298,6 +302,8 @@ function App() {
   const [pendingKhatmaTime, setPendingKhatmaTime] = useState(null);
   const [isKhatmaListOpen, setIsKhatmaListOpen] = useState(false);
   const [isFiqhOpen, setIsFiqhOpen] = useState(false);
+  const [isIjazatOpen, setIsIjazatOpen] = useState(false);
+  const ijazatBackRef = useRef(null); // يضعه IjazatScreen ما دام خارج قائمة الإجازات
   const [expandedFiqhId, setExpandedFiqhId] = useState(null);
   const [editingKhatmaId, setEditingKhatmaId] = useState(null);
   const [editKhatmaIntention, setEditKhatmaIntention] = useState('');
@@ -367,6 +373,7 @@ function App() {
   const [activeResultSession, setActiveResultSession] = useState(null);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const resultsBackRef = useRef(null);   // يضعه JuzResults حين يكون محرّر الدعاء مفتوحاً
+  const liveCardLinkRef = useRef(null);  // بطاقة العشر الجارية في العداد ↔ نسختها في المحفوظات (وقت الانتهاء + أوّل صفحة)
   // المصحف: آخر صفحة مقروءة تُحفظ وتُستعاد
   const [isMushafOpen, setIsMushafOpen] = useState(false);
   const [mushafPage, setMushafPage] = useState(() => (
@@ -388,6 +395,8 @@ function App() {
   const celebrationBackRef = useRef(null); // نافذة تهنئة مفتوحة (نتيجة اختبار، ختمة) — تضع هنا دالّة إغلاقها
   const hifzBackRef = useRef(null);      // يضعه HifzScreen حين يكون فوقه شيء مفتوح
   const cornerNavBackRef = useRef(null); // يضعه CornerNav حين تكون قائمة السور أو الخطوة مفتوحة
+  const counterMarksBackRef = useRef(null); // يضعه CounterFivesMarks حين تكون قائمة «…» مفتوحة
+  const returnToCounterRef = useRef(false); // خماسية فُتحت من أيقونات العدّاد: الرجوع يعيد إليه
   const [quranicWondersNotes, setQuranicWondersNotes] = useState(() => (
     Array.isArray(persistedAppState.quranicWondersNotes) ? persistedAppState.quranicWondersNotes : []
   ));
@@ -414,6 +423,13 @@ function App() {
   // «فقهيات» محتوى خاص بالمالك: لا يظهر لغير حسابه
   const isOwner = Boolean(account && accountStatus?.admin);
   const hijriReminder = useHijriReminder(isOwner);   // المشرف: إضافة بدايات الأشهر الهجرية كل شهر
+  const ijazatStore = useIjazat(persistedAppState.ijazat);   // إجازاتي: تُزامَن مع الحساب
+  const tafsirReminder = useTafsirReminder();         // كل يوم: تفسير خمس آيات على ظهر البطاقات
+  const { recordSaved: recordTafsirSaved } = tafsirReminder;
+  const saveVerseNoteCounted = useCallback((key, text) => {
+    saveVerseNote(key, text);
+    recordTafsirSaved(key, text);
+  }, [saveVerseNote, recordTafsirSaved]);
   const [syncCheckNonce, setSyncCheckNonce] = useState(0);   // يعيد فحص الفتح («تحقّق الآن»)
   const [isAdminUsersOpen, setIsAdminUsersOpen] = useState(false);
   const syncUnlocked = Boolean(account);
@@ -494,6 +510,23 @@ function App() {
     setJumpError('');
   };
 
+  // أيقونة آية من أيقونات العدّاد (5، 10، 15…): الانتقال إلى خماسيتها، وزرّ الرجوع يعيد إلى العدّاد.
+  // الخطوة تصير 5 (الأيقونات خماسيات) فيُحسب الفهرس بها
+  // مغادرة القراءة إلى أيّ شاشة أخرى تُسقط العودة إلى العدّاد
+  useEffect(() => {
+    if (viewMode !== 'khmasiyat') returnToCounterRef.current = false;
+  }, [viewMode]);
+  const openFivesFromCounter = ({ surah, ayah }) => {
+    stopwatch.leaveScreen();
+    if (stepSize !== DEFAULT_STEP) {
+      setStepSize(DEFAULT_STEP);
+      setReviewAnchor(null);   // المرساة محسوبة بفهارس الخطوة السابقة
+    }
+    setCurrentIndex(indexForSurahAyah(surah, ayah, DEFAULT_STEP));
+    setViewMode('khmasiyat');
+    returnToCounterRef.current = true;
+  };
+
   // الانتقال إلى أوّل مجموعة في سورة (أوّل خماسية عند الخطوة 5)
   const handleSurahJump = (surahNumber) => {
     const target = firstIndexOfSurah(surahNumber, stepSize);
@@ -568,15 +601,18 @@ function App() {
   // ساعة الحفظ: الهدف بالمللي ثانية + منطق التوقيت/الجولات/الأجزاء
   const targetMs = Math.max(1, stopwatchTargetSeconds) * 1000;
   const stopwatch = useStopwatch({
-    onJuzComplete: useCallback(({ ms, avgPerPage, laps, startedAt, complete }) => {
+    onJuzComplete: useCallback(({ ms, avgPerPage, complete }) => {
       // الأفضلان الشخصيان من جزء كامل فقط — جزء ناقص الصفحات لا يصير «الأسرع»
       if (complete) {
         setStopwatchBestJuzMs(prev => (prev == null ? ms : Math.min(prev, ms)));
         setStopwatchBestAvgMs(prev => (prev == null ? avgPerPage : Math.min(prev, avgPerPage)));
       }
-      // بناء جلسة الجزء (صفحاته وحده) وفتح شاشة النتيجة
+    }, []),
+    onBlockComplete: useCallback(({ laps, startedAt }) => {
+      // بطاقة كل عشر صفحات (صفحاتها وحدها): تُحفظ في المحفوظات وتُفتح
       const session = buildSessionFromLaps(laps, startedAt, Date.now());
       if (session) {
+        liveCardLinkRef.current = session;
         setSessions(prev => [...prev, session]);
         setActiveResultSession(session);
         setIsResultsOpen(true);
@@ -590,18 +626,23 @@ function App() {
     setStopwatchTargetInput(String(clamped));
   }, [stopwatchTargetInput]);
 
-  // فتح شاشة النتائج (من صندوق الوقت) بجلسة حيّة من جولات الجزء الجاري وحده
+  // فتح شاشة النتائج (من صندوق الوقت) بجلسة حيّة من جولات العشر الجارية وحدها
   const handleOpenResults = useCallback(() => {
     const lastLap = stopwatch.laps[stopwatch.laps.length - 1];
-    const currentJuzLaps = lastLap ? lapsOfJuz(stopwatch.laps, juzOfPage(lastLap.page)) : [];
-    const session = buildSessionFromLaps(currentJuzLaps, null, null);
+    const currentBlockLaps = lastLap ? lapsOfBlock(stopwatch.laps, blockEndOf(lastLap.page)) : [];
+    let session = buildSessionFromLaps(currentBlockLaps, null, null);
+    // بطاقة هذه العشر حُفظت من قبل: تأخذ هويّتها ودعاءها من نسختها في المحفوظات
+    const link = liveCardLinkRef.current;
+    const archived = session && link && blockEndOf(link.startPage) === blockEndOf(session.startPage)
+      ? sessions.find(s => sameSession(s, link)) : null;
+    if (archived) session = { ...session, startPage: archived.startPage, finishedAt: archived.finishedAt, dua: archived.dua || '' };
     if (session) {
       setActiveResultSession(session);
       setIsResultsOpen(true);
     } else {
       setIsLapSheetOpen(true);
     }
-  }, [stopwatch.laps]);
+  }, [stopwatch.laps, sessions]);
 
   // مشاركة نتيجة العداد كملف PDF (مسار أندرويد الأصلي عبر Capacitor)
   const handleShareCounterPdf = useCallback(() => {
@@ -633,22 +674,29 @@ function App() {
 
   // ─── جلسات الجزء: حفظ/حذف/دعاء/مشاركة/مدينة ───
   const handleSaveSession = useCallback((session) => {
+    liveCardLinkRef.current = session;
     setSessions(prev => {
-      const exists = prev.some(s => s === session);
+      const exists = prev.some(s => sameSession(s, session));
       if (!exists) return [...prev, session];
-      return prev.map(s => (s === session ? { ...s, bookmarked: !s.bookmarked } : s));
+      return prev.map(s => (sameSession(s, session) ? { ...s, bookmarked: !s.bookmarked } : s));
     });
   }, []);
 
   const handleDeleteSession = useCallback((session) => {
-    setSessions(prev => prev.filter(s => s !== session));
+    setSessions(prev => prev.filter(s => !sameSession(s, session)));
     setActiveResultSession(null);
     setIsResultsOpen(false);
   }, []);
 
+  // الدعاء يُكتب في نسخة المحفوظات؛ بطاقة لم تُحفظ بعد تُحفظ معه كي لا يضيع عند إغلاقها
   const handleUpdateSessionDua = useCallback((dua) => {
-    setActiveResultSession(prev => prev ? { ...prev, dua } : prev);
-    setSessions(prev => prev.map(s => (s === activeResultSession ? { ...s, dua } : s)));
+    if (!activeResultSession) return;
+    const updated = { ...activeResultSession, dua };
+    liveCardLinkRef.current = updated;
+    setActiveResultSession(updated);
+    setSessions(prev => (prev.some(s => sameSession(s, updated))
+      ? prev.map(s => (sameSession(s, updated) ? { ...s, dua } : s))
+      : [...prev, updated]));
   }, [activeResultSession]);
 
   const handleShareSession = useCallback((session) => {
@@ -1010,6 +1058,7 @@ function App() {
       mushafPage,
       hifz: hifz.program,
       hifzContacts: hifzContacts.state,
+      ijazat: ijazatStore.ijazat,
       isNightMode,
       accentTheme,
       sessions,
@@ -1046,6 +1095,7 @@ function App() {
     mushafPage,
     hifz.program,
     hifzContacts.state,
+    ijazatStore.ijazat,
     starredByStep,
     starredPages,
     starredPageEnds,
@@ -1091,6 +1141,7 @@ function App() {
     mushafPage,
     hifz.program,
     hifzContacts.state,
+    ijazatStore.ijazat,
     starredByStep,
     starredPages,
     starredPageEnds,
@@ -1696,6 +1747,7 @@ function App() {
     setNightCounterLimitInput('');
     setIsNightCounterSettingsOpen(false);
     stopwatch.reset();
+    liveCardLinkRef.current = null;
     setIsPlaying(false);
     setIsAyahMenuOpen(false);
     setActiveAyahTest(null);
@@ -1913,6 +1965,11 @@ function App() {
       cornerNavBackRef.current();
       return true;
     }
+    // قائمة «…» لآيات الخمسات حول دائرة العدّاد
+    if (counterMarksBackRef.current) {
+      counterMarksBackRef.current();
+      return true;
+    }
     // قائمة المستخدمين مفتوحة فوق لوحة المزامنة: تُغلق وحدها أوّلاً
     if (isAdminUsersOpen) {
       setIsAdminUsersOpen(false);
@@ -1988,6 +2045,15 @@ function App() {
     }
     if (isFiqhOpen) {
       setIsFiqhOpen(false);
+      return true;
+    }
+    // إجازاتي: داخل القسم يرجع درجةً درجة، ومن قائمته يُغلق
+    if (ijazatBackRef.current) {
+      ijazatBackRef.current();
+      return true;
+    }
+    if (isIjazatOpen) {
+      setIsIjazatOpen(false);
       return true;
     }
     if (isFalOpen) {
@@ -2070,6 +2136,13 @@ function App() {
       return true;
     }
 
+    // خماسية فُتحت من أيقونات العدّاد: الرجوع يعيد إلى العدّاد على صفحته
+    if (viewMode === 'khmasiyat' && returnToCounterRef.current) {
+      returnToCounterRef.current = false;
+      setViewMode('night-counter');
+      return true;
+    }
+
     // على الشاشة الرئيسية: عرض تأكيد خروج احترافي بدل التوست الأصلي
     setIsExitConfirmOpen(true);
     return true;
@@ -2095,6 +2168,7 @@ function App() {
   // مفتوحة فوق الشاشة الرئيسية بعد الوصول إليها.
   const goHome = () => {
     mainKeyboard.closeKeyboard();
+    returnToCounterRef.current = false;
     setIsMoreMenuOpen(false);
     setIsFontMenuOpen(false);
     setIsPageStartsMenuOpen(false);
@@ -2103,6 +2177,7 @@ function App() {
     setActivePageStartsTest(null);
     setActiveSurahNamesQuiz(false);
     setIsUserManualOpen(false);
+    setIsIjazatOpen(false);
     stopwatch.leaveScreen();
     setViewMode('khmasiyat');
   };
@@ -2611,6 +2686,16 @@ function App() {
           backRef={celebrationBackRef}
         />
       )}
+      {!hijriReminder.open && tafsirReminder.open && (
+        <HijriMonthsReminder
+          message={tafsirReminder.message}
+          closeLabel="افتح الخماسيات"
+          postponeLabel="لاحقًا"
+          onClose={() => { tafsirReminder.hide(); setViewMode('khmasiyat'); }}
+          onPostpone={tafsirReminder.postpone}
+          backRef={celebrationBackRef}
+        />
+      )}
       {isKhatmaProgressOpen && (
         <KhatmaProgressDialog
           khatmas={khatmaList}
@@ -2744,22 +2829,23 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', ...(isOwner ? ['فقهيات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
+                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
-                      className={`ayah-menu-item ${(option === 'الوضع الليلي' && isNightMode) || (option === ACCENT_THEME_LABEL && accentTheme === ACCENT_THEMES.YELLOW) || (option === 'السور المتشابهة في العدد' && viewMode === 'shared-verses') ? 'active' : ''}`}
+                      className={`ayah-menu-item ${(option === 'الوضع الليلي' && isNightMode) || (option === 'السور المتشابهة في العدد' && viewMode === 'shared-verses') ? 'active' : ''}`}
                       onClick={() => {
                         if (option === 'المصحف') { mainKeyboard.closeKeyboard(); setIsMushafOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'العداد') { setViewMode('night-counter'); setIsMoreMenuOpen(false); return; }
                         if (option === 'ختماتي') { mainKeyboard.closeKeyboard(); setIsKhatmaListOpen(true); setIsMoreMenuOpen(false); return; }
+                        if (option === 'إجازاتي') { mainKeyboard.closeKeyboard(); setIsIjazatOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'المحفوظات') { setIsSavedSessionsOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فقهيات') { mainKeyboard.closeKeyboard(); setIsFiqhOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فأل القرآن') { mainKeyboard.closeKeyboard(); setIsFalOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'البحث في القرآن') { mainKeyboard.closeKeyboard(); setIsSearchOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'خماسيات - سور') { mainKeyboard.closeKeyboard(); setSurahFivesIndex(0); setViewMode('surah-fives'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'الوضع الليلي') { setIsNightMode(prev => !prev); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
-                        if (option === ACCENT_THEME_LABEL) { setAccentTheme(prev => (prev === ACCENT_THEMES.YELLOW ? ACCENT_THEMES.GREEN : ACCENT_THEMES.YELLOW)); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === ACCENT_THEME_LABEL) { setAccentTheme(nextAccentTheme); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'إعدادات الصوت') { mainKeyboard.closeKeyboard(); setIsAudioSettingsOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'الخط') { mainKeyboard.closeKeyboard(); setIsMoreMenuOpen(false); setIsFontMenuOpen(true); return; }
                         if (option === 'عجائب قرآنية') { mainKeyboard.closeKeyboard(); setViewMode('quranic-wonders'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -2772,7 +2858,7 @@ function App() {
                         setIsMoreMenuOpen(false);
                       }}
                     >
-                      {option}
+                      {option === ACCENT_THEME_LABEL ? `${option}: ${ACCENT_THEME_NAMES[accentTheme]}` : option}
                     </button>
                   ))}
                 </div>
@@ -3195,9 +3281,16 @@ function App() {
                 onReset={stopwatch.reset}
                 onOpenLapSheet={() => setIsLapSheetOpen(true)}
                 onOpenResults={handleOpenResults}
+                keepLap={stopwatch.keepLap}
+                onToggleKeepLap={stopwatch.toggleKeepLap}
               />
 
               <div className="night-counter-screen">
+                <CounterFivesMarks
+                  page={activeNightCounter?.value ?? 0}
+                  onOpen={openFivesFromCounter}
+                  backRef={counterMarksBackRef}
+                >
                 <button
                   type="button"
                   className="night-counter-circle"
@@ -3229,6 +3322,7 @@ function App() {
                 >
                   <CounterRing value={activeNightCounter?.value ?? 0} status={lapStatus(stopwatch.currentLapMs, targetMs)} />
                 </button>
+                </CounterFivesMarks>
               </div>
 
               {Number.isInteger(activeNightCounter?.limit) && (
@@ -3428,7 +3522,7 @@ function App() {
               flipped: flippedCardKey === cardKey,
               onFlip: () => setFlippedCardKey(prev => (prev === cardKey ? null : cardKey)),
               notes: verseNotes,
-              onSave: saveVerseNote,
+              onSave: saveVerseNoteCounted,
               onImport: mergeVerseNotes,
             } : undefined;
             return <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} cornerAction={cornerAction} cardClassName={cardClass} notesFlip={notesFlip} />;
@@ -4134,6 +4228,16 @@ function App() {
         onClose={mainKeyboard.closeKeyboard}
       />
         </>
+      )}
+      {isIjazatOpen && (
+        <IjazatScreen
+          ijazat={ijazatStore.ijazat}
+          onAdd={ijazatStore.addIjaza}
+          onRemove={ijazatStore.removeIjaza}
+          onSaveNote={ijazatStore.saveNote}
+          onClose={() => setIsIjazatOpen(false)}
+          backRef={ijazatBackRef}
+        />
       )}
       {/* ─── قسم فقهيات ─── */}
       {isFiqhOpen && isOwner && (
