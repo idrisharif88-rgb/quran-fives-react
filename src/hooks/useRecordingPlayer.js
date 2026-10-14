@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { applyRate } from './usePlaybackRate';
 
 /**
  * تشغيل تسجيل محفوظ في مكانه (قائمة «تسجيلاتي») بلا صفحة مصحف: مقطع واحد في كل لحظة.
  * @param loadUrl يحمّل ملف التسجيل ويعيد رابطاً مؤقتاً لتشغيله
+ * @param rate    سرعة التشغيل (تغييرها يسري على المقطع الجاري فوراً)
  * @returns { playingId, failedId, toggle(recording), stop }
  */
-export default function useRecordingPlayer(loadUrl) {
+export default function useRecordingPlayer(loadUrl, rate = 1) {
   const [playingId, setPlayingId] = useState(null);
   const [failedId, setFailedId] = useState(null);
   const currentRef = useRef(null);   // { id, audio, url }
@@ -20,6 +22,12 @@ export default function useRecordingPlayer(loadUrl) {
 
   // إغلاق الشاشة يوقف التشغيل ويحرّر الرابط
   useEffect(() => stop, [stop]);
+
+  const rateRef = useRef(rate);
+  useEffect(() => {
+    rateRef.current = rate;
+    applyRate(currentRef.current?.audio, rate);
+  }, [rate]);
 
   const toggle = useCallback(async (recording) => {
     const wasPlaying = currentRef.current?.id === recording.id;
@@ -36,6 +44,7 @@ export default function useRecordingPlayer(loadUrl) {
       if (currentRef.current !== current) { URL.revokeObjectURL(url); return; }
       current.url = url;
       current.audio = new Audio(url);
+      applyRate(current.audio, rateRef.current);
       current.audio.onended = () => { if (currentRef.current === current) stop(); };
       current.audio.onerror = fail;
       await current.audio.play();

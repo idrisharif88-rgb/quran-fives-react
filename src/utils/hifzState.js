@@ -1,8 +1,9 @@
 import {
-  TOTAL_VERSES, DIRECTIONS, DEFAULT_RULES, VERSES_PER_DAY_CHOICES, withDefaultRules,
-  boxesFor, verseAt, daysBetween,
+  TOTAL_VERSES, DIRECTIONS, DEFAULT_RULES, VERSES_PER_DAY_CHOICES, LISTEN_CHOICES, withDefaultRules,
+  boxesFor, verseAt, daysBetween, addDays,
 } from './hifzSchedule';
 import { STEP_DEFS, freshProgress, normalizeProgress, currentStep, stepTarget, stepCount } from './hifzSteps';
+import { methodTotal } from './hifzMethod';
 
 // ─── برنامج الحفظ: الحالة ───
 // دوال صرفة: (الحالة، الحدث) ← حالة جديدة. التخزين والواجهة خارجها.
@@ -33,6 +34,7 @@ export function startProgram(direction, today, rules = DEFAULT_RULES, origin = 0
     progress: freshProgress(fullRules),  // تقدّم الآية الجارية — يبقى إن لم تُنجَز في يومها
     checks: freshChecks(today),
     celebratedOn: null,                  // آخر يوم عُرض فيه تنبيه الإتمام
+    shift: 0,                            // أيام سُبق بها التقويم بفتح أوراد إضافية (effectiveDay)
     dayLog: {},                          // { 'YYYY-MM-DD': { verse, boxes } } — للإشراف لاحقاً
   };
 }
@@ -48,19 +50,20 @@ export function loadProgram(raw) {
     progress: normalizeProgress(raw.progress, rules),
     checks: { ...freshChecks(raw.startedOn), ...raw.checks },
     celebratedOn: raw.celebratedOn ?? null,
+    shift: Number.isInteger(raw.shift) && raw.shift > 0 ? raw.shift : 0,
     dayLog: raw.dayLog || {},
   };
 }
 
-// فتح ورد إضافي في اليوم نفسه (للمشرف، للتجربة): extra = { day, at } يُبطل قفل «ورد
-// واحد في اليوم» ما دام عدد المحفوظ at لم يتغيّر — إتمام الورد الإضافي يعيد القفل.
-const extraOpen = (state, today) => (
-  state.extra?.day === today && state.extra.at === state.memorizedOn.length
-);
+// يوم البرنامج: يوم التقويم مزاحاً بـshift. جدول المراجعة مربوط بالمحفوظ لا بالتقويم:
+// من فتح ورداً إضافياً في اليوم نفسه دخل «يوماً جديداً» من أيام البرنامج، فيصير ما حفظه
+// قبل قليل «آيات الأمس» وتتقدّم الصناديق كلّها يوماً. كل دوالّ هذا الملف تأخذ يوم
+// البرنامج في معاملها today — الواجهة تحسبه بـeffectiveDay قبل استدعائها.
+export const effectiveDay = (state, today) => addDays(today, state?.shift || 0);
 
-// ورد جديد واحد في اليوم على الأكثر (آية أو أكثر حسب rules.versesPerDay)
+// ورد جديد واحد في يوم البرنامج على الأكثر (آية أو أكثر حسب rules.versesPerDay)
 export const verseDoneToday = (state, today) => (
-  state.memorizedOn[state.memorizedOn.length - 1] === today && !extraOpen(state, today)
+  state.memorizedOn[state.memorizedOn.length - 1] === today
 );
 
 // ورد اليوم: آياته المتتالية في ترتيب الحفظ. يُحفظ وحدةً واحدة بالخطوات نفسها،
@@ -69,9 +72,7 @@ export const verseDoneToday = (state, today) => (
 export function portionOf(state, today) {
   const total = state.memorizedOn.length;
   let doneCount = 0;
-  if (!extraOpen(state, today)) {
-    while (doneCount < total && state.memorizedOn[total - 1 - doneCount] === today) doneCount++;
-  }
+  while (doneCount < total && state.memorizedOn[total - 1 - doneCount] === today) doneCount++;
   if (doneCount > 0) return { start: total - doneCount, count: doneCount, done: true };
   return { start: total, count: Math.min(state.rules.versesPerDay, TOTAL_VERSES - total), done: false };
 }
@@ -183,12 +184,14 @@ export function checkBox(state, today, box, done = true) {
   return logDay({ ...rolled, checks: { ...rolled.checks, [box]: done } }, today);
 }
 
-// ورد إضافي اليوم بعد إتمام ورده — لا يُفتح إلا وورد اليوم منجز والمصحف لم يُختم.
-// الآيات تُسجَّل بيومها كغيرها، فتدخل صناديق الغد مع ورد اليوم الأوّل.
+// ورد إضافي في يوم التقويم نفسه: يتقدّم يوم البرنامج يوماً (shift)، فيُفتح الورد التالي
+// ومعه مهامّ يومه — تكرار ما حُفظ قبله (آيات الأمس)، والربط، والمراجعة.
+// لا يُفتح إلا ويوم البرنامج الجاري تامّ (ورده وصناديقه كلّها) والمصحف لم يُختم:
+// من ترك مراجعة يومٍ لا ينتقل إلى الذي بعده.
 export function openExtraPortion(state, today) {
-  if (state.status !== STATUS.ACTIVE || !verseDoneToday(state, today)) return state;
+  if (state.status !== STATUS.ACTIVE || !dailyPlan(state, today).complete) return state;
   if (state.memorizedOn.length >= TOTAL_VERSES) return state;
-  return { ...state, extra: { day: today, at: state.memorizedOn.length } };
+  return { ...state, shift: (state.shift || 0) + 1 };
 }
 
 // تغيير ورد اليوم (1/3/5/7) دون إعادة ضبط البرنامج: ما حُفظ وصناديقه لا تُمسّ، والعدد
@@ -201,7 +204,42 @@ export function changeVersesPerDay(state, today, versesPerDay) {
     ...state,
     rules,
     progress: verseDoneToday(state, today) ? state.progress : freshProgress(rules),
+    method: null,   // مراحل الطريقة تتبع عدد آيات الورد
   };
+}
+
+// عدد مرات سماع المقرئ (3 أو 5 أو 7). ما سُمع يبقى محسوباً؛ إن بلغ العددَ الجديد تمّت الخطوة.
+export function changeListenTarget(state, listenTarget) {
+  if (!LISTEN_CHOICES.includes(listenTarget) || listenTarget === state.rules.listenTarget) return state;
+  return { ...state, rules: { ...state.rules, listenTarget } };
+}
+
+// ─── طريقة الخماسيات (hifzMethod.js) ───
+// عدّادها يُحفظ مع البرنامج: method = { at, taps } — at عدد المحفوظ حين بدأ العدّ، فعدّاد
+// وردٍ سابق لا يُحتسب للورد التالي.
+export const methodTaps = (state) => (state.method?.at === state.memorizedOn.length ? state.method.taps : 0);
+
+// ضغطة في الطريقة: زيادة أو نقص أو 'reset' — في خطوة الحفظ وحدها، وبين 0 ومجموع الطريقة.
+// بلوغ المجموع لا يُتمّ الخطوة؛ يُتمّها صاحبها بتأكيده (tickStep).
+export function tapMethod(state, today, delta) {
+  if (state.status !== STATUS.ACTIVE || verseDoneToday(state, today)) return state;
+  if (currentStep(state.progress, state.rules) !== 'memorize') return state;
+  const total = methodTotal(portionOf(state, today).count);
+  const taps = delta === 'reset' ? 0 : Math.min(total, Math.max(0, methodTaps(state) + delta));
+  return { ...state, method: { at: state.memorizedOn.length, taps } };
+}
+
+// جلسة اليوم: خطوات الورد الجاري. بدأت = فيها تقدّم ولم يكتمل الورد بعد.
+export const sessionStarted = (state, today) => (
+  !verseDoneToday(state, today)
+  && JSON.stringify(state.progress) !== JSON.stringify(freshProgress(state.rules))
+);
+
+// إلغاء جلسة اليوم: تعود خطوات الورد الجاري إلى أوّلها. ما حُفظ والصناديق لا تُمسّ،
+// وورد اليوم المنجز لا يُلغى.
+export function cancelSession(state, today) {
+  if (!sessionStarted(state, today)) return state;
+  return { ...state, progress: freshProgress(state.rules), method: null };
 }
 
 // تنبيه الإتمام يُعرض مرة واحدة في اليوم

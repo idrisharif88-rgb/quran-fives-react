@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useRecorder from '../../hooks/useRecorder';
 import './HifzRecorder.css';
 
@@ -20,12 +20,20 @@ const ERRORS = {
  * @param latest    آخر تسجيل محفوظ لهذه الآية (أو لا شيء)
  * @param onSave    (blob, durationMs) ← يحفظ المقطع
  * @param onListen  يفتح شاشة الاستماع مع المصحف
+ * @param onRecordingChange (bool) ← يُعلم الشاشة ببدء التسجيل وانتهائه لتغطّي نصّ الورد
  */
-export default function HifzRecorder({ value, latest, onSave, onListen }) {
+export default function HifzRecorder({ value, latest, onSave, onListen, onRecordingChange }) {
   const recorder = useRecorder();
   const [take, setTake] = useState(null);       // مقطع سُجّل ولم يُحفظ بعد
   const [saving, setSaving] = useState(false);
   const [recordAgain, setRecordAgain] = useState(false);
+
+  const isRecording = recorder.status === 'recording';
+  useEffect(() => {
+    if (!onRecordingChange) return undefined;
+    onRecordingChange(isRecording);
+    return () => onRecordingChange(false);
+  }, [isRecording, onRecordingChange]);
 
   const stop = async () => setTake(await recorder.stop());
 

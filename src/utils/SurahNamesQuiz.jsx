@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import CustomKeyboard, { useCustomKeyboard } from '../components/CustomKeyboard';
 import { SURAH_METADATA } from '../data/quranConstants';
-import { buildShuffledIndices } from './quizUtils';
-import { loadStoredState, saveStoredState } from './persistence';
+import { buildShuffledIndices, quizNotice } from './quizUtils';
+import QuizNotice from '../components/QuizNotice';
+import { SURAH_NAMES_QUIZ_STORAGE_KEY, loadStoredState, saveStoredState } from './persistence';
 
-const SURAH_NAMES_QUIZ_STORAGE_KEY = 'quran_fives_surah_names_quiz_state';
 
-export default function SurahNamesQuiz({ onClose }) {
+export default function SurahNamesQuiz({ onClose, backRef }) {
   const [persistedQuizState] = useState(() => loadStoredState(SURAH_NAMES_QUIZ_STORAGE_KEY) || {});
   
   // mode: 'name-to-number' (أسماء السور -> أرقام السور) or 'number-to-name' (أرقام السور -> أسماء السور)
@@ -36,8 +36,14 @@ export default function SurahNamesQuiz({ onClose }) {
   ));
   const [isGuessShaking, setIsGuessShaking] = useState(false);
   const audioCtxRef = useRef(null);
+  const [notice, setNotice] = useState(null);   // نتيجة آخر المدى، أو تهنئة محطّة (كل 100 سؤال)
 
   const createQuestion = (forceNewCycle = false) => {
+    const nextNotice = quizNotice({ forced: forceNewCycle, orderLength: order.length, pointer: nextPointer });
+    setNotice(nextNotice);
+    // انتهى المدى: تُعرض النتيجة، ولا يبدأ اختبار جديد إلا بطلب صاحبه
+    if (nextNotice?.kind === 'finished') return;
+
     const needsNewCycle = forceNewCycle || order.length === 0 || nextPointer >= order.length;
     if (needsNewCycle) {
       const newOrder = buildShuffledIndices(1, 114);
@@ -244,6 +250,7 @@ export default function SurahNamesQuiz({ onClose }) {
         onSubmit={keyboard.handleKeyboardSubmit}
         onClose={keyboard.closeKeyboard}
       />
+      <QuizNotice notice={notice} correct={correctCount} incorrect={incorrectCount} onRestart={() => createQuestion(true)} onClose={() => setNotice(null)} backRef={backRef} />
     </div>
   );
 }

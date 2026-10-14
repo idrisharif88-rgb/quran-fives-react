@@ -53,6 +53,33 @@
   border-color: var(--app-accent-ink);
 }
 
+/* حقل كلمة السر وزرّ إظهارها (PasswordInput). الحشو متساوٍ على الجانبين ليبقى النص في الوسط */
+.account-form-password {
+  position: relative;
+}
+
+.account-form-password .account-form-input {
+  padding-inline: 44px;
+}
+
+.account-form-eye {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  border: none;
+  background: none;
+  color: var(--app-muted);
+  cursor: pointer;
+}
+
+.account-form-eye[aria-pressed='true'] {
+  color: var(--app-accent-ink);
+}
+
 .account-form-hint {
   margin: 0;
   font-size: 12.5px;

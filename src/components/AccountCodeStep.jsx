@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PasswordInput from './PasswordInput';
 
 /**
  * الخطوة الثانية: رمز التأكيد المُرسل إلى البريد — لتفعيل حساب جديد (verify)،
@@ -38,16 +39,11 @@ export default function AccountCodeStep({ auth }) {
         maxLength={6}
       />
       {isReset && (
-        <input
-          className="account-form-input"
-          type="password"
-          dir="ltr"
+        <PasswordInput
           value={code}
           onChange={(e) => { setCode(e.target.value); clearError(); }}
           placeholder="كلمة السر الجديدة"
           aria-label="كلمة السر الجديدة"
-          autoComplete="new-password"
-          maxLength={128}
         />
       )}
 

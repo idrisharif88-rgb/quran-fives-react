@@ -41,10 +41,13 @@ import { FIQH_DATA } from './data/fiqhData';
 import { getAudioUrl } from './utils/audioDownloader';
 import {
   APP_STORAGE_KEY,
+  LOCAL_SYNC_EVENT,
   loadStoredState,
+  readSyncedLocal,
   removeStoredState,
   saveStoredState
 } from './utils/persistence';
+import SyncScopeList from './components/SyncScopeList';
 import { pushLocal, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, fetchMe } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
 import { getSyncMeta, deviceDataIsForeign, clearSyncMeta } from './utils/syncMeta';
@@ -54,6 +57,13 @@ import { SESSION_STORAGE_KEYS, wipeDeviceData, isPristineState } from './utils/d
 const REOPEN_SYNC_PANEL_KEY = 'quran-fives-reopen-sync-panel';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
 import StartupSyncPrompt from './components/StartupSyncPrompt';
+import CelebrationDialog from './components/CelebrationDialog';
+import KhatmaProgressDialog from './components/KhatmaProgressDialog';
+import { dayKey } from './utils/hifzSchedule';
+import { hijriFromTable } from './utils/hijriDate';
+import HijriMonthsReminder from './components/HijriMonthsReminder';
+import useHijriReminder from './hooks/useHijriReminder';
+import { MUSHAF } from './utils/mushafEdition';
 import AccountPanel from './components/AccountPanel';
 import WelcomeToast from './components/WelcomeToast';
 import AccountBadge from './components/AccountBadge';
@@ -70,6 +80,7 @@ import { buildSessionFromLaps } from './utils/sessions';
 import { juzOfPage, lapsOfJuz } from './data/juzPages';
 import useVerseNotes, { cardKeyOf } from './hooks/useVerseNotes';
 import useHifz from './hooks/useHifz';
+import useHifzTrial from './hooks/useHifzTrial';
 import useHifzContacts from './hooks/useHifzContacts';
 import HifzIconButton from './components/hifz/HifzIconButton';
 
@@ -132,7 +143,6 @@ const SHARED_VERSE_GROUPS = Object.keys(countGroups)
   .sort((a, b) => a - b)
   .map(count => ({ count, surahs: countGroups[count] }));
 
-const HIJRI_CACHE_KEY = 'quran-fives-hijri-cache';
 const HIJRI_MONTHS_AR = ['محرم','صفر','ربيع الأول','ربيع الثاني','جمادى الأولى','جمادى الثانية','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
 const HIJRI_WEEKDAYS_AR = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 
@@ -141,9 +151,12 @@ const HIJRI_UMALQURA_FMT = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
   day: 'numeric', month: 'numeric', year: 'numeric',
 });
 
+// الهجري من جدول بدايات الأشهر المعتمد أوّلاً؛ خارجه تقويم أم القرى
 function calcHijriOffline(date) {
   let day, month, year;
-  try {
+  const approved = hijriFromTable(date);
+  if (approved) ({ day, month, year } = approved);
+  else try {
     const parts = HIJRI_UMALQURA_FMT.formatToParts(date);
     const get = (t) => parts.find((p) => p.type === t)?.value;
     day = parseInt(get('day'), 10);
@@ -343,6 +356,10 @@ function App() {
   const [accentTheme, setAccentTheme] = useAccentTheme(persistedAppState.accentTheme);
   const [isSavedSessionsOpen, setIsSavedSessionsOpen] = useState(false);
   const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
+  const [isKhatmaCongratsOpen, setIsKhatmaCongratsOpen] = useState(false); // تهنئة إتمام آخر صفحة في العدّاد
+  const closeKhatmaCongrats = useCallback(() => setIsKhatmaCongratsOpen(false), []);
+  const [isKhatmaProgressOpen, setIsKhatmaProgressOpen] = useState(false); // تقدّم الختمة ومعدّل الختمات (من دائرة «ختماتي»)
+  const closeKhatmaProgress = useCallback(() => setIsKhatmaProgressOpen(false), []);
   // جلسات الجزء (المصدر: محلي، append-only، تُرفع مع المزامنة)
   const [sessions, setSessions] = useState(() => (
     Array.isArray(persistedAppState.sessions) ? persistedAppState.sessions : []
@@ -358,8 +375,17 @@ function App() {
   const mushafBackRef = useRef(null);    // يضعه MushafReader حين تكون نافذة الانتقال مفتوحة
   // برنامج الحفظ: حالته تُحفظ وتُزامن مع بقية التطبيق
   const hifz = useHifz(persistedAppState.hifz);
+  // حفظٌ لما يُزامَن خارج حالة التطبيق (اختبار، سرعة تشغيل) يعيد اللقطة والرفع
+  const [localSyncTick, setLocalSyncTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setLocalSyncTick((n) => n + 1);
+    window.addEventListener(LOCAL_SYNC_EVENT, bump);
+    return () => window.removeEventListener(LOCAL_SYNC_EVENT, bump);
+  }, []);
+  const hifzTrial = useHifzTrial();   // وضع التجربة للمشرف: برنامج منفصل على الجهاز، لا يُزامَن
   const hifzContacts = useHifzContacts(persistedAppState.hifzContacts);
   const [isHifzOpen, setIsHifzOpen] = useState(false);
+  const celebrationBackRef = useRef(null); // نافذة تهنئة مفتوحة (نتيجة اختبار، ختمة) — تضع هنا دالّة إغلاقها
   const hifzBackRef = useRef(null);      // يضعه HifzScreen حين يكون فوقه شيء مفتوح
   const cornerNavBackRef = useRef(null); // يضعه CornerNav حين تكون قائمة السور أو الخطوة مفتوحة
   const [quranicWondersNotes, setQuranicWondersNotes] = useState(() => (
@@ -387,6 +413,7 @@ function App() {
   const [accountStatus, setAccountStatus] = useState(readAccountStatus);   // آخر حالة معروفة، تعمل بلا شبكة
   // «فقهيات» محتوى خاص بالمالك: لا يظهر لغير حسابه
   const isOwner = Boolean(account && accountStatus?.admin);
+  const hijriReminder = useHijriReminder(isOwner);   // المشرف: إضافة بدايات الأشهر الهجرية كل شهر
   const [syncCheckNonce, setSyncCheckNonce] = useState(0);   // يعيد فحص الفتح («تحقّق الآن»)
   const [isAdminUsersOpen, setIsAdminUsersOpen] = useState(false);
   const syncUnlocked = Boolean(account);
@@ -987,6 +1014,8 @@ function App() {
       accentTheme,
       sessions,
       // ملاحظة: khatmaList لم يعد ضمن الحالة المشتركة — صار خاصاً على الخادم خلف بيانات دخول
+      // تقدّم الاختبارات وسرعة التشغيل: محفوظة خارج هذه الحالة، وتُزامَن معها (SYNCED_LOCAL_KEYS)
+      localStores: readSyncedLocal(),
     };
     saveStoredState(APP_STORAGE_KEY, appStateSnapshot);
     lastSnapshotRef.current = appStateSnapshot;
@@ -1023,6 +1052,7 @@ function App() {
     stepSize,
     surahFivesIndex,
     viewMode,
+    localSyncTick,
   ]);
 
   // رفع فوري للسحابة عند كل تغيير حقيقي — دون دقّات ساعة الحفظ عمداً:
@@ -1067,6 +1097,7 @@ function App() {
     stepSize,
     surahFivesIndex,
     viewMode,
+    localSyncTick,
   ]);
 
   useEffect(() => {
@@ -1329,46 +1360,11 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // جلب التاريخ الهجري للمشهد الرئيسي فقط - مع كاش محلي واحتياط بدون إنترنت
+  // التاريخ الهجري للمشهد الرئيسي: من جدول بدايات الأشهر المعتمد، محلياً بلا شبكة
+  // (خارج الجدول تقويم أم القرى المدمج) — لا انتظار لخادم ولا مزامنة
   useEffect(() => {
     if (isPageStartsMode || isSurahFivesMode) return;
-
-    const today = new Date();
-    const dateStr = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
-
-    // استخدام الكاش أولاً
-    try {
-      const cached = JSON.parse(localStorage.getItem(HIJRI_CACHE_KEY) || 'null');
-      if (cached && cached.date === dateStr && Array.isArray(cached.data) && cached.data.length === 4) {
-        setHijriData(cached.data);
-        return;
-      }
-    } catch {}
-
-    // إذا بدون إنترنت، احسب الهجري محلياً
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-      setHijriData(calcHijriOffline(today));
-      return;
-    }
-
-    fetch(`https://api.aladhan.com/v1/gToH?date=${dateStr}`)
-      .then(res => res.json())
-      .then(json => {
-        if (json.code !== 200) {
-          setHijriData(calcHijriOffline(today));
-          return;
-        }
-        const hijri = json.data.hijri;
-        const dayNameWithoutAl = hijri.weekday.ar.replace('ال', '').trim();
-        const data = [dayNameWithoutAl, hijri.day, hijri.month.ar, hijri.year];
-        setHijriData(data);
-        try {
-          localStorage.setItem(HIJRI_CACHE_KEY, JSON.stringify({ date: dateStr, data }));
-        } catch {}
-      })
-      .catch(() => {
-        setHijriData(calcHijriOffline(today));
-      });
+    setHijriData(calcHijriOffline(new Date()));
   }, [isPageStartsMode, isSurahFivesMode]);
 
   useEffect(() => {
@@ -1907,6 +1903,11 @@ function App() {
     // النوافذ الحاجبة (ModalDialog) فوق كل شيء، فهي أوّل ما يغلقه الرجوع.
     // قرار المزامنة لا يُغلق بالرجوع: يُختار منه صراحةً، والزرّ لا يفعل شيئاً تحته.
     if (startupSyncChoice) return true;
+    // نافذة التهنئة (نتيجة اختبار، محطّة، ختمة)
+    if (celebrationBackRef.current) {
+      celebrationBackRef.current();
+      return true;
+    }
     // قائمة السور أو خطوة التنقّل (من اسم السورة ورقمها أسفل البطاقة)
     if (cornerNavBackRef.current) {
       cornerNavBackRef.current();
@@ -2602,6 +2603,34 @@ function App() {
           </div>
         </div>
       )}
+      {hijriReminder.open && (
+        <HijriMonthsReminder
+          message={hijriReminder.message}
+          onClose={hijriReminder.close}
+          onPostpone={hijriReminder.postpone}
+          backRef={celebrationBackRef}
+        />
+      )}
+      {isKhatmaProgressOpen && (
+        <KhatmaProgressDialog
+          khatmas={khatmaList}
+          page={activeNightCounter?.value ?? 0}
+          today={dayKey()}
+          onClose={closeKhatmaProgress}
+          backRef={celebrationBackRef}
+        />
+      )}
+      {isKhatmaCongratsOpen && (
+        <CelebrationDialog
+          title="مبارك إتمام المصحف"
+          message={`أتممت الصفحة ${MUSHAF.totalPages}، آخر صفحات المصحف. تقبّل الله منك وجعل القرآن ربيع قلبك.`}
+          stats={khitmaUnlocked ? [{ label: 'ختماتي المسجّلة', value: khatmaList.length }] : []}
+          primaryLabel="الحمد لله"
+          onPrimary={closeKhatmaCongrats}
+          onClose={closeKhatmaCongrats}
+          backRef={celebrationBackRef}
+        />
+      )}
       {isExitConfirmOpen && (
         <div className="session-overlay" dir="rtl" style={{ zIndex: 10002, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
           <div style={{
@@ -2884,31 +2913,31 @@ function App() {
       )}
       {activeAyahTest === 'khmasiyat' && (
         <div style={{ flexGrow: 1, overflowY: 'auto' }}>
-          <KhmasiyatQuiz onClose={() => setActiveAyahTest(null)} />
+          <KhmasiyatQuiz onClose={() => setActiveAyahTest(null)} backRef={celebrationBackRef} />
         </div>
       )}
 
       {activeAyahTest === 'random-ayat' && (
         <div style={{ flexGrow: 1, overflowY: 'auto' }}>
-          <RandomAyahQuiz onClose={() => setActiveAyahTest(null)} />
+          <RandomAyahQuiz onClose={() => setActiveAyahTest(null)} backRef={celebrationBackRef} />
         </div>
       )}
 
       {activeAyahTest === 'surah-count' && (
         <div style={{ flexGrow: 1, overflowY: 'auto' }}>
-          <SurahCountQuiz onClose={() => setActiveAyahTest(null)} />
+          <SurahCountQuiz onClose={() => setActiveAyahTest(null)} backRef={celebrationBackRef} />
         </div>
       )}
 
       {activePageStartsTest === 'page-starts' && (
         <div style={{ flexGrow: 1, overflowY: 'auto' }}>
-          <PageStartsQuiz onClose={() => setActivePageStartsTest(null)} />
+          <PageStartsQuiz onClose={() => setActivePageStartsTest(null)} backRef={celebrationBackRef} />
         </div>
       )}
 
       {activeSurahNamesQuiz && (
         <div style={{ flexGrow: 1, overflowY: 'auto' }}>
-          <SurahNamesQuiz onClose={() => setActiveSurahNamesQuiz(false)} />
+          <SurahNamesQuiz onClose={() => setActiveSurahNamesQuiz(false)} backRef={celebrationBackRef} />
         </div>
       )}
 
@@ -3181,6 +3210,8 @@ function App() {
                     const nextValue = hasLimit
                       ? Math.min(activeNightCounter.limit, finishedPage + 1)
                       : finishedPage + 1;
+                    // إنهاء آخر صفحة في المصحف: تهنئة بالختمة (مرة، عند تجاوزها)
+                    if (finishedPage === MUSHAF.totalPages) setIsKhatmaCongratsOpen(true);
                     // سجّل زمن الصفحة المنتهية إن وُجدت صفحة فعلية
                     if (finishedPage >= 1) {
                       stopwatch.recordLap(finishedPage);
@@ -3245,16 +3276,24 @@ function App() {
                     <path d="M6.5 12.5 10 16.5 20 4" strokeWidth="3.2" />
                   </svg>
                 </button>
-                <div
-                  aria-label={`${khatmaList.length} ختمة مسجلة`}
+                <button
+                  type="button"
+                  aria-label={`${khatmaList.length} ختمة مسجلة — اعرض تقدّم الختمة`}
+                  title="تقدّم الختمة ومعدّل الختمات"
                   className="nc-khitma-circle"
                   style={{ flexDirection: 'column', lineHeight: '1.2', gap: '1px' }}
+                  onClick={() => {
+                    mainKeyboard.closeKeyboard();
+                    // التقدّم يُحسب من تاريخ آخر ختمة، والسجلّ خاص: الدخول أوّلاً
+                    if (!khitmaUnlocked) { setIsKhatmaListOpen(true); return; }
+                    setIsKhatmaProgressOpen(true);
+                  }}
                 >
                   <span className="nc-khitma-count">
                     {khatmaList.length}
                   </span>
                   <span className="nc-khitma-label">ختماتي</span>
-                </div>
+                </button>
                 <button
                   type="button"
                   className="night-counter-btn night-counter-minus-btn"
@@ -3785,7 +3824,7 @@ function App() {
       )}
       {isHifzOpen && (
         <Suspense fallback={null}>
-          <HifzScreen hifz={hifz} reciter={activeReciter} contacts={hifzContacts} onClose={() => setIsHifzOpen(false)} backRef={hifzBackRef} canTakeExtra={isOwner} canCustomStart={Boolean(account && accountStatus?.hifzCustomStart)} />
+          <HifzScreen hifz={isOwner && hifzTrial.on ? hifzTrial.hifz : hifz} trial={isOwner && hifzTrial.on} onTrialStart={hifzTrial.start} onTrialEnd={hifzTrial.end} reciter={activeReciter} onReciterChange={setActiveReciter} contacts={hifzContacts} onClose={() => setIsHifzOpen(false)} backRef={hifzBackRef} canTakeExtra={isOwner} canCustomStart={Boolean(account && accountStatus?.hifzCustomStart)} />
         </Suspense>
       )}
       {isMushafOpen && (
@@ -3934,6 +3973,8 @@ function App() {
                 <p style={{ fontSize: '13px', color: 'var(--app-muted)', margin: '0 0 16px', lineHeight: 1.7 }}>
                   بياناتك تُرفع تلقائياً إلى حسابك «{account.user}». وبالأسفل خطوتان يدويّتان تحسمان أيّ اختلاف.
                 </p>
+
+                <SyncScopeList />
 
                 {/* ─── المزامنة اليدوية: خطوة رفع وخطوة تنزيل ─── */}
                 <div className="manual-sync">

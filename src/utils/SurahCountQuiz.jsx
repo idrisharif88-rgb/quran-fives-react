@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import CustomKeyboard, { useCustomKeyboard } from '../components/CustomKeyboard';
 import { SURAH_METADATA } from '../data/quranConstants';
-import { buildShuffledIndices } from './quizUtils';
+import { buildShuffledIndices, quizNotice } from './quizUtils';
+import QuizNotice from '../components/QuizNotice';
 import { SURAH_COUNT_QUIZ_STORAGE_KEY, loadStoredState, saveStoredState } from './persistence';
 
-export default function SurahCountQuiz({ onClose }) {
+export default function SurahCountQuiz({ onClose, backRef }) {
   const [persistedQuizState] = useState(() => loadStoredState(SURAH_COUNT_QUIZ_STORAGE_KEY) || {});
   const [surahCountMode, setSurahCountMode] = useState(() => (
     typeof persistedQuizState.surahCountMode === 'string' ? persistedQuizState.surahCountMode : 'name-to-count'
@@ -36,8 +37,14 @@ export default function SurahCountQuiz({ onClose }) {
   const [isGuessShaking, setIsGuessShaking] = useState(false);
   const [isInputShaking, setIsInputShaking] = useState(false);
   const audioCtxRef = useRef(null);
+  const [notice, setNotice] = useState(null);   // نتيجة آخر المدى، أو تهنئة محطّة (كل 100 سؤال)
 
   const createSurahCountQuestion = (forceNewCycle = false) => {
+    const nextNotice = quizNotice({ forced: forceNewCycle, orderLength: surahCountOrder.length, pointer: surahCountNextPointer });
+    setNotice(nextNotice);
+    // انتهى المدى: تُعرض النتيجة، ولا يبدأ اختبار جديد إلا بطلب صاحبه
+    if (nextNotice?.kind === 'finished') return;
+
     const needsNewCycle = forceNewCycle || surahCountOrder.length === 0 || surahCountNextPointer >= surahCountOrder.length;
     if (needsNewCycle) {
       const newOrder = buildShuffledIndices(1, SURAH_METADATA.length);
@@ -256,6 +263,7 @@ export default function SurahCountQuiz({ onClose }) {
         onSubmit={keyboard.handleKeyboardSubmit}
         onClose={keyboard.closeKeyboard}
       />
+      <QuizNotice notice={notice} correct={correctCount} incorrect={incorrectCount} onRestart={() => createSurahCountQuestion(true)} onClose={() => setNotice(null)} backRef={backRef} />
     </div>
   );
 }

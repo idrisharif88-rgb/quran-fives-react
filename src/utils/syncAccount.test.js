@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { authHeaders, validateName, validateEmail, validateCode, readKnownEmails, rememberEmail, forgetEmail } from './syncAccount';
+import { authHeaders, validateName, validateEmail, validateCode, readKnownEmails, rememberEmail, forgetEmail, latinDigits } from './syncAccount';
 
 const mem = new Map();
 globalThis.localStorage = {
@@ -68,5 +68,13 @@ describe('البُرُد المحفوظة للدخول السريع', () => {
     rememberEmail('b@example.com');
     expect(forgetEmail('b@example.com')).toEqual(['a@example.com']);
     expect(readKnownEmails()).toEqual(['a@example.com']);
+  });
+});
+
+describe('أرقام كلمة السر', () => {
+  it('العربية والفارسية تصير لاتينية، وغيرها لا يُمسّ', () => {
+    expect(latinDigits('سرّ١٢٣٤٥٦٧٨٩٠')).toBe('سرّ1234567890');
+    expect(latinDigits('۰۱۲۳۴۵۶۷۸۹')).toBe('0123456789');
+    expect(latinDigits('Abc-123 ')).toBe('Abc-123 ');
   });
 });
