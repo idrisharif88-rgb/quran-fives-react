@@ -8,6 +8,8 @@
 - **No Spaghetti Code:** Always prioritize readability and maintainability. If a file exceeds 200 lines, suggest breaking it down into smaller sub-components.
 - **Consistency:** Follow the existing project structure (Vite + React + Capacitor). 
 - **Refactoring:** Before implementing a new update, check if an existing file should be modified or if a new file is required to keep the structure clean.
+- **`App.jsx` is frozen in size.** The split of `App.jsx` / `App.css` is postponed on purpose. Until then, every new feature or section gets its own component (`src/components/<Feature>/`), hook (`src/hooks/`) and CSS file. `App.jsx` only receives the import, the mount line and minimal wiring — never the feature's state, effects or JSX. Hard ceiling: 6000 lines (4460 at the time of this rule). Same for `App.css`: new styles go next to their component.
+- **Do not start splitting `App.jsx` unless the user asks.
 
 # Verification Rules
 
