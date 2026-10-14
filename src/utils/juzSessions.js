@@ -1,11 +1,12 @@
 import { juzOfPage, juzPageRange, juzPageCount, lapsOfJuz } from '../data/juzPages';
 
-// جولات الصفحات → قائمة جديدة: إعادة قراءة صفحة تستبدل جولتها القديمة
+// جولات الصفحات → قائمة جديدة: العودة إلى صفحة تضيف زمنها الجديد إلى رصيدها السابق
+// (جولة واحدة لكل صفحة). استبدال القديم كان يُبقي للصفحة ثوانيَ العودة وحدها فيختلّ معدّلها.
 export function upsertLap(laps, page, ms) {
   const idx = laps.findIndex((l) => l.page === page);
   if (idx === -1) return [...laps, { page, ms }];
   const next = laps.slice();
-  next[idx] = { page, ms };
+  next[idx] = { page, ms: next[idx].ms + ms };
   return next;
 }
 

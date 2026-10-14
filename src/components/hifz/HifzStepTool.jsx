@@ -1,8 +1,9 @@
 import useVerseAudio from '../../hooks/useVerseAudio';
 import { stepTarget, stepCount } from '../../utils/hifzSteps';
+import { LISTEN_CHOICES } from '../../utils/hifzSchedule';
 
 // أداة سماع المقرئ: كل تلاوة كاملة لورد اليوم (آياته كلّها) تُحسب مرة
-function ListenTool({ verses, reciter, value, target, onCount }) {
+function ListenTool({ verses, reciter, value, target, onCount, onTarget, reciterSelect }) {
   const audio = useVerseAudio({ verses, reciter, onFinished: () => onCount(1) });
   const playing = audio.status === 'playing' || audio.status === 'loading';
   return (
@@ -11,6 +12,22 @@ function ListenTool({ verses, reciter, value, target, onCount }) {
         {audio.status === 'loading' ? 'جارٍ التحميل…' : playing ? 'إيقاف' : 'تشغيل التلاوة'}
       </button>
       <span className="hifz-tool-count" dir="ltr">{value} / {target}</span>
+      <div className="hifz-listen-choices" role="radiogroup" aria-label="عدد مرات السماع">
+        <span>مرات السماع</span>
+        {LISTEN_CHOICES.map((n) => (
+          <button
+            key={n}
+            type="button"
+            role="radio"
+            aria-checked={target === n}
+            className={`hifz-start-chip ${target === n ? 'active' : ''}`.trim()}
+            onClick={() => onTarget(n)}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+      {reciterSelect}
       {audio.status === 'error' && <span className="hifz-tool-error">تعذّر تشغيل التلاوة — تحقّق من الإنترنت</span>}
     </div>
   );
@@ -42,11 +59,11 @@ function RepeatTool({ value, target, onCount, onConfirm }) {
 /**
  * أداة الخطوة المفتوحة. كل خطوة جديدة تُضاف إلى القواعد تحتاج أداتها هنا.
  * @param verses آيات ورد اليوم [{ s, a }]
- * @param extras أدوات تُحقن من الشاشة: hafizContacts (خطّ التواصل مع الشيخ) و recorder (التسجيل)
+ * @param extras أدوات تُحقن من الشاشة: reciterSelect (اختيار المقرئ)، method (طريقة الخماسيات)، hafizContacts (خطّ التواصل مع الشيخ)، recorder (التسجيل)
  */
 export default function HifzStepTool({ id, value, rules, verses, reciter, actions, extras = {} }) {
   if (id === 'listen') {
-    return <ListenTool verses={verses} reciter={reciter} value={value} target={stepTarget(id, rules)} onCount={(d) => actions.count(id, d)} />;
+    return <ListenTool verses={verses} reciter={reciter} value={value} target={stepTarget(id, rules)} onCount={(d) => actions.count(id, d)} onTarget={actions.setListenTarget} reciterSelect={extras.reciterSelect} />;
   }
   if (id === 'repeat') {
     return <RepeatTool value={stepCount(id, value)} target={stepTarget(id, rules)} onCount={(d) => actions.count(id, d)} onConfirm={() => actions.confirm(id)} />;
@@ -61,6 +78,9 @@ export default function HifzStepTool({ id, value, rules, verses, reciter, action
   }
   if (id === 'record') {
     return extras.recorder ?? null;
+  }
+  if (id === 'memorize' && extras.method) {
+    return extras.method;
   }
   return (
     <div className="hifz-tool">

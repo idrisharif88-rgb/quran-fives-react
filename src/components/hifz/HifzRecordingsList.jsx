@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import useRecordingPlayer from '../../hooks/useRecordingPlayer';
 import { recordingText } from './hifzText';
+import usePlaybackRate from '../../hooks/usePlaybackRate';
+import PlaybackRateButton from './PlaybackRateButton';
 
 const clock = (ms) => {
   const total = Math.max(0, Math.round(ms / 1000));
@@ -15,7 +17,8 @@ const dateText = (timestamp) => new Date(timestamp).toLocaleDateString('ar', { d
 export default function HifzRecordingsList({ recordings }) {
   const [open, setOpen] = useState(false);
   const [removingId, setRemovingId] = useState(null);
-  const player = useRecordingPlayer(recordings.loadUrl);
+  const speed = usePlaybackRate();
+  const player = useRecordingPlayer(recordings.loadUrl, speed.rate);
   if (recordings.list.length === 0) return null;
 
   const remove = (recording) => {
@@ -30,6 +33,12 @@ export default function HifzRecordingsList({ recordings }) {
         <span>تسجيلاتي ({recordings.list.length})</span>
         <span aria-hidden="true">{open ? '▲' : '▼'}</span>
       </button>
+      {open && (
+        <div className="hifz-recordings-speed">
+          <span>سرعة التشغيل</span>
+          <PlaybackRateButton rate={speed.rate} onCycle={speed.cycle} />
+        </div>
+      )}
       {open && (
         <ul className="hifz-recordings">
           {[...recordings.list].reverse().map((recording) => (

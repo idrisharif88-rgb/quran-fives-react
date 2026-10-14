@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import CustomKeyboard, { useCustomKeyboard } from '../components/CustomKeyboard';
 import { QURAN_VERSES } from '../data/quranVerses';
-import { buildShuffledIndices, evaluateRandomAyahAnswer } from './quizUtils';
+import { buildShuffledIndices, evaluateRandomAyahAnswer, quizNotice } from './quizUtils';
+import QuizNotice from '../components/QuizNotice';
 import { RANDOM_AYAH_QUIZ_STORAGE_KEY, loadStoredState, saveStoredState } from './persistence';
 
-export default function RandomAyahQuiz({ onClose }) {
+export default function RandomAyahQuiz({ onClose, backRef }) {
   const [persistedQuizState] = useState(() => loadStoredState(RANDOM_AYAH_QUIZ_STORAGE_KEY) || {});
   const [randomAyahIndex, setRandomAyahIndex] = useState(() => (
     Number.isInteger(persistedQuizState.randomAyahIndex) ? persistedQuizState.randomAyahIndex : null
@@ -42,6 +43,7 @@ export default function RandomAyahQuiz({ onClose }) {
   ));
   const [isVerseShaking, setIsVerseShaking] = useState(false);
   const audioCtxRef = useRef(null);
+  const [notice, setNotice] = useState(null);   // نتيجة آخر المدى، أو تهنئة محطّة (كل 100 سؤال)
 
   const createRandomAyahQuestion = (forceNewCycle = false) => {
     const start = Number(randomAyahRangeStart);
@@ -54,6 +56,11 @@ export default function RandomAyahQuiz({ onClose }) {
     }
 
     const rangeChanged = randomAyahOrderRange.start !== start || randomAyahOrderRange.end !== end;
+    const nextNotice = quizNotice({ forced: forceNewCycle, rangeChanged, orderLength: randomAyahOrder.length, pointer: randomAyahNextPointer });
+    setNotice(nextNotice);
+    // انتهى المدى: تُعرض النتيجة، ولا يبدأ اختبار جديد إلا بطلب صاحبه
+    if (nextNotice?.kind === 'finished') return;
+
     const needsNewCycle = forceNewCycle || rangeChanged || randomAyahOrder.length === 0 || randomAyahNextPointer >= randomAyahOrder.length;
 
     if (needsNewCycle) {
@@ -263,6 +270,7 @@ export default function RandomAyahQuiz({ onClose }) {
         onSubmit={keyboard.handleKeyboardSubmit}
         onClose={keyboard.closeKeyboard}
       />
+      <QuizNotice notice={notice} correct={correctCount} incorrect={incorrectCount} onRestart={() => createRandomAyahQuestion(true)} onClose={() => setNotice(null)} backRef={backRef} />
     </div>
   );
 }

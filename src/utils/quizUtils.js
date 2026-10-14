@@ -63,3 +63,22 @@ export function buildShuffledIndices(start, end) {
   }
   return indices;
 }
+
+// محطّات التهنئة أثناء اختبار طويل: كل 100 سؤال
+export const QUIZ_MILESTONE = 100;
+
+/**
+ * ما يُعلَن عند طلب السؤال التالي، قبل تقديمه.
+ * @param forced       دورة جديدة بطلب صاحبها (تطبيق المدى، «اختبار جديد»)
+ * @param rangeChanged المدى تغيّر منذ بناء الترتيب
+ * @param orderLength  عدد أسئلة الدورة
+ * @param pointer      عدد ما قُدّم منها حتى الآن
+ * @returns { kind: 'finished' } حين لا سؤال بعده — النتيجة تُعرض ولا تبدأ دورة وحدها،
+ *          { kind: 'milestone' } عند كل محطّة، وإلا null
+ */
+export function quizNotice({ forced = false, rangeChanged = false, orderLength, pointer }) {
+  if (forced || rangeChanged || orderLength === 0) return null;
+  if (pointer >= orderLength) return { kind: 'finished', completed: orderLength, total: orderLength };
+  if (pointer % QUIZ_MILESTONE === 0) return { kind: 'milestone', completed: pointer, total: orderLength };
+  return null;
+}

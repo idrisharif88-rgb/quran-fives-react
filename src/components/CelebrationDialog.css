@@ -1,0 +1,77 @@
+/* نافذة التهنئة (CelebrationDialog) داخل ModalDialog */
+.celebration-dialog .modal-body {
+  align-items: center;
+  gap: 12px;
+  padding: 4px 6px 6px;
+  text-align: center;
+}
+
+.celebration-star {
+  color: #d4a017;
+  line-height: 0;
+}
+
+.celebration-message {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--app-text);
+}
+
+.celebration-stats {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.celebration-stats div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 4px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-2);
+}
+
+.celebration-stats strong {
+  font-size: 20px;
+  line-height: 1.1;
+  color: var(--app-text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.celebration-stats .good strong { color: var(--app-accent-ink); }
+.celebration-stats .bad strong { color: var(--app-danger); }
+
+.celebration-stats span {
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+.celebration-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.celebration-btn {
+  flex: 1;
+  padding: 11px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.celebration-btn.primary {
+  border-color: transparent;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+}

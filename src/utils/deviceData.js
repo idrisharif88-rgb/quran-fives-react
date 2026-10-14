@@ -4,6 +4,7 @@ import {
   RANDOM_AYAH_QUIZ_STORAGE_KEY,
   SURAH_COUNT_QUIZ_STORAGE_KEY,
   PAGE_STARTS_QUIZ_STORAGE_KEY,
+  SURAH_NAMES_QUIZ_STORAGE_KEY,
   removeStoredState,
 } from './persistence';
 import { clearSyncMeta } from './syncMeta';
@@ -16,7 +17,8 @@ export const SESSION_STORAGE_KEYS = [
   RANDOM_AYAH_QUIZ_STORAGE_KEY,
   SURAH_COUNT_QUIZ_STORAGE_KEY,
   PAGE_STARTS_QUIZ_STORAGE_KEY,
-  'quran_fives_surah_names_quiz_state',
+  SURAH_NAMES_QUIZ_STORAGE_KEY,
+  'quran-fives-hifz-trial-v1',   // وضع التجربة للمشرف (useHifzTrial)
 ];
 const KHITMA_CACHE_KEY = 'quran-fives-khitma-cache-v1';
 

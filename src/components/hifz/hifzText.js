@@ -27,12 +27,10 @@ export const boxTitle = (box, rules) => {
 
 export const surahName = (s) => SURAH_METADATA[s - 1]?.name ?? '';
 
-// عزل اتجاه الأرقام (LRI…PDI): داخل نصّ عربي ينقلب «67–91» إلى «91–67»
-const ltr = (text) => `\u2066${text}\u2069`;
-
-// [{ s, from, to }] ← «البقرة 74–98 · آل عمران 1»
+// [{ s, from, to }] ← «البقرة من 74 إلى 98 · آل عمران 1»
+// المدى بالكلمات لا بشرطة: «74–98» بين نصّ عربي يُقرأ من اليمين معكوساً «98–74».
 export const rangesText = (ranges) => ranges
-  .map((r) => `${surahName(r.s)} ${ltr(r.from === r.to ? r.from : `${r.from}–${r.to}`)}`)
+  .map((r) => `${surahName(r.s)} ${r.from === r.to ? r.from : `من ${r.from} إلى ${r.to}`}`)
   .join(' · ');
 
 // [{ s, a }] متتالية ← مقاطع داخل السورة الواحدة [{ s, from, to }]
@@ -46,7 +44,7 @@ export function rangesOfRefs(refs) {
   return ranges;
 }
 
-// «الفاتحة 7 · البقرة 1–2» لآيات ورد اليوم
+// «الفاتحة 7 · البقرة من 1 إلى 2» لآيات ورد اليوم
 export const refsText = (refs) => rangesText(rangesOfRefs(refs));
 
 // تسجيل ← وصف آياته. refs تُحفظ مع تسجيل الورد المتعدّد؛ التسجيلات الأقدم آية واحدة.

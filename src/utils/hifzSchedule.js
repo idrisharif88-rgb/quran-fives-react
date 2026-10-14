@@ -21,6 +21,9 @@ export const DEFAULT_RULES = {
 // خيارات ورد اليوم المعروضة عند بدء البرنامج
 export const VERSES_PER_DAY_CHOICES = [1, 3, 5, 7];
 
+// خيارات عدد مرات سماع المقرئ قبل الحفظ (listenTarget) — يختارها الحافظ في خطوة السماع
+export const LISTEN_CHOICES = [3, 5, 7];
+
 // قواعد مخزّنة ← قواعد كاملة: ما نقص يُؤخذ من الافتراضي (ترقية البيانات القديمة).
 // برنامج بدأ قبل إضافة ورد اليوم يبقى آية واحدة في اليوم.
 export const withDefaultRules = (rules) => {
@@ -45,6 +48,12 @@ export function dayNumber(key) {
 }
 
 export const daysBetween = (fromKey, toKey) => dayNumber(toKey) - dayNumber(fromKey);
+
+// مفتاح اليوم بعد n يوماً (أو قبلها إن كان سالباً)
+export function addDays(key, n) {
+  const [y, m, d] = key.split('-').map(Number);
+  return dayKey(new Date(y, m - 1, d + n));
+}
 
 // ─── ترتيب الحفظ ───
 // forward: من الفاتحة إلى الناس. backward: السور من الناس إلى الفاتحة، وآيات كل سورة بترتيبها.

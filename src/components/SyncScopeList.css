@@ -1,0 +1,67 @@
+/* «ما الذي يُزامَن؟» (SyncScopeList) في لوحة المزامنة */
+.sync-scope {
+  margin: 0 0 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-2);
+  text-align: right;
+}
+
+.sync-scope-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  color: var(--app-text-strong);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sync-scope-body {
+  padding: 0 12px 10px;
+}
+
+.sync-scope-body h4 {
+  margin: 8px 0 4px;
+  font-size: 13px;
+  color: var(--app-muted);
+}
+
+.sync-scope-body ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sync-scope-body li {
+  position: relative;
+  padding: 3px 18px 3px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--app-text);
+}
+
+.sync-scope-body li::before {
+  position: absolute;
+  right: 0;
+  font-weight: 900;
+}
+
+.sync-scope-body li.is-synced::before {
+  content: '✓';
+  color: var(--app-accent-ink);
+}
+
+.sync-scope-body li.is-local::before {
+  content: '•';
+  color: var(--app-muted);
+}
+
+.sync-scope-body li span {
+  color: var(--app-muted);
+}

@@ -1,7 +1,7 @@
 import { SYNC_URL, SYNC_ENABLED } from './syncConfig';
 import { readAccount, authHeaders } from './syncAccount';
 import { getSyncMeta, setSyncMeta } from './syncMeta';
-import { APP_STORAGE_KEY } from './persistence';
+import { APP_STORAGE_KEY, restoreSyncedLocal } from './persistence';
 
 // creds: حساب الطلب. الافتراضي هو الحساب المحفوظ على الجهاز؛ null يرسل بلا دخول.
 async function api(path, { creds = readAccount(), ...options } = {}, timeoutMs = 12000) {
@@ -100,6 +100,8 @@ export async function forcePullRemote() {
   const remote = await api('/api/state', { method: 'GET' });
   if (!remote || !remote.state) return false;
   localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(remote.state));
+  // الاختبارات وسرعة التشغيل تُحفظ خارج حالة التطبيق: تعود إلى مواضعها
+  restoreSyncedLocal(remote.state.localStores);
   setSyncMeta({ updatedAt: remote.updatedAt });
   return true;
 }

@@ -1,0 +1,71 @@
+/* شريط وضع التجربة (HifzTrialBar): أصفر #FFFF00 بنصّ داكن ثابت في الوضعين (≈19:1) */
+.hifz-trial-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 14px 10px;
+  padding: 8px 10px;
+  border: 1px solid #d4d400;
+  border-radius: 12px;
+  background: #ffff00;
+  color: #1c1c00;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.hifz-trial-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.hifz-trial-text strong {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.hifz-trial-text span {
+  font-size: 11.5px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.hifz-trial-btn {
+  flex: 0 0 auto;
+  padding: 6px 11px;
+  border: 1.5px solid #1c1c00;
+  border-radius: 999px;
+  background: #1c1c00;
+  color: #ffff00;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.hifz-trial-btn.outline {
+  background: transparent;
+  color: #1c1c00;
+}
+
+.hifz-trial-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* زرّ «تخطَّ» في الخطوة المفتوحة (وضع التجربة) */
+.hifz-skip {
+  display: block;
+  width: fit-content;
+  margin-top: 8px;
+  padding: 5px 12px;
+  border: 1.5px solid #1c1c00;
+  border-radius: 999px;
+  background: #ffff00;
+  color: #1c1c00;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+}

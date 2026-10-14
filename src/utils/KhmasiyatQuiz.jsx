@@ -3,10 +3,11 @@ import { getSurahAndRange } from './quranLogic';
 import { QURAN_VERSES } from '../data/quranVerses';
 import CustomKeyboard, { useCustomKeyboard } from '../components/CustomKeyboard';
 import TextDisplay from '../components/TextDisplay';
-import { buildShuffledIndices } from './quizUtils';
+import { buildShuffledIndices, quizNotice } from './quizUtils';
+import QuizNotice from '../components/QuizNotice';
 import { KHMASIYAT_QUIZ_STORAGE_KEY, loadStoredState, saveStoredState } from './persistence';
 
-export default function KhmasiyatQuiz({ onClose }) {
+export default function KhmasiyatQuiz({ onClose, backRef }) {
   const [persistedQuizState] = useState(() => loadStoredState(KHMASIYAT_QUIZ_STORAGE_KEY) || {});
   const [quizKhmasiyaIndex, setQuizKhmasiyaIndex] = useState(() => (
     Number.isInteger(persistedQuizState.quizKhmasiyaIndex) ? persistedQuizState.quizKhmasiyaIndex : null
@@ -44,6 +45,7 @@ export default function KhmasiyatQuiz({ onClose }) {
     Number.isInteger(persistedQuizState.incorrectCount) ? persistedQuizState.incorrectCount : 0
   ));
   const audioCtxRef = useRef(null);
+  const [notice, setNotice] = useState(null);   // نتيجة آخر المدى، أو تهنئة محطّة (كل 100 سؤال)
 
   const createKhmasiyatQuestion = (forceNewCycle = false) => {
     const start = Number(quizRangeStart);
@@ -55,6 +57,11 @@ export default function KhmasiyatQuiz({ onClose }) {
     }
 
     const rangeChanged = quizOrderRange.start !== start || quizOrderRange.end !== end;
+    const nextNotice = quizNotice({ forced: forceNewCycle, rangeChanged, orderLength: quizOrder.length, pointer: quizNextPointer });
+    setNotice(nextNotice);
+    // انتهى المدى: تُعرض النتيجة، ولا يبدأ اختبار جديد إلا بطلب صاحبه
+    if (nextNotice?.kind === 'finished') return;
+
     const needsNewCycle = forceNewCycle || rangeChanged || quizOrder.length === 0 || quizNextPointer >= quizOrder.length;
 
     if (needsNewCycle) {
@@ -291,6 +298,7 @@ export default function KhmasiyatQuiz({ onClose }) {
         onSubmit={keyboard.handleKeyboardSubmit}
         onClose={keyboard.closeKeyboard}
       />
+      <QuizNotice notice={notice} correct={correctCount} incorrect={incorrectCount} onRestart={() => createKhmasiyatQuestion(true)} onClose={() => setNotice(null)} backRef={backRef} />
     </div>
   );
 }
