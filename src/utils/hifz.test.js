@@ -6,7 +6,7 @@ import {
 import {
   startProgram, loadProgram, dailyPlan, rollDay, countStep, confirmStep, tickStep, recordStep, checkBox,
   verseDoneToday, shouldCelebrate, markCelebrated, portionOf, openExtraPortion, changeVersesPerDay,
-  cancelSession, sessionStarted, effectiveDay, tapMethod, methodTaps, changeListenTarget,
+  cancelSession, sessionStarted, effectiveDay, tapMethod, answerMethod, methodTaps, methodChecked, changeListenTarget,
 } from './hifzState';
 import { methodStages, methodTotal, methodPosition } from './hifzMethod';
 import { currentStep } from './hifzSteps';
@@ -532,12 +532,40 @@ describe('طريقة الخماسيات', () => {
     expect(tapMethod(early, day(1), 1)).toBe(early);
 
     let s = atMemorize(3);
-    for (let i = 0; i < 40; i++) s = tapMethod(s, day(1), 1);
+    for (let stage = 0; stage < 5; stage++) {
+      for (let i = 0; i < 8; i++) s = tapMethod(s, day(1), 1);   // لا يتجاوز خمس المرحلة قبل الجواب
+      s = answerMethod(s, day(1), true);
+    }
     expect(methodTaps(s)).toBe(25);
+    expect(methodChecked(s)).toBe(5);
     expect(currentStep(s.progress, s.rules)).toBe('memorize');
-    s = tapMethod(s, day(1), -1);
-    expect(methodTaps(s)).toBe(24);
+    expect(methodTaps(tapMethod(s, day(1), -1))).toBe(25);           // مرحلة أُجيب عنها لا تُنقص
     expect(methodTaps(tapMethod(s, day(1), 'reset'))).toBe(0);
+  });
+
+  it('asks after five: «no» repeats the stage and counts the newest verse as hard, «yes» moves on', () => {
+    let s = atMemorize(3);
+    for (let i = 0; i < 4; i++) s = tapMethod(s, day(1), 1);
+    expect(answerMethod(s, day(1), true)).toBe(s);                    // لا سؤال قبل الخامسة
+    s = tapMethod(s, day(1), 1);
+    s = answerMethod(s, day(1), false);
+    expect(methodTaps(s)).toBe(0);
+    expect(s.hardVerses).toEqual({ 0: 1 });
+    for (let i = 0; i < 5; i++) s = tapMethod(s, day(1), 1);
+    s = answerMethod(s, day(1), true);
+    expect(methodChecked(s)).toBe(1);
+    for (let i = 0; i < 5; i++) s = tapMethod(s, day(1), 1);          // الآية الثانية وحدها
+    s = answerMethod(s, day(1), true);
+    for (let i = 0; i < 5; i++) s = tapMethod(s, day(1), 1);          // الأولى مع الثانية
+    s = answerMethod(s, day(1), false);
+    expect(s.hardVerses).toEqual({ 0: 1, 1: 1 });
+    expect(methodChecked(s)).toBe(2);
+  });
+
+  it('reads a counter stored before the question as stages already answered', () => {
+    const s = { ...atMemorize(3), method: { at: 0, taps: 12 } };
+    expect(methodChecked(s)).toBe(2);
+    expect(methodPosition(3, 12)).toMatchObject({ stageIndex: 2, rep: 2, asking: false });
   });
 
   it('starts from zero for the next portion, after a cancel, and when the portion size changes', () => {

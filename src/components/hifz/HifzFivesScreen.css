@@ -1,0 +1,238 @@
+/* نافذة طريقة الخماسيات (HifzFivesScreen): فوق شاشة الحفظ، خط كبير وأزرار كبيرة */
+.hifz-fives {
+  position: fixed;
+  inset: 0;
+  z-index: 11600;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: max(28px, env(safe-area-inset-top, 0px)) 16px max(18px, env(safe-area-inset-bottom, 0px));
+  background: var(--app-bg);
+  color: var(--app-text);
+  font-family: 'Tajawal', sans-serif;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.hifz-fives-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hifz-fives-icon {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1.5px solid var(--app-border);
+  border-radius: 50%;
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.hifz-fives-dots {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hifz-fives-dots span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--app-accent-ink);
+  box-sizing: border-box;
+}
+
+.hifz-fives-dots span.now {
+  transform: scale(1.35);
+}
+
+.hifz-fives-dots span.done {
+  background: var(--app-accent-ink);
+}
+
+/* الرسالة: ما يُطلب الآن، تُنطق كذلك */
+.hifz-fives-card {
+  padding: 18px 16px;
+  border-radius: 18px;
+  background: var(--app-accent-deep);
+  color: var(--app-accent-deep-contrast);
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
+.hifz-fives-card h2 {
+  margin: 0 0 8px;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.hifz-fives-card p {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.hifz-fives-replay {
+  margin-top: 10px;
+  padding: 4px 14px;
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-accent-deep-contrast);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hifz-fives-verse {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.hifz-fives-refs {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--app-muted);
+}
+
+.hifz-fives-verse .hifz-verse {
+  align-self: stretch;
+}
+
+.hifz-fives-peek {
+  padding: 8px 20px;
+  border: 2px solid var(--app-accent-ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* العدّاد: دائرة كبيرة بلمسة واحدة */
+.hifz-fives-counter {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.hifz-fives-tap {
+  width: min(62vw, 240px);
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: none;
+  border-radius: 50%;
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hifz-fives-tap:active {
+  transform: scale(0.97);
+}
+
+.hifz-fives-tap strong {
+  font-size: 84px;
+  line-height: 1;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.hifz-fives-pips {
+  display: flex;
+  gap: 8px;
+}
+
+.hifz-fives-pips i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  box-sizing: border-box;
+}
+
+.hifz-fives-pips i.on {
+  background: currentColor;
+}
+
+.hifz-fives-side {
+  display: flex;
+  gap: 10px;
+}
+
+.hifz-fives-side button {
+  padding: 8px 16px;
+  border: 1.5px solid var(--app-accent-ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.hifz-fives-side button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* سؤال «هل حفظك جيد؟» */
+.hifz-fives-ask {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.hifz-fives-ask button,
+.hifz-fives-finish {
+  padding: 20px 10px;
+  border-radius: 18px;
+  font-family: inherit;
+  font-size: 28px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.hifz-fives-ask .yes,
+.hifz-fives-finish {
+  border: none;
+  background: var(--app-accent-deep);
+  color: var(--app-accent-deep-contrast);
+}
+
+.hifz-fives-ask .no {
+  border: 2.5px solid var(--app-accent-ink);
+  background: transparent;
+  color: var(--app-accent-ink);
+}
+
+.hifz-fives-finish {
+  margin-top: auto;
+  font-size: 22px;
+}

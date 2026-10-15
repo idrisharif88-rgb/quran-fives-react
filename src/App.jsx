@@ -51,6 +51,7 @@ import {
   saveStoredState
 } from './utils/persistence';
 import SyncScopeList from './components/SyncScopeList';
+import CounterPageHead from './components/CounterPageHead';
 import { pushLocal, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, fetchMe } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
 import { getSyncMeta, deviceDataIsForeign, clearSyncMeta } from './utils/syncMeta';
@@ -64,6 +65,7 @@ import CelebrationDialog from './components/CelebrationDialog';
 import KhatmaProgressDialog from './components/KhatmaProgressDialog';
 import { dayKey } from './utils/hifzSchedule';
 import { hijriFromTable } from './utils/hijriDate';
+import useHijriToday from './hooks/useHijriToday';
 import HijriMonthsReminder from './components/HijriMonthsReminder';
 import useHijriReminder from './hooks/useHijriReminder';
 import useTafsirReminder from './hooks/useTafsirReminder';
@@ -284,7 +286,8 @@ function App() {
   });
   const [isLapSheetOpen, setIsLapSheetOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [hijriData, setHijriData] = useState([]);
+  // التاريخ الهجري للمشهد الرئيسي: من جدول الأهلّة المعتمد محلياً، ويتجدّد كل يوم وحده
+  const hijriData = useHijriToday(calcHijriOffline);
   const [hijriIndex, setHijriIndex] = useState(0);
   // سجلّ الختمات خاص الآن: لا يُحفظ في الحالة المشتركة بل يُحمَّل من الخادم بعد الدخول
   const [khatmaList, setKhatmaList] = useState([]);
@@ -1410,13 +1413,6 @@ function App() {
     }, 800); // Changes the number every 800 milliseconds
     return () => clearInterval(interval);
   }, []);
-
-  // التاريخ الهجري للمشهد الرئيسي: من جدول بدايات الأشهر المعتمد، محلياً بلا شبكة
-  // (خارج الجدول تقويم أم القرى المدمج) — لا انتظار لخادم ولا مزامنة
-  useEffect(() => {
-    if (isPageStartsMode || isSurahFivesMode) return;
-    setHijriData(calcHijriOffline(new Date()));
-  }, [isPageStartsMode, isSurahFivesMode]);
 
   useEffect(() => {
     if (hijriData.length === 0) return undefined;
@@ -3285,6 +3281,7 @@ function App() {
                 onToggleKeepLap={stopwatch.toggleKeepLap}
               />
 
+              <CounterPageHead page={activeNightCounter?.value ?? 0} />
               <div className="night-counter-screen">
                 <CounterFivesMarks
                   page={activeNightCounter?.value ?? 0}

@@ -3,7 +3,7 @@ import {
   boxesFor, verseAt, daysBetween, addDays,
 } from './hifzSchedule';
 import { STEP_DEFS, freshProgress, normalizeProgress, currentStep, stepTarget, stepCount } from './hifzSteps';
-import { methodTotal } from './hifzMethod';
+import { METHOD_REPS, methodPosition, legacyChecked } from './hifzMethod';
 
 // ─── برنامج الحفظ: الحالة ───
 // دوال صرفة: (الحالة، الحدث) ← حالة جديدة. التخزين والواجهة خارجها.
@@ -36,6 +36,7 @@ export function startProgram(direction, today, rules = DEFAULT_RULES, origin = 0
     celebratedOn: null,                  // آخر يوم عُرض فيه تنبيه الإتمام
     shift: 0,                            // أيام سُبق بها التقويم بفتح أوراد إضافية (effectiveDay)
     dayLog: {},                          // { 'YYYY-MM-DD': { verse, boxes } } — للإشراف لاحقاً
+    hardVerses: {},                      // { موضع: عدد مرات «لا» في طريقة الخماسيات }
   };
 }
 
@@ -52,6 +53,7 @@ export function loadProgram(raw) {
     celebratedOn: raw.celebratedOn ?? null,
     shift: Number.isInteger(raw.shift) && raw.shift > 0 ? raw.shift : 0,
     dayLog: raw.dayLog || {},
+    hardVerses: raw.hardVerses || {},
   };
 }
 
@@ -215,18 +217,46 @@ export function changeListenTarget(state, listenTarget) {
 }
 
 // ─── طريقة الخماسيات (hifzMethod.js) ───
-// عدّادها يُحفظ مع البرنامج: method = { at, taps } — at عدد المحفوظ حين بدأ العدّ، فعدّاد
-// وردٍ سابق لا يُحتسب للورد التالي.
-export const methodTaps = (state) => (state.method?.at === state.memorizedOn.length ? state.method.taps : 0);
+// عدّادها يُحفظ مع البرنامج: method = { at, taps, checked } — at عدد المحفوظ حين بدأ العدّ،
+// فعدّاد وردٍ سابق لا يُحتسب للورد التالي.
+const currentMethod = (state) => {
+  if (state.method?.at !== state.memorizedOn.length) return { taps: 0, checked: 0 };
+  const { taps } = state.method;
+  return { taps, checked: Number.isInteger(state.method.checked) ? state.method.checked : legacyChecked(taps) };
+};
+export const methodTaps = (state) => currentMethod(state).taps;
+export const methodChecked = (state) => currentMethod(state).checked;
 
-// ضغطة في الطريقة: زيادة أو نقص أو 'reset' — في خطوة الحفظ وحدها، وبين 0 ومجموع الطريقة.
-// بلوغ المجموع لا يُتمّ الخطوة؛ يُتمّها صاحبها بتأكيده (tickStep).
+const inMemorize = (state, today) => (
+  state.status === STATUS.ACTIVE && !verseDoneToday(state, today)
+  && currentStep(state.progress, state.rules) === 'memorize'
+);
+
+// ضغطة في الطريقة: زيادة أو نقص أو 'reset' — في خطوة الحفظ وحدها، وداخل المرحلة الجارية:
+// لا يتجاوز خمسها قبل الجواب، ولا ينقص إلى مرحلة أُجيب عنها.
+// بلوغ آخرها لا يُتمّ الخطوة؛ يُتمّها صاحبها بتأكيده (tickStep).
 export function tapMethod(state, today, delta) {
-  if (state.status !== STATUS.ACTIVE || verseDoneToday(state, today)) return state;
-  if (currentStep(state.progress, state.rules) !== 'memorize') return state;
-  const total = methodTotal(portionOf(state, today).count);
-  const taps = delta === 'reset' ? 0 : Math.min(total, Math.max(0, methodTaps(state) + delta));
-  return { ...state, method: { at: state.memorizedOn.length, taps } };
+  if (!inMemorize(state, today)) return state;
+  const at = state.memorizedOn.length;
+  if (delta === 'reset') return { ...state, method: { at, taps: 0, checked: 0 } };
+  const { taps, checked } = currentMethod(state);
+  const next = Math.min((checked + 1) * METHOD_REPS, Math.max(checked * METHOD_REPS, taps + delta));
+  return { ...state, method: { at, taps: next, checked } };
+}
+
+// جواب «هل حفظك جيد؟» بعد خمس المرحلة: نعم ← المرحلة التالية، لا ← خمس أخرى، ويُعدّ
+// على أحدث آية في المرحلة في hardVerses { [موضعها في ترتيب الحفظ]: عدد مرات «لا» }.
+export function answerMethod(state, today, good) {
+  if (!inMemorize(state, today)) return state;
+  const portion = portionOf(state, today);
+  const { taps, checked } = currentMethod(state);
+  const pos = methodPosition(portion.count, taps, checked);
+  if (!pos.asking) return state;
+  const at = state.memorizedOn.length;
+  if (good) return { ...state, method: { at, taps, checked: checked + 1 } };
+  const key = portion.start + pos.stage.to;
+  const hardVerses = { ...state.hardVerses, [key]: (state.hardVerses?.[key] || 0) + 1 };
+  return { ...state, hardVerses, method: { at, taps: taps - METHOD_REPS, checked } };
 }
 
 // جلسة اليوم: خطوات الورد الجاري. بدأت = فيها تقدّم ولم يكتمل الورد بعد.

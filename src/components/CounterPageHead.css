@@ -1,0 +1,14 @@
+/* مطلع الصفحة فوق دائرة العدّاد (CounterPageHead) */
+.counter-page-head {
+  margin: 0 auto 6px;
+  max-width: 90%;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--app-accent-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

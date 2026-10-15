@@ -19,6 +19,11 @@
   width: 90%;
   max-width: 400px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  /* بطاقة أطول من الشاشة (لوحة المزامنة و«ما الذي يُزامَن؟» مفتوحة) تُمرَّر داخلها؛
+     بلا هذا كانت تُقصّ من أعلى وأسفل ولا مخرج إلا الرجوع */
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .audio-settings-title {
