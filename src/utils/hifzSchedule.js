@@ -41,10 +41,17 @@ export function dayKey(date = new Date()) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-// رقم اليوم (عدد صحيح) للفرق بين يومين — بلا تأثّر بالتوقيت الصيفي
+// رقم اليوم (عدد صحيح) للفرق بين يومين — بلا تأثّر بالتوقيت الصيفي.
+// يُحفظ لكل مفتاح: الصناديق تحسب عمر كل آية محفوظة، ومفاتيح الأيام قليلة.
+const dayNumbers = new Map();
 export function dayNumber(key) {
-  const [y, m, d] = key.split('-').map(Number);
-  return Math.round(Date.UTC(y, m - 1, d) / 86400000);
+  let n = dayNumbers.get(key);
+  if (n === undefined) {
+    const [y, m, d] = key.split('-').map(Number);
+    n = Math.round(Date.UTC(y, m - 1, d) / 86400000);
+    dayNumbers.set(key, n);
+  }
+  return n;
 }
 
 export const daysBetween = (fromKey, toKey) => dayNumber(toKey) - dayNumber(fromKey);

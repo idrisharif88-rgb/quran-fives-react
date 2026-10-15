@@ -67,7 +67,7 @@ function HifzStart({ onStart, canCustomStart, onTrialStart }) {
  * @param onTrialStart / onTrialEnd للمشرف: الدخول إلى وضع التجربة والخروج منه
  */
 export default function HifzScreen({ hifz, reciter, onReciterChange, contacts, onClose, backRef, canTakeExtra = false, canCustomStart = false, trial = false, onTrialStart, onTrialEnd }) {
-  const { program, plan, today, celebrate, inSession, methodTaps, actions } = hifz;
+  const { program, plan, today, celebrate, inSession, method, actions } = hifz;
   const [confirming, setConfirming] = useState(null);       // سؤال مفتوح أسفل الشاشة: 'reset' | 'cancel'
   const [settingsOpen, setSettingsOpen] = useState(false);   // إعدادات الحفظ: تغيير ورد اليوم بلا إعادة ضبط
   const recordings = useHifzRecordings();
@@ -92,23 +92,25 @@ export default function HifzScreen({ hifz, reciter, onReciterChange, contacts, o
     setListening(null);
   };
 
-  // زرّ الرجوع: يغلق شاشة الاستماع أو تنبيه الإتمام أو سؤال التأكيد قبل الشاشة
+  // زرّ الرجوع: يغلق نافذة الطريقة أو شاشة الاستماع أو تنبيه الإتمام أو سؤال التأكيد قبل الشاشة
   const showCelebration = Boolean(program && celebrate && !listening);
   useEffect(() => {
     if (!backRef) return undefined;
     let closeTop = null;
-    if (listening) closeTop = () => setListening(null);
+    if (methodOpen) closeTop = () => setMethodOpen(false);
+    else if (listening) closeTop = () => setListening(null);
     else if (showCelebration) closeTop = actions.celebrated;
     else if (confirming) closeTop = () => setConfirming(null);
     if (!closeTop) return undefined;
     backRef.current = closeTop;
     return () => { if (backRef.current === closeTop) backRef.current = null; };
-  }, [backRef, listening, showCelebration, confirming, actions]);
+  }, [backRef, methodOpen, listening, showCelebration, confirming, actions]);
 
   // أدوات تُحقن في الخطوات المفتوحة
   const extras = verse ? {
+    backRef,
     reciterSelect: <HifzReciterSelect reciter={reciter} onChange={onReciterChange} />,
-    method: <HifzMethodTool refs={verse.refs.filter(Boolean)} taps={methodTaps} open={methodOpen} onOpenChange={setMethodOpen} onTap={actions.methodTap} onDone={() => actions.tick('memorize')} />,
+    method: <HifzMethodTool refs={verse.refs.filter(Boolean)} method={method} open={methodOpen} onOpenChange={setMethodOpen} onTap={actions.methodTap} onAnswer={actions.methodAnswer} onDone={() => actions.tick('memorize')} />,
     hafizContacts: <HifzContacts contacts={contacts} verse={verse} backRef={backRef} />,
     recorder: <HifzRecorder value={program.progress.record} latest={latestTake} onSave={saveTake} onListen={setListening} onRecordingChange={setRecording} />,
   } : {};
@@ -122,7 +124,7 @@ export default function HifzScreen({ hifz, reciter, onReciterChange, contacts, o
         <h2>برنامج الحفظ</h2>
         <span className="hifz-header-spacer" />
       </div>
-      {trial && <HifzTrialBar canAdvance={Boolean(program)} onNextDay={actions.nextDay} onEnd={onTrialEnd} />}
+      {trial && <HifzTrialBar canAdvance={Boolean(program)} onNextDay={actions.nextDay} onJump={actions.jumpDays} onEnd={onTrialEnd} />}
 
       <div className="hifz-body">
         {!program ? <HifzStart onStart={actions.start} canCustomStart={canCustomStart || trial} onTrialStart={canTakeExtra && !trial ? onTrialStart : undefined} /> : (
@@ -130,7 +132,6 @@ export default function HifzScreen({ hifz, reciter, onReciterChange, contacts, o
             <div className="hifz-summary">
               <div><strong>{daysBetween(program.startedOn, today) + 1}</strong><span>اليوم</span></div>
               <div><strong>{program.memorizedOn.length}</strong><span>آية محفوظة</span></div>
-              <div className={plan.complete ? 'complete' : ''}><strong>{plan.complete ? '✓' : '…'}</strong><span>{plan.complete ? 'اكتمل اليوم' : 'مهام اليوم'}</span></div>
             </div>
 
             <HifzTimeline program={program} plan={plan} reciter={reciter} actions={actions} extras={extras} cover={recording ? 'recording' : methodOpen ? 'method' : null} trial={trial} canTakeExtra={canTakeExtra} />

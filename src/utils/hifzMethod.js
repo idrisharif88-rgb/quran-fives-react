@@ -2,7 +2,9 @@
 // منطق صرف. ورد اليوم (1 أو 3 أو 5 أو 7 آيات) يُحفظ آيةً آية:
 //   كل آية تُكرَّر غيباً METHOD_REPS مرات، ثم تُجمع مع ما قبلها من الورد METHOD_REPS مرات،
 //   حتى يُقرأ الورد كلّه مجموعاً.
-// التقدّم عدد واحد: taps = مجموع التكرارات المنجزة منذ أوّل الورد.
+// التقدّم: taps = مجموع التكرارات المنجزة منذ أوّل الورد، وchecked = المراحل التي أجاب
+// فيها الحافظ «نعم، حفظي جيد». بعد الخامسة يُسأل؛ «لا» تعيد المرحلة خمساً أخرى.
+// برنامج خُزّن قبل السؤال لا checked فيه: كانت المراحل تنتقل وحدها بعد الخامسة.
 export const METHOD_REPS = 5;
 
 // مراحل ورد من count آيات: [{ from, to }] بفهارس آيات الورد (من صفر، شاملة)
@@ -17,16 +19,21 @@ export function methodStages(count) {
 
 export const methodTotal = (count) => methodStages(count).length * METHOD_REPS;
 
-// أين وصل: المرحلة الجارية وعدد تكراراتها المنجزة؛ done بعد آخر تكرار في آخر مرحلة
-export function methodPosition(count, taps) {
+export const legacyChecked = (taps) => Math.floor(Math.max(0, taps) / METHOD_REPS);
+
+// أين وصل: المرحلة الجارية وتكراراتها المنجزة. asking: أتمّ خمسها وينتظر جوابه.
+// done بعد «نعم» في آخر مرحلة.
+export function methodPosition(count, taps, checked = legacyChecked(taps)) {
   const stages = methodStages(count);
-  const done = taps >= stages.length * METHOD_REPS;
-  const stageIndex = done ? stages.length - 1 : Math.floor(Math.max(0, taps) / METHOD_REPS);
+  const done = checked >= stages.length;
+  const stageIndex = done ? stages.length - 1 : checked;
+  const rep = done ? METHOD_REPS : Math.min(METHOD_REPS, Math.max(0, taps - checked * METHOD_REPS));
   return {
     done,
+    asking: !done && rep === METHOD_REPS,
     stageIndex,
     stageCount: stages.length,
     stage: stages[stageIndex],
-    rep: done ? METHOD_REPS : Math.max(0, taps) % METHOD_REPS,
+    rep,
   };
 }

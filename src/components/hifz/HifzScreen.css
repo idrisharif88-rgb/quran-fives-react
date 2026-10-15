@@ -166,7 +166,7 @@
 /* ── ملخّص اليوم ── */
 .hifz-summary {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
 
@@ -191,11 +191,6 @@
 .hifz-summary span {
   font-size: 12px;
   color: var(--app-muted);
-}
-
-.hifz-summary .complete {
-  border-color: var(--hifz-gold);
-  background: var(--hifz-gold-soft);
 }
 
 /* ── الأقسام ── */
@@ -479,29 +474,6 @@
   color: var(--hifz-gold-ink);
 }
 
-/* طريقة الخماسيات (HifzMethodTool): ما يُقرأ الآن والمرحلة */
-.hifz-method-stage {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 2px 0 8px;
-}
-
-.hifz-method-stage strong {
-  font-size: 17px;
-  color: var(--app-accent-ink);
-}
-
-.hifz-method-stage span {
-  font-size: 13px;
-  color: var(--app-muted);
-}
-
-.hifz-method-close {
-  display: block;
-  margin: 8px auto 0;
-}
-
 .hifz-confirm {
   align-self: stretch;
   margin-top: 4px;
@@ -676,21 +648,6 @@
   margin: 0;
   font-size: 15px;
   color: var(--app-text-strong);
-}
-
-.hifz-listen-choices {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  font-size: 13px;
-  color: var(--app-muted);
-}
-
-.hifz-listen-choices .hifz-start-chip {
-  flex: 0 0 auto;
-  min-width: 44px;
-  padding: 6px 10px;
 }
 
 .hifz-select {

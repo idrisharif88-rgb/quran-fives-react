@@ -1,32 +1,52 @@
+import { useEffect, useRef, useState } from 'react';
 import useVerseAudio from '../../hooks/useVerseAudio';
 import { stepTarget, stepCount } from '../../utils/hifzSteps';
-import { LISTEN_CHOICES } from '../../utils/hifzSchedule';
+import HifzListenTimes from './HifzListenTimes';
 
-// أداة سماع المقرئ: كل تلاوة كاملة لورد اليوم (آياته كلّها) تُحسب مرة
-function ListenTool({ verses, reciter, value, target, onCount, onTarget, reciterSelect }) {
-  const audio = useVerseAudio({ verses, reciter, onFinished: () => onCount(1) });
-  const playing = audio.status === 'playing' || audio.status === 'loading';
+// أداة سماع المقرئ: كل تلاوة كاملة لورد اليوم (آياته كلّها) تُحسب مرة. ضغطة تشغيل واحدة
+// تعيد التلاوة وحدها حتى يبلغ العدد المختار (3 أو 5 أو 7) فتتمّ الخطوة. تغيير المقرئ أثناءها
+// يعيد التلاوة الجارية بصوت الجديد ويكمل العدّ. العدد يُختار من خانة صغيرة بجانب الزرّ.
+const REPLAY_GAP_MS = 900;
+
+function ListenTool({ verses, reciter, value, target, onCount, onTarget, reciterSelect, backRef }) {
+  const autoRef = useRef(false);   // تشغيل متتابع جارٍ (أوقفه صاحبه أو انتهى ← false)
+  const [auto, setAutoState] = useState(false);   // للعرض: الزرّ «إيقاف» حتى في الفاصل بين تلاوتين
+  const [heard, setHeard] = useState(false);       // بدأت أول تلاوة: «جارٍ التحميل…» لا يعود بين الجولات
+  const setAuto = (on) => { autoRef.current = on; setAutoState(on); };
+  const timerRef = useRef(null);
+  const playRef = useRef(null);
+  const audio = useVerseAudio({
+    verses,
+    reciter,
+    onFinished: () => {
+      onCount(1);
+      if (!autoRef.current || value + 1 >= target) { setAuto(false); return; }
+      timerRef.current = setTimeout(() => playRef.current?.(), REPLAY_GAP_MS);
+    },
+  });
+  useEffect(() => { playRef.current = audio.play; }, [audio.play]);
+
+  // تغيير المقرئ أثناء التشغيل المتتابع: يُعاد بالصوت الجديد
+  useEffect(() => {
+    if (!autoRef.current) return;
+    clearTimeout(timerRef.current);
+    audio.play();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reciter]);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+  if (audio.status === 'error' && auto) setAuto(false);
+  if (audio.status === 'playing' && !heard) setHeard(true);
+
+  const start = () => { setHeard(false); setAuto(true); audio.play(); };
+  const stop = () => { setAuto(false); clearTimeout(timerRef.current); audio.stop(); };
+  const playing = auto || audio.status === 'playing' || audio.status === 'loading';
   return (
     <div className="hifz-tool">
-      <button type="button" className="hifz-btn primary" onClick={playing ? audio.stop : audio.play}>
-        {audio.status === 'loading' ? 'جارٍ التحميل…' : playing ? 'إيقاف' : 'تشغيل التلاوة'}
+      <button type="button" className="hifz-btn primary" onClick={playing ? stop : start}>
+        {audio.status === 'loading' && !heard ? 'جارٍ التحميل…' : playing ? 'إيقاف' : 'تشغيل التلاوة'}
       </button>
-      <span className="hifz-tool-count" dir="ltr">{value} / {target}</span>
-      <div className="hifz-listen-choices" role="radiogroup" aria-label="عدد مرات السماع">
-        <span>مرات السماع</span>
-        {LISTEN_CHOICES.map((n) => (
-          <button
-            key={n}
-            type="button"
-            role="radio"
-            aria-checked={target === n}
-            className={`hifz-start-chip ${target === n ? 'active' : ''}`.trim()}
-            onClick={() => onTarget(n)}
-          >
-            {n}
-          </button>
-        ))}
-      </div>
+      <HifzListenTimes value={target} onChange={onTarget} backRef={backRef} />
       {reciterSelect}
       {audio.status === 'error' && <span className="hifz-tool-error">تعذّر تشغيل التلاوة — تحقّق من الإنترنت</span>}
     </div>
@@ -59,11 +79,11 @@ function RepeatTool({ value, target, onCount, onConfirm }) {
 /**
  * أداة الخطوة المفتوحة. كل خطوة جديدة تُضاف إلى القواعد تحتاج أداتها هنا.
  * @param verses آيات ورد اليوم [{ s, a }]
- * @param extras أدوات تُحقن من الشاشة: reciterSelect (اختيار المقرئ)، method (طريقة الخماسيات)، hafizContacts (خطّ التواصل مع الشيخ)، recorder (التسجيل)
+ * @param extras أدوات تُحقن من الشاشة: backRef (زرّ الرجوع)، reciterSelect (اختيار المقرئ)، method (طريقة الخماسيات)، hafizContacts (خطّ التواصل مع الشيخ)، recorder (التسجيل)
  */
 export default function HifzStepTool({ id, value, rules, verses, reciter, actions, extras = {} }) {
   if (id === 'listen') {
-    return <ListenTool verses={verses} reciter={reciter} value={value} target={stepTarget(id, rules)} onCount={(d) => actions.count(id, d)} onTarget={actions.setListenTarget} reciterSelect={extras.reciterSelect} />;
+    return <ListenTool verses={verses} reciter={reciter} value={stepCount(id, value)} target={stepTarget(id, rules)} onCount={(d) => actions.count(id, d)} onTarget={actions.setListenTarget} reciterSelect={extras.reciterSelect} backRef={extras.backRef} />;
   }
   if (id === 'repeat') {
     return <RepeatTool value={stepCount(id, value)} target={stepTarget(id, rules)} onCount={(d) => actions.count(id, d)} onConfirm={() => actions.confirm(id)} />;

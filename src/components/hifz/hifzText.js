@@ -16,8 +16,8 @@ export const STEP_TEXT = {
 
 export const BOX_TEXT = {
   five: { title: (rules) => (isMulti(rules) ? 'آيات الأمس' : 'آية الأمس'), hint: (rules) => `تُقرأ غيباً ${rules.fiveTimes} مرات` },
-  daily: { title: (rules) => `صندوق الـ${rules.dailyOnceDays}`, hint: () => 'كل آية مرة واحدة' },
-  review: { title: 'المراجعة الدائمة', hint: (rules) => `مجموعة اليوم — كل آية مرة كل ${rules.reviewCycleDays} أيام` },
+  daily: { title: 'ربط الآيات', hint: (rules) => `آيات آخر ${rules.dailyOnceDays} يوماً — كل آية مرة واحدة` },
+  review: { title: 'المراجعة', hint: (rules) => `مجموعة اليوم — كل آية مرة كل ${rules.reviewCycleDays} أيام` },
 };
 
 export const boxTitle = (box, rules) => {

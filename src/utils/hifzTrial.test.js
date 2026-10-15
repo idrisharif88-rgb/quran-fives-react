@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { skipStep, nextTrialDay } from './hifzTrial';
+import { skipStep, nextTrialDay, jumpTrialDays } from './hifzTrial';
 import { startProgram, dailyPlan, effectiveDay } from './hifzState';
 import { currentStep } from './hifzSteps';
 import { dayKey } from './hifzSchedule';
@@ -27,5 +27,19 @@ describe('trial mode tools', () => {
     const plan = dailyPlan(s, today);
     expect(plan.verse).toMatchObject({ indices: [3, 4, 5], done: false });
     expect(plan.boxItems.map((item) => item.box)).toEqual(['five']);
+  });
+
+  it('a jump completes every skipped day, so verses and boxes advance as in a real programme', () => {
+    const start = startProgram('forward', day1, { versesPerDay: 3 });
+    const s = jumpTrialDays(start, day1, 30);
+    expect(s.shift).toBe(30);
+    expect(s.memorizedOn).toHaveLength(90);
+    const today = effectiveDay(s, day1);
+    expect(Object.keys(s.dayLog)).toHaveLength(30);
+    expect(Object.values(s.dayLog).every((d) => d.verse && d.boxes)).toBe(true);
+    const plan = dailyPlan(s, today);
+    expect(plan.verse).toMatchObject({ indices: [90, 91, 92], done: false });
+    expect(plan.boxItems.map((item) => item.box)).toEqual(['five', 'daily', 'review']);
+    expect(plan.boxItems.every((item) => !item.done)).toBe(true);
   });
 });
