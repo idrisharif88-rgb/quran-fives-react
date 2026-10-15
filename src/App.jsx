@@ -397,6 +397,7 @@ function App() {
   const cornerNavBackRef = useRef(null); // يضعه CornerNav حين تكون قائمة السور أو الخطوة مفتوحة
   const counterMarksBackRef = useRef(null); // يضعه CounterFivesMarks حين تكون قائمة «…» مفتوحة
   const returnToCounterRef = useRef(false); // خماسية فُتحت من أيقونات العدّاد: الرجوع يعيد إليه
+  const resumeStopwatchRef = useRef(false); // والساعة كانت تعمل عند فتحها: تُستأنف مع الرجوع
   const [quranicWondersNotes, setQuranicWondersNotes] = useState(() => (
     Array.isArray(persistedAppState.quranicWondersNotes) ? persistedAppState.quranicWondersNotes : []
   ));
@@ -514,9 +515,13 @@ function App() {
   // الخطوة تصير 5 (الأيقونات خماسيات) فيُحسب الفهرس بها
   // مغادرة القراءة إلى أيّ شاشة أخرى تُسقط العودة إلى العدّاد
   useEffect(() => {
-    if (viewMode !== 'khmasiyat') returnToCounterRef.current = false;
+    if (viewMode !== 'khmasiyat') {
+      returnToCounterRef.current = false;
+      resumeStopwatchRef.current = false;
+    }
   }, [viewMode]);
   const openFivesFromCounter = ({ surah, ayah }) => {
+    resumeStopwatchRef.current = stopwatch.isRunning;
     stopwatch.leaveScreen();
     if (stepSize !== DEFAULT_STEP) {
       setStepSize(DEFAULT_STEP);
@@ -2139,6 +2144,8 @@ function App() {
     // خماسية فُتحت من أيقونات العدّاد: الرجوع يعيد إلى العدّاد على صفحته
     if (viewMode === 'khmasiyat' && returnToCounterRef.current) {
       returnToCounterRef.current = false;
+      if (resumeStopwatchRef.current) stopwatch.start();
+      resumeStopwatchRef.current = false;
       setViewMode('night-counter');
       return true;
     }
