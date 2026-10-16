@@ -15,6 +15,10 @@
         "apple": false,
         "twitter": false
       }
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_hifz",
+      "iconColor": "#1B5E20"
     }
   }
 }

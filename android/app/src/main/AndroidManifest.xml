@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application
         android:allowBackup="true"
         android:resizeableActivity="true"
@@ -37,6 +38,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- تذكير الحفظ لا يحتاج منبّهاً دقيقاً: بلا هذه الصلاحية يُجدوَل بمنبّه عادي، ولا يطلب Google Play تبريرها -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- تسجيل الآية في برنامج الحفظ (الميكروفون عبر WebView) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />

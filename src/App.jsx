@@ -56,6 +56,7 @@ import ReviewRecorder from './components/ReviewRecorder/ReviewRecorder';
 import GoogleBackup from './components/GoogleBackup/GoogleBackup';
 import UpdatesNotebook from './components/UpdatesNotebook/UpdatesNotebook';
 import useGoogleDailyBackup from './hooks/useGoogleDailyBackup';
+import useHifzReminder from './hooks/useHifzReminder';
 import { pushLocal, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, fetchMe } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
 import { getSyncMeta, deviceDataIsForeign, clearSyncMeta } from './utils/syncMeta';
@@ -401,6 +402,7 @@ function App() {
   const hifzTrial = useHifzTrial();   // وضع التجربة للمشرف: برنامج منفصل على الجهاز، لا يُزامَن
   const hifzContacts = useHifzContacts(persistedAppState.hifzContacts);
   const [isHifzOpen, setIsHifzOpen] = useState(false);
+  useHifzReminder({ hasProgram: Boolean(hifz.program), todayDone: Boolean(hifz.plan?.complete), onOpen: () => setIsHifzOpen(true) });
   const celebrationBackRef = useRef(null); // نافذة تهنئة مفتوحة (نتيجة اختبار، ختمة) — تضع هنا دالّة إغلاقها
   const hifzBackRef = useRef(null);      // يضعه HifzScreen حين يكون فوقه شيء مفتوح
   const cornerNavBackRef = useRef(null); // يضعه CornerNav حين تكون قائمة السور أو الخطوة مفتوحة

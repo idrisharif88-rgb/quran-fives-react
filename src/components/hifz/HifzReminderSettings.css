@@ -1,0 +1,121 @@
+/* «تذكير يومي» في شاشة الحفظ (HifzReminderSettings) */
+.hifz-reminder {
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  background: var(--app-surface);
+  padding: 10px 14px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hifz-reminder-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hifz-reminder-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--app-text);
+}
+
+.hifz-reminder-switch {
+  position: relative;
+  width: 50px;
+  height: 28px;
+  border-radius: 14px;
+  border: none;
+  background: var(--app-border-strong);
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.hifz-reminder-switch span {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.2s ease;
+}
+
+.hifz-reminder-switch.on {
+  background: var(--app-accent);
+}
+
+.hifz-reminder-switch.on span {
+  transform: translateX(-22px);
+}
+
+.hifz-reminder-switch:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.hifz-reminder-time {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hifz-reminder-time button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--app-accent-ink);
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 900;
+  padding: 0;
+  cursor: pointer;
+}
+
+.hifz-reminder-time bdi {
+  min-width: 78px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--app-accent-ink);
+}
+
+.hifz-reminder-msg {
+  margin: 0;
+  font-size: 13px;
+  color: var(--app-muted);
+}
+
+.hifz-reminder-tones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hifz-reminder-tone {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1.5px solid var(--app-accent-ink);
+  border-radius: 18px;
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.hifz-reminder-tone.selected {
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+  color: var(--app-accent-contrast);
+}
