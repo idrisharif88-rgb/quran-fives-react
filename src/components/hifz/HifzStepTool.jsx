@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import useVerseAudio from '../../hooks/useVerseAudio';
 import { stepTarget, stepCount } from '../../utils/hifzSteps';
 import HifzListenTimes from './HifzListenTimes';
+import HifzRepeatTarget from './HifzRepeatTarget';
 
 // أداة سماع المقرئ: كل تلاوة كاملة لورد اليوم (آياته كلّها) تُحسب مرة. ضغطة تشغيل واحدة
 // تعيد التلاوة وحدها حتى يبلغ العدد المختار (3 أو 5 أو 7) فتتمّ الخطوة. تغيير المقرئ أثناءها
@@ -55,7 +56,8 @@ function ListenTool({ verses, reciter, value, target, onCount, onTarget, reciter
 
 // عدّاد التكرار: ضغطة تزيد، مع إنقاص وتصفير — عدّاد بسيط خاص بالحفظ.
 // بلوغ الهدف لا يُتمّ الخطوة: يظهر زرّ تأكيد، فضغطة خاطئة تُصحَّح بالإنقاص قبله.
-function RepeatTool({ value, target, onCount, onConfirm }) {
+// العدد نفسه (1–100) يضبطه الحافظ تحت العدّاد.
+function RepeatTool({ value, target, onCount, onConfirm, onTarget }) {
   const reached = value >= target;
   return (
     <>
@@ -69,6 +71,7 @@ function RepeatTool({ value, target, onCount, onConfirm }) {
           <button type="button" className="hifz-btn" onClick={() => onCount('reset')} disabled={value === 0}>تصفير</button>
         </div>
       </div>
+      <HifzRepeatTarget value={target} onChange={onTarget} />
       {reached && (
         <button type="button" className="hifz-btn primary hifz-confirm" onClick={onConfirm}>تم — أكملت التكرار</button>
       )}
@@ -86,7 +89,7 @@ export default function HifzStepTool({ id, value, rules, verses, reciter, action
     return <ListenTool verses={verses} reciter={reciter} value={stepCount(id, value)} target={stepTarget(id, rules)} onCount={(d) => actions.count(id, d)} onTarget={actions.setListenTarget} reciterSelect={extras.reciterSelect} backRef={extras.backRef} />;
   }
   if (id === 'repeat') {
-    return <RepeatTool value={stepCount(id, value)} target={stepTarget(id, rules)} onCount={(d) => actions.count(id, d)} onConfirm={() => actions.confirm(id)} />;
+    return <RepeatTool value={stepCount(id, value)} target={stepTarget(id, rules)} onCount={(d) => actions.count(id, d)} onConfirm={() => actions.confirm(id)} onTarget={actions.setRepeatTarget} />;
   }
   if (id === 'hafiz') {
     return (

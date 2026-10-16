@@ -1,5 +1,5 @@
 import {
-  TOTAL_VERSES, DIRECTIONS, DEFAULT_RULES, VERSES_PER_DAY_CHOICES, LISTEN_CHOICES, withDefaultRules,
+  TOTAL_VERSES, DIRECTIONS, DEFAULT_RULES, VERSES_PER_DAY_CHOICES, LISTEN_CHOICES, REPEAT_MIN, REPEAT_MAX, withDefaultRules,
   boxesFor, verseAt, daysBetween, addDays,
 } from './hifzSchedule';
 import { STEP_DEFS, freshProgress, normalizeProgress, currentStep, stepTarget, stepCount } from './hifzSteps';
@@ -214,6 +214,13 @@ export function changeVersesPerDay(state, today, versesPerDay) {
 export function changeListenTarget(state, listenTarget) {
   if (!LISTEN_CHOICES.includes(listenTarget) || listenTarget === state.rules.listenTarget) return state;
   return { ...state, rules: { ...state.rules, listenTarget } };
+}
+
+// عدد التكرار (1–100). ما كُرِّر يبقى محسوباً؛ إن بلغ العددَ الجديد ظهر زرّ التأكيد.
+export function changeRepeatTarget(state, repeatTarget) {
+  if (!Number.isInteger(repeatTarget) || repeatTarget < REPEAT_MIN || repeatTarget > REPEAT_MAX) return state;
+  if (repeatTarget === state.rules.repeatTarget) return state;
+  return { ...state, rules: { ...state.rules, repeatTarget } };
 }
 
 // ─── طريقة الخماسيات (hifzMethod.js) ───

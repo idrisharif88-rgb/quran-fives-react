@@ -1,0 +1,57 @@
+/* عدد التكرار (HifzRepeatTarget): − [العدد] + تحت عدّاد التكرار */
+.hifz-repeat-target {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.hifz-repeat-target-label {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--app-accent-ink);
+  margin-inline-end: 4px;
+}
+
+.hifz-repeat-target-step {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid var(--app-accent-ink);
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.hifz-repeat-target-step:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.hifz-repeat-target-input {
+  width: 58px;
+  height: 38px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--app-accent-ink);
+  border-radius: 12px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+  outline: none;
+}
+
+.hifz-repeat-target-input:focus {
+  box-shadow: 0 0 0 3px var(--app-accent-glow);
+}

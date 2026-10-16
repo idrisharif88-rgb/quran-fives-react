@@ -6,7 +6,7 @@ import {
 import {
   startProgram, loadProgram, dailyPlan, rollDay, countStep, confirmStep, tickStep, recordStep, checkBox,
   verseDoneToday, shouldCelebrate, markCelebrated, portionOf, openExtraPortion, changeVersesPerDay,
-  cancelSession, sessionStarted, effectiveDay, tapMethod, answerMethod, methodTaps, methodChecked, changeListenTarget,
+  cancelSession, sessionStarted, effectiveDay, tapMethod, answerMethod, methodTaps, methodChecked, changeListenTarget, changeRepeatTarget,
 } from './hifzState';
 import { methodStages, methodTotal, methodPosition } from './hifzMethod';
 import { currentStep } from './hifzSteps';
@@ -601,5 +601,34 @@ describe('listening 3, 5 or 7 times', () => {
     const s = startProgram('forward', day(1));
     expect(changeListenTarget(s, 4)).toBe(s);
     expect(changeListenTarget(s, 3)).toBe(s);
+  });
+});
+
+describe('repeat count set by the memoriser (1–100)', () => {
+  it('defaults to 40 and accepts any whole number from 1 to 100', () => {
+    let s = startProgram('forward', day(1));
+    expect(s.rules.repeatTarget).toBe(40);
+    s = changeRepeatTarget(s, 1);
+    expect(s.rules.repeatTarget).toBe(1);
+    s = changeRepeatTarget(s, 100);
+    expect(s.rules.repeatTarget).toBe(100);
+  });
+
+  it('ignores values outside the range or not whole', () => {
+    const s = startProgram('forward', day(1));
+    for (const bad of [0, 101, -5, 2.5, NaN, '20']) expect(changeRepeatTarget(s, bad)).toBe(s);
+    expect(changeRepeatTarget(s, 40)).toBe(s);
+  });
+
+  it('a lower count lets the repeats already done reach it', () => {
+    let s = startProgram('forward', day(1));
+    for (let i = 0; i < 3; i++) s = countStep(s, day(1), 'listen', 1);
+    s = tickStep(tickStep(s, day(1), 'hafiz'), day(1), 'memorize');
+    s = recordStep(s, day(1), 'record', 'recorded');
+    s = recordStep(s, day(1), 'record', 'reviewed');
+    for (let i = 0; i < 10; i++) s = countStep(s, day(1), 'repeat', 1);
+    s = changeRepeatTarget(s, 10);
+    s = confirmStep(s, day(1), 'repeat');
+    expect(s.memorizedOn).toHaveLength(1);
   });
 });
