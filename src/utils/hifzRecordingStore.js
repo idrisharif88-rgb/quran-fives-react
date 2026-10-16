@@ -26,6 +26,7 @@ function base64ToBlob(base64, mime) {
 
 // فهرس التسجيلات: [{ id, verseIndex, s, a, refs, file, mime, durationMs, createdAt, account, uploaded }]
 // s/a أول آية؛ refs آيات الورد كلّها [{ s, a }] — تُظلَّل عند السماع. التسجيلات الأقدم بلا refs.
+// type 'review' تسجيل مراجعة من العدّاد، معه fromPage/toPage (بلا آيات)؛ غيابه = تسجيل حفظ.
 // account الحساب الذي سُجّل به (null: بلا حساب أو قبل المزامنة)؛ uploaded وصل ملفه إلى السيرفر.
 export function loadRecordingIndex() {
   const list = loadStoredState(INDEX_KEY);
@@ -37,12 +38,13 @@ export const saveRecordingIndex = (list) => saveStoredState(INDEX_KEY, list);
 // يحفظ المقطع ملفاً ويعيد مدخله في الفهرس
 export const recordingPath = (id, mime) => `${FOLDER}/${id}.${extensionOf(mime)}`;
 
-export async function writeRecording(blob, { verseIndex, s, a, refs, durationMs }, account = null) {
+export async function writeRecording(blob, { verseIndex, s, a, refs, durationMs, type, fromPage, toPage }, account = null) {
   const id = `${Date.now()}`;
   const mime = blob.type || 'audio/webm';
   const file = recordingPath(id, mime);
   await Filesystem.writeFile({ path: file, data: await blobToBase64(blob), directory: Directory.Data, recursive: true });
-  return { id, verseIndex, s, a, refs, file, mime, durationMs, createdAt: Date.now(), account, uploaded: false };
+  const extra = type === 'review' ? { type, fromPage, toPage } : {};
+  return { id, verseIndex, s, a, refs, ...extra, file, mime, durationMs, createdAt: Date.now(), account, uploaded: false };
 }
 
 export const recordingExists = (recording) =>

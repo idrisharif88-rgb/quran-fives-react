@@ -9,7 +9,9 @@ const KIND = 'hifz';
 // حذفٌ لم يصل السيرفر (بلا شبكة): { [account]: [id] } — يُعاد عند المزامنة التالية
 const PENDING_DELETES_KEY = 'quran-fives-hifz-deletes-v1';
 
-const metaOf = (r) => ({ verseIndex: r.verseIndex, s: r.s, a: r.a, refs: r.refs, durationMs: r.durationMs, createdAt: r.createdAt });
+const metaOf = (r) => (r.type === 'review'
+  ? { type: r.type, fromPage: r.fromPage, toPage: r.toPage, durationMs: r.durationMs, createdAt: r.createdAt }
+  : { verseIndex: r.verseIndex, s: r.s, a: r.a, refs: r.refs, durationMs: r.durationMs, createdAt: r.createdAt });
 
 // التسجيل يخصّ الحساب الحالي أو لم يُنسب لحساب بعد
 export const belongsHere = (r, account = currentAccount()) => !r.account || r.account === account;

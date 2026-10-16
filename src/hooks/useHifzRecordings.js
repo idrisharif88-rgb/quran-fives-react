@@ -5,16 +5,18 @@ import {
 import { belongsHere, syncRecordings, uploadRecording, forgetRemote, ensureLocal } from '../utils/hifzRecordingSync';
 import { canReachServer, currentAccount } from '../utils/fileRemote';
 
-// تسجيلات الحفظ: على الجهاز، ومنسوخة في حساب صاحبها. تبقى كلها حتى يحذفها المستخدم.
-export default function useHifzRecordings() {
+const typeOf = (r) => r.type || 'hifz';
+
+// التسجيلات: على الجهاز، ومنسوخة في حساب صاحبها. تبقى كلها حتى يحذفها المستخدم.
+// type: 'hifz' تسجيلات الحفظ («تسجيلاتي»)، 'review' تسجيلات المراجعة في العدّاد — فهرس واحد يجمعهما.
+export default function useHifzRecordings(type = 'hifz') {
   const [all, setAll] = useState(loadRecordingIndex);
 
+  // يُقرأ الفهرس من التخزين في كل تعديل: شاشتان مفتوحتان معاً (العدّاد والحفظ) لا تمحو إحداهما ما أضافته الأخرى
   const update = useCallback((change) => {
-    setAll((prev) => {
-      const next = change(prev);
-      saveRecordingIndex(next);
-      return next;
-    });
+    const next = change(loadRecordingIndex());
+    saveRecordingIndex(next);
+    setAll(next);
   }, []);
 
   // مزامنة عند الفتح: الرفع المؤجَّل وما سُجّل على جهاز آخر
@@ -34,7 +36,7 @@ export default function useHifzRecordings() {
   }, [update]);
 
   const add = useCallback(async (blob, meta) => {
-    const recording = await writeRecording(blob, meta, currentAccount());
+    const recording = await writeRecording(blob, { ...meta, type }, currentAccount());
     update((prev) => [...prev, recording]);
     if (canReachServer()) {
       uploadRecording(recording)
@@ -42,7 +44,7 @@ export default function useHifzRecordings() {
         .catch(() => {});
     }
     return recording;
-  }, [update]);
+  }, [update, type]);
 
   const remove = useCallback(async (recording) => {
     await deleteRecordingFile(recording);
@@ -55,6 +57,6 @@ export default function useHifzRecordings() {
     return readRecordingUrl(recording);
   }, []);
 
-  const list = useMemo(() => all.filter((r) => belongsHere(r)), [all]);
+  const list = useMemo(() => all.filter((r) => belongsHere(r) && typeOf(r) === type), [all, type]);
   return useMemo(() => ({ list, add, remove, loadUrl }), [list, add, remove, loadUrl]);
 }

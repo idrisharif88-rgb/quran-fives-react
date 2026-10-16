@@ -52,6 +52,7 @@ import {
 } from './utils/persistence';
 import SyncScopeList from './components/SyncScopeList';
 import CounterPageHead from './components/CounterPageHead';
+import ReviewRecorder from './components/ReviewRecorder/ReviewRecorder';
 import { pushLocal, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, fetchMe } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
 import { getSyncMeta, deviceDataIsForeign, clearSyncMeta } from './utils/syncMeta';
@@ -399,6 +400,7 @@ function App() {
   const hifzBackRef = useRef(null);      // يضعه HifzScreen حين يكون فوقه شيء مفتوح
   const cornerNavBackRef = useRef(null); // يضعه CornerNav حين تكون قائمة السور أو الخطوة مفتوحة
   const counterMarksBackRef = useRef(null); // يضعه CounterFivesMarks حين تكون قائمة «…» مفتوحة
+  const reviewRecordingsBackRef = useRef(null); // يضعه ReviewRecorder حين تكون «تسجيلات المراجعة» مفتوحة
   const returnToCounterRef = useRef(false); // خماسية فُتحت من أيقونات العدّاد: الرجوع يعيد إليه
   const resumeStopwatchRef = useRef(false); // والساعة كانت تعمل عند فتحها: تُستأنف مع الرجوع
   const [quranicWondersNotes, setQuranicWondersNotes] = useState(() => (
@@ -1966,6 +1968,11 @@ function App() {
       cornerNavBackRef.current();
       return true;
     }
+    // «تسجيلات المراجعة» فوق العدّاد
+    if (reviewRecordingsBackRef.current) {
+      reviewRecordingsBackRef.current();
+      return true;
+    }
     // قائمة «…» لآيات الخمسات حول دائرة العدّاد
     if (counterMarksBackRef.current) {
       counterMarksBackRef.current();
@@ -3288,6 +3295,7 @@ function App() {
                 onToggleKeepLap={stopwatch.toggleKeepLap}
               />
 
+              <ReviewRecorder page={activeNightCounter?.value ?? 0} backRef={reviewRecordingsBackRef} />
               <CounterPageHead page={activeNightCounter?.value ?? 0} />
               <div className="night-counter-screen">
                 <CounterFivesMarks
