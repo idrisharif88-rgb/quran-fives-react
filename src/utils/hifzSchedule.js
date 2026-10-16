@@ -24,6 +24,10 @@ export const VERSES_PER_DAY_CHOICES = [1, 3, 5, 7];
 // خيارات عدد مرات سماع المقرئ قبل الحفظ (listenTarget) — يختارها الحافظ في خطوة السماع
 export const LISTEN_CHOICES = [3, 5, 7];
 
+// حدود عدد التكرار (repeatTarget) — يضبطه الحافظ بنفسه في خطوة التكرار
+export const REPEAT_MIN = 1;
+export const REPEAT_MAX = 100;
+
 // قواعد مخزّنة ← قواعد كاملة: ما نقص يُؤخذ من الافتراضي (ترقية البيانات القديمة).
 // برنامج بدأ قبل إضافة ورد اليوم يبقى آية واحدة في اليوم.
 export const withDefaultRules = (rules) => {

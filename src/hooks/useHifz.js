@@ -3,7 +3,7 @@ import { dayKey } from '../utils/hifzSchedule';
 import {
   startProgram, loadProgram, rollDay, dailyPlan, countStep, confirmStep, tickStep, recordStep, checkBox,
   shouldCelebrate, markCelebrated, openExtraPortion, changeVersesPerDay, cancelSession, sessionStarted,
-  effectiveDay, tapMethod, answerMethod, methodTaps, methodChecked, changeListenTarget,
+  effectiveDay, tapMethod, answerMethod, methodTaps, methodChecked, changeListenTarget, changeRepeatTarget,
 } from '../utils/hifzState';
 import { skipStep, nextTrialDay, jumpTrialDays } from '../utils/hifzTrial';
 
@@ -56,6 +56,7 @@ export default function useHifz(persisted) {
     extraPortion: () => apply((p, day) => openExtraPortion(p, day)),
     setVersesPerDay: (n) => apply((p, day) => changeVersesPerDay(p, day, n)),
     setListenTarget: (n) => apply((p) => changeListenTarget(p, n)),
+    setRepeatTarget: (n) => apply((p) => changeRepeatTarget(p, n)),
     cancelSession: () => apply((p, day) => cancelSession(p, day)),
     methodTap: (delta) => apply((p, day) => tapMethod(p, day, delta)),
     methodAnswer: (good) => apply((p, day) => answerMethod(p, day, good)),
