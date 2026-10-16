@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, memo } from 'react';
 import { searchQuran, findMatchRanges } from '../utils/quranSearch';
 import { shareSearchResultsPdf, preloadSearchPdfFonts } from '../utils/quranSearchPdf';
+import SearchResultShare from './SearchResultShare';
 import './QuranSearch.css';
 
 // أرقام عربية مشرقيّة لعرض رقم الآية بما يطابق بقيّة الواجهة
@@ -127,19 +128,21 @@ export default function QuranSearch({ onClose, onJump }) {
           ) : (
             <>
               {results.slice(0, visibleCount).map((result) => (
-                <button
-                  key={`${result.s}-${result.a}`}
-                  type="button"
-                  className="quran-search-result"
-                  onClick={() => onJump?.(result.s, result.a)}
-                >
-                  <span className="quran-search-verse-text">
-                    <HighlightedVerse text={result.t} query={query} />
-                  </span>
-                  <span className="quran-search-meta">
-                    سورة {result.surahName} — آية {toArabicDigits(result.a)}
-                  </span>
-                </button>
+                <div key={`${result.s}-${result.a}`} className="quran-search-item">
+                  <button
+                    type="button"
+                    className="quran-search-result"
+                    onClick={() => onJump?.(result.s, result.a)}
+                  >
+                    <span className="quran-search-verse-text">
+                      <HighlightedVerse text={result.t} query={query} />
+                    </span>
+                    <span className="quran-search-meta">
+                      سورة {result.surahName} — آية {toArabicDigits(result.a)}
+                    </span>
+                  </button>
+                  <SearchResultShare result={result} query={query} />
+                </div>
               ))}
               {visibleCount < results.length && (
                 <button
