@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import useUpdatesNotebook from '../../hooks/useUpdatesNotebook';
+import useKeyboardInset, { revealOnFocus } from '../../hooks/useKeyboardInset';
 import { sortedNotes } from '../../utils/updatesNotebook';
 import './UpdatesNotebook.css';
 
@@ -11,8 +12,8 @@ function NoteEditor({ note, onSave, onCancel, onDelete }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   return (
     <div className="notebook-editor">
-      <input className="notebook-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="العنوان" dir="auto" autoFocus />
-      <textarea className="notebook-textarea" value={text} onChange={(e) => setText(e.target.value)} placeholder="التفاصيل" dir="auto" rows={5} />
+      <input className="notebook-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="العنوان" dir="auto" autoFocus onFocus={revealOnFocus} />
+      <textarea className="notebook-textarea" value={text} onChange={(e) => setText(e.target.value)} placeholder="التفاصيل" dir="auto" rows={5} onFocus={revealOnFocus} />
       <div className="notebook-editor-actions">
         <button type="button" className="notebook-btn primary" onClick={() => onSave({ id: note?.id, title, text })}>حفظ</button>
         <button type="button" className="notebook-btn" onClick={onCancel}>إلغاء</button>
@@ -47,6 +48,7 @@ function NoteRow({ note, onToggle, onEdit }) {
  */
 export default function UpdatesNotebook({ onClose, backRef }) {
   const notebook = useUpdatesNotebook();
+  const keyboardInset = useKeyboardInset();
   const [editing, setEditing] = useState(null);   // null | 'new' | note
   const [showDone, setShowDone] = useState(false);
   const { open, done } = sortedNotes(notebook.notes);
@@ -62,7 +64,7 @@ export default function UpdatesNotebook({ onClose, backRef }) {
   const remove = (id) => { notebook.remove(id); setEditing(null); };
 
   return (
-    <div className="notebook-overlay" dir="rtl">
+    <div className="notebook-overlay" dir="rtl" style={keyboardInset ? { paddingBottom: keyboardInset + 24 } : undefined}>
       <div className="notebook-card">
         <div className="notebook-head">
           <h2>دفتر التحديثات</h2>
