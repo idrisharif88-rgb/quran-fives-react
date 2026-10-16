@@ -12,5 +12,11 @@ export const pagesText = ({ fromPage, toPage }) => (fromPage === toPage
   ? `الصفحة ${toArabicDigits(fromPage)}`
   : `الصفحات ${toArabicDigits(fromPage)}–${toArabicDigits(toPage)}`);
 
-// اسم الملف عند إرساله إلى المُسمِّع
-export const shareName = (r) => `مراجعة ${pagesText(r)} ${dateText(r.createdAt)}`;
+// عنوان المشاركة (يُعرض)، واسم الملف لاتينياً: review-p12-15-2026-10-17
+export const shareTitle = (r) => `مراجعة ${pagesText(r)} — ${dateText(r.createdAt)}`;
+export function shareFileName(r) {
+  const d = new Date(r.createdAt);
+  const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const pages = r.fromPage === r.toPage ? `p${r.fromPage}` : `p${r.fromPage}-${r.toPage}`;
+  return `review-${pages}-${day}`;
+}

@@ -1,0 +1,87 @@
+/* إعدادات الحفظ (HifzSettings): صفوف — العنوان يميناً والأداة يساراً */
+.hifz-set {
+  margin-top: 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  background: var(--app-surface);
+  overflow: hidden;
+}
+
+.hifz-set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+}
+
+.hifz-set-row + .hifz-set-row {
+  border-top: 1px solid var(--app-border);
+}
+
+.hifz-set-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hifz-set-label strong {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--app-text);
+}
+
+.hifz-set-label span {
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+.hifz-set-control {
+  flex: none;
+  display: flex;
+  align-items: center;
+}
+
+.hifz-set-chips {
+  display: flex;
+  gap: 6px;
+}
+
+.hifz-set-chips button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--app-accent-ink);
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 900;
+  padding: 0;
+  cursor: pointer;
+}
+
+.hifz-set-chips button.on {
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+  color: var(--app-accent-contrast);
+}
+
+.hifz-set-btn {
+  min-width: 72px;
+  height: 36px;
+  border: 1.5px solid var(--app-accent-ink);
+  border-radius: 18px;
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.hifz-set-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

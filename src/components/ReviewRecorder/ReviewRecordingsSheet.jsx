@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import useRecordingPlayer from '../../hooks/useRecordingPlayer';
 import { ensureLocal } from '../../utils/hifzRecordingSync';
 import { shareRecording } from '../../utils/recordingShare';
-import { clock, dateText, pagesText, shareName } from './reviewText';
+import { clock, dateText, pagesText, shareTitle, shareFileName } from './reviewText';
 
 /**
  * «تسجيلات المراجعة»: الأحدث أولاً، ولكلٍّ منها استماع ومشاركة (إلى المُسمِّع) وحذف.
@@ -29,7 +29,7 @@ export default function ReviewRecordingsSheet({ recordings, onClose, backRef }) 
     setSharingId(r.id);
     try {
       await ensureLocal(r);
-      await shareRecording(r, shareName(r));
+      await shareRecording(r, { fileName: shareFileName(r), title: shareTitle(r) });
     } catch {
       alert('تعذّرت المشاركة');
     }

@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { loadReminderSettings, saveReminderSettings, shiftMinutes, timeText, STEP_MINUTES } from '../../utils/hifzReminder';
+import { loadReminderSettings, saveReminderSettings } from '../../utils/hifzReminder';
+import HifzReminderTime from './HifzReminderTime';
 import { ensureReminderChannel } from '../../hooks/useHifzReminder';
 import { REMINDER_CHANNEL } from '../../utils/hifzReminder';
 import './HifzReminderSettings.css';
 
 /**
- * «تذكير يومي»: مفتاح تشغيل، ووقت يُضبط بـ − و + (ربع ساعة)، ونغمة يختارها الحافظ من نغمات
+ * «تذكير يومي»: مفتاح تشغيل، ووقت بساعة ودقائق تُكتبان، ونغمة يختارها الحافظ من نغمات
  * هاتفه (إعدادات قناة الإشعار في أندرويد). الإشعار على الهاتف وحده.
  */
 export default function HifzReminderSettings() {
@@ -51,11 +52,7 @@ export default function HifzReminderSettings() {
       {native && settings.on && (
         <div className="hifz-reminder-row">
           <span className="hifz-reminder-label">الوقت</span>
-          <div className="hifz-reminder-time">
-            <button type="button" onClick={() => update({ ...settings, minutes: shiftMinutes(settings.minutes, -STEP_MINUTES) })} aria-label="أبكر">−</button>
-            <bdi>{timeText(settings.minutes)}</bdi>
-            <button type="button" onClick={() => update({ ...settings, minutes: shiftMinutes(settings.minutes, STEP_MINUTES) })} aria-label="أبعد">+</button>
-          </div>
+          <HifzReminderTime minutes={settings.minutes} onChange={(minutes) => update({ ...settings, minutes })} />
         </div>
       )}
       {native && settings.on && canPickTone && (
