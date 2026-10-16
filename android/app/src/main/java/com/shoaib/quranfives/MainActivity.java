@@ -48,6 +48,23 @@ public class MainActivity extends BridgeActivity {
                 });
             }
 
+            // إعدادات قناة إشعار في أندرويد (8+): منها يختار المستخدم نغمة من نغمات هاتفه
+            @JavascriptInterface
+            public void openNotificationChannel(final String channelId) {
+                runOnUiThread(() -> {
+                    android.content.Intent intent;
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        intent = new android.content.Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                                .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName())
+                                .putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, channelId);
+                    } else {
+                        intent = new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                .setData(android.net.Uri.fromParts("package", getPackageName(), null));
+                    }
+                    try { startActivity(intent); } catch (Exception ignored) { }
+                });
+            }
+
             // إنهاء التطبيق (يُستدعى من زر «خروج» في مربع تأكيد الخروج)
             @JavascriptInterface
             public void finishApp() {

@@ -2,36 +2,26 @@ import { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import {
-  loadReminderSettings, upcomingTimes, REMINDER_TEXT, REMINDER_CHANGE_EVENT, BASE_ID, DAYS_AHEAD,
+  loadReminderSettings, upcomingTimes, REMINDER_TEXT, REMINDER_CHANGE_EVENT, BASE_ID, DAYS_AHEAD, REMINDER_CHANNEL,
 } from '../utils/hifzReminder';
-import { toneById } from '../constants/hifzReminderTones';
 
-// قناة أندرويد لكل نغمة: النغمة تُثبَّت في القناة عند إنشائها أول مرة، فتغيير النغمة يعني قناة أخرى
-const channelFor = (tone) => ({
-  id: `hifz-reminder-${tone.id}`,
-  name: `تذكير الحفظ — ${tone.label}`,
-  description: 'تذكير يومي بوِرد الحفظ',
-  importance: 4,
-  vibration: true,
-  ...(tone.file ? { sound: tone.file } : {}),
-});
+// القناة بلا نغمة محدّدة: تبدأ بصوت الإشعار في الهاتف، ويغيّرها المستخدم من إعداداتها
+// (اختيار المستخدم يحفظه أندرويد، فلا تُعاد كتابته بإنشاء القناة مرة أخرى).
+export const ensureReminderChannel = () => LocalNotifications.createChannel(REMINDER_CHANNEL).catch(() => {});
 const ids = Array.from({ length: DAYS_AHEAD }, (_, i) => ({ id: BASE_ID + i }));
 
 async function reschedule(todayDone) {
   await LocalNotifications.cancel({ notifications: ids }).catch(() => {});
-  const { on, minutes, tone: toneId } = loadReminderSettings();
+  const { on, minutes } = loadReminderSettings();
   if (!on) return;
   if ((await LocalNotifications.checkPermissions()).display !== 'granted') return;
-  const tone = toneById(toneId);
-  const channel = channelFor(tone);
-  await LocalNotifications.createChannel(channel).catch(() => {});
+  await ensureReminderChannel();
   await LocalNotifications.schedule({
     notifications: upcomingTimes(minutes, new Date(), todayDone).map((at, i) => ({
       id: BASE_ID + i,
       title: REMINDER_TEXT.title,
       body: REMINDER_TEXT.body,
-      channelId: channel.id,
-      ...(tone.file ? { sound: tone.file } : {}),
+      channelId: REMINDER_CHANNEL.id,
       schedule: { at, allowWhileIdle: true },
       extra: { open: 'hifz' },
     })),

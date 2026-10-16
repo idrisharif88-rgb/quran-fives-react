@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { loadReminderSettings, saveReminderSettings, shiftMinutes, timeText, STEP_MINUTES } from '../../utils/hifzReminder';
-import { REMINDER_TONES } from '../../constants/hifzReminderTones';
+import { ensureReminderChannel } from '../../hooks/useHifzReminder';
+import { REMINDER_CHANNEL } from '../../utils/hifzReminder';
 import './HifzReminderSettings.css';
 
 /**
- * «تذكير يومي»: مفتاح تشغيل، ووقت يُضبط بـ − و + (ربع ساعة)، ونغمة يختارها الحافظ
- * (تُسمع عند اختيارها). الإشعار على الهاتف وحده.
+ * «تذكير يومي»: مفتاح تشغيل، ووقت يُضبط بـ − و + (ربع ساعة)، ونغمة يختارها الحافظ من نغمات
+ * هاتفه (إعدادات قناة الإشعار في أندرويد). الإشعار على الهاتف وحده.
  */
 export default function HifzReminderSettings() {
   const [settings, setSettings] = useState(loadReminderSettings);
@@ -16,9 +17,11 @@ export default function HifzReminderSettings() {
 
   const update = (next) => { setSettings(next); saveReminderSettings(next); };
 
-  const chooseTone = (tone) => {
-    update({ ...settings, tone: tone.id });
-    if (tone.preview) new Audio(tone.preview).play().catch(() => {});
+  // صفحة أندرويد لإشعار التذكير: فيها «الصوت» بنغمات الهاتف كلها
+  const canPickTone = typeof window.AndroidApp?.openNotificationChannel === 'function';
+  const pickTone = async () => {
+    await ensureReminderChannel();
+    window.AndroidApp.openNotificationChannel(REMINDER_CHANNEL.id);
   };
 
   const toggle = async () => {
@@ -55,21 +58,13 @@ export default function HifzReminderSettings() {
           </div>
         </div>
       )}
-      {(settings.on || !native) && (
-        <div className="hifz-reminder-tones" role="radiogroup" aria-label="نغمة التذكير">
-          {REMINDER_TONES.map((tone) => (
-            <button
-              key={tone.id}
-              type="button"
-              role="radio"
-              aria-checked={settings.tone === tone.id}
-              className={`hifz-reminder-tone ${settings.tone === tone.id ? 'selected' : ''}`.trim()}
-              onClick={() => chooseTone(tone)}
-            >
-              {tone.preview && <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>}
-              {tone.label}
-            </button>
-          ))}
+      {native && settings.on && canPickTone && (
+        <div className="hifz-reminder-row">
+          <span className="hifz-reminder-label">النغمة</span>
+          <button type="button" className="hifz-reminder-tone" onClick={pickTone}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z" /></svg>
+            اختر من نغمات هاتفك
+          </button>
         </div>
       )}
       {!native && <p className="hifz-reminder-msg">الإشعار متاح في تطبيق الهاتف</p>}

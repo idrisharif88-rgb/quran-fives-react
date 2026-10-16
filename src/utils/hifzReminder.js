@@ -1,9 +1,8 @@
 import { loadStoredState, saveStoredState } from './persistence';
-import { REMINDER_TONES, DEFAULT_TONE } from '../constants/hifzReminderTones';
 
 // ─── تذكير الحفظ اليومي ───
-// إعداد على هذا الجهاز: { on, minutes, tone } — minutes دقائق منذ منتصف الليل (الافتراضي 20:00)،
-// tone معرّف النغمة (hifzReminderTones.js).
+// إعداد على هذا الجهاز: { on, minutes } — minutes دقائق منذ منتصف الليل (الافتراضي 20:00).
+// النغمة يختارها المستخدم من نغمات هاتفه في إعدادات قناة الإشعار (أندرويد يحفظها).
 // يُجدول التذكير للأيام السبعة القادمة، ويُعاد جدوله عند فتح التطبيق وعند إتمام ورد اليوم.
 export const REMINDER_KEY = 'quran-fives-hifz-reminder-daily-v1';
 export const REMINDER_CHANGE_EVENT = 'quran-fives-hifz-reminder-change';
@@ -11,6 +10,7 @@ export const DEFAULT_MINUTES = 20 * 60;
 export const STEP_MINUTES = 15;
 export const DAYS_AHEAD = 7;
 export const BASE_ID = 9100;   // معرّفات الإشعارات 9100–9106
+export const REMINDER_CHANNEL = { id: 'hifz-reminder', name: 'تذكير الحفظ', description: 'تذكير يومي بوِرد الحفظ', importance: 4, vibration: true };
 
 export const REMINDER_TEXT = {
   title: 'حان موعد وِردك اليوم 🌿',
@@ -23,7 +23,6 @@ export function loadReminderSettings() {
   return {
     on: saved?.on === true,
     minutes: Number.isInteger(minutes) && minutes >= 0 && minutes < 24 * 60 ? minutes : DEFAULT_MINUTES,
-    tone: REMINDER_TONES.some((t) => t.id === saved?.tone) ? saved.tone : DEFAULT_TONE,
   };
 }
 

@@ -93,12 +93,6 @@
   color: var(--app-muted);
 }
 
-.hifz-reminder-tones {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
 .hifz-reminder-tone {
   display: inline-flex;
   align-items: center;
@@ -112,10 +106,4 @@
   font-weight: 800;
   padding: 7px 12px;
   cursor: pointer;
-}
-
-.hifz-reminder-tone.selected {
-  background: var(--app-accent);
-  border-color: var(--app-accent);
-  color: var(--app-accent-contrast);
 }
