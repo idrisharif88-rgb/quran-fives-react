@@ -2,7 +2,7 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { loadStoredState, saveStoredState } from './persistence';
-import { canReachServer, fetchRemoteIndex, uploadFile, deleteRemoteFile, downloadFile } from './ijazaFileRemote';
+import { canReachServer, fetchRemoteIndex, uploadFile, deleteRemoteFile, downloadFile } from './fileRemote';
 
 // ─── ملف الإجازة (PDF) ───
 // الأصل على السيرفر (لكل حساب)، ونسخة على الجهاز في مساحة التطبيق تُفتح بلا شبكة.
@@ -67,7 +67,7 @@ export async function attachIjazaFile(id, file) {
   setEntry(id, entry);
   if (canReachServer()) {
     try {
-      await uploadFile(id, file, file.name);
+      await uploadFile('ijaza', id, file, { name: file.name, mime: 'application/pdf' });
       entry = { ...entry, uploaded: true };
       setEntry(id, entry);
     } catch {
@@ -80,7 +80,7 @@ export async function attachIjazaFile(id, file) {
 export async function removeIjazaFile(id) {
   await Filesystem.deleteFile({ path: pathOf(id), directory: Directory.Data }).catch(() => {});
   setEntry(id, null);
-  if (canReachServer()) await deleteRemoteFile(id).catch(() => {});
+  if (canReachServer()) await deleteRemoteFile('ijaza', id).catch(() => {});
 }
 
 /**
@@ -93,11 +93,11 @@ export async function syncIjazaFile(id) {
   // uploaded غائب: ملف أُرفق قبل أن يصير للإجازة نسخة على السيرفر
   if (local && local.uploaded !== true) {
     if (!await hasLocal(id)) return local;
-    await uploadFile(id, await readLocalBlob(id), local.name);
+    await uploadFile('ijaza', id, await readLocalBlob(id), { name: local.name, mime: 'application/pdf' });
     return setEntry(id, { ...local, uploaded: true })[id];
   }
   if (local) return local;
-  const remote = (await fetchRemoteIndex())[id];
+  const remote = (await fetchRemoteIndex('ijaza'))[id];
   return remote ? { ...remote, uploaded: true, remoteOnly: true } : null;
 }
 
@@ -106,7 +106,7 @@ export async function syncIjazaFile(id) {
 export async function openIjazaFile(id, name) {
   let blob = null;
   if (!await hasLocal(id)) {
-    blob = await downloadFile(id, pathOf(id));
+    blob = await downloadFile('ijaza', id, pathOf(id));
     if (blob) await writeLocal(id, blob);
     const { size } = await Filesystem.stat({ path: pathOf(id), directory: Directory.Data });
     setEntry(id, { name, size, addedAt: Date.now(), uploaded: true });

@@ -354,3 +354,61 @@ test('ملف الإجازة: رفع، قائمة، تنزيل، حدّ الحج�
     await fs.rm(dir, { recursive: true, force: true });
   }
 });
+
+test('تسجيلات الحفظ: رفع مع بيانات، نوع مقبول، مساحة الحساب', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'quran-sync-hifz-'));
+  const s = await start({ dataDir: dir, maxFileBytes: 4096, maxUserBytes: 3000 });
+  try {
+    await signUp('h@example.com', '123456', s.origin);
+    await s.accounts.setApproved('h@example.com', true);
+    const auth = basic('h@example.com', '123456', devices['h@example.com']);
+    const put = (id, body, type = 'audio/webm', meta) => fetch(s.origin + '/api/files/hifz/' + id, {
+      method: 'PUT',
+      headers: { ...auth, 'Content-Type': type, ...(meta ? { 'X-File-Meta': encodeURIComponent(JSON.stringify(meta)) } : {}) },
+      body,
+    });
+
+    assert.equal((await put('1', Buffer.alloc(1000), 'audio/webm', { s: 2, a: 5, refs: [{ s: 2, a: 5 }] })).status, 200);
+    assert.equal((await put('2', Buffer.alloc(10), 'application/pdf')).status, 415);
+    assert.equal((await fetch(s.origin + '/api/files/other', { headers: auth })).status, 404);
+    assert.equal((await put('3', Buffer.alloc(1500))).status, 200);
+    assert.equal((await put('4', Buffer.alloc(1000))).status, 507);   // 1000 + 1500 + 1000 > 3000
+    assert.equal((await put('3', Buffer.alloc(1900))).status, 200);   // الاستبدال لا يُحسب مرتين
+
+    const list = await call('GET', '/api/files/hifz', { headers: auth }, s.origin);
+    assert.deepEqual(list.json['1'].meta, { s: 2, a: 5, refs: [{ s: 2, a: 5 }] });
+    assert.equal(list.json['1'].mime, 'audio/webm');
+    const usage = await call('GET', '/api/files-usage', { headers: auth }, s.origin);
+    assert.deepEqual(usage.json, { used: 2900, limit: 3000 });
+    const down = await fetch(s.origin + '/api/files/hifz/1', { headers: auth });
+    assert.equal(down.headers.get('content-type'), 'audio/webm');
+    assert.equal((await down.arrayBuffer()).byteLength, 1000);
+  } finally {
+    s.srv.close();
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('ملف إجازة بالاسم القديم (<id>.pdf) يُقرأ ويُحذف', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'quran-sync-legacy-'));
+  const s = await start({ dataDir: dir });
+  try {
+    await signUp('l@example.com', '123456', s.origin);
+    await s.accounts.setApproved('l@example.com', true);
+    const auth = basic('l@example.com', '123456', devices['l@example.com']);
+    const { userKey } = await import('../store.js');
+    const folder = path.join(dir, 'users', userKey('l@example.com'), 'files', 'ijaza');
+    await fs.mkdir(folder, { recursive: true });
+    await fs.writeFile(path.join(folder, 'ij-old.pdf'), '%PDF old');
+    await s.store.write(userKey('l@example.com'), 'ijaza-files.json', { 'ij-old': { name: 'a.pdf', size: 8, addedAt: 1 } });
+
+    const down = await fetch(s.origin + '/api/files/ijaza/ij-old', { headers: auth });
+    assert.equal(Buffer.from(await down.arrayBuffer()).toString(), '%PDF old');
+    assert.equal(down.headers.get('content-type'), 'application/pdf');
+    await call('DELETE', '/api/files/ijaza/ij-old', { headers: auth }, s.origin);
+    assert.equal((await fetch(s.origin + '/api/files/ijaza/ij-old', { headers: auth })).status, 404);
+  } finally {
+    s.srv.close();
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});

@@ -36,7 +36,7 @@ function readCreds(req) {
 }
 
 // adminUser: حساب المشرف (المالك) — يوافق على الحسابات الجديدة ولا يحتاج موافقة
-export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpOptions, adminUser = '', maxFileBytes = 50 * 1024 * 1024 }) {
+export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpOptions, adminUser = '', maxFileBytes = 50 * 1024 * 1024, maxUserBytes = 200 * 1024 * 1024 }) {
   const adminName = normalizeUser(adminUser);
   const store = createStore(dataDir);
   const accounts = createAccounts(store, { maxUsers });
@@ -157,7 +157,7 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
   versioned('/api/khitma', 'khitma.json', 'list',
     v => Array.isArray(v), { updatedAt: 0, list: [] });
 
-  registerFileRoutes(app, { store, dataDir, requireAccount, maxFileBytes });
+  registerFileRoutes(app, { store, dataDir, requireAccount, maxFileBytes, maxUserBytes });
 
   return { app, store, accounts };
 }
