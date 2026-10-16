@@ -7,6 +7,7 @@ import { createOtps } from './otp.js';
 import { createDevices } from './devices.js';
 import { registerAuthRoutes } from './authRoutes.js';
 import { registerAdminRoutes } from './adminRoutes.js';
+import { registerFileRoutes } from './fileRoutes.js';
 
 const DEFAULT_LIMITS = {
   ipMail: { windowMs: 60 * 60 * 1000, max: 10 },     // رسائل تأكيد/استرجاع لكل عنوان
@@ -35,7 +36,7 @@ function readCreds(req) {
 }
 
 // adminUser: حساب المشرف (المالك) — يوافق على الحسابات الجديدة ولا يحتاج موافقة
-export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpOptions, adminUser = '' }) {
+export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpOptions, adminUser = '', maxFileBytes = 50 * 1024 * 1024 }) {
   const adminName = normalizeUser(adminUser);
   const store = createStore(dataDir);
   const accounts = createAccounts(store, { maxUsers });
@@ -155,6 +156,8 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
     v => typeof v === 'object' && v !== null, { updatedAt: 0, state: null });
   versioned('/api/khitma', 'khitma.json', 'list',
     v => Array.isArray(v), { updatedAt: 0, list: [] });
+
+  registerFileRoutes(app, { store, dataDir, requireAccount, maxFileBytes });
 
   return { app, store, accounts };
 }

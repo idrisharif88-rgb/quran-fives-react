@@ -320,3 +320,37 @@ test('فشل خدمة البريد يُعلن 503 ولا يُنشئ حساباً
     await fs.rm(dir, { recursive: true, force: true });
   }
 });
+
+test('ملف الإجازة: رفع، قائمة، تنزيل، حدّ الحجم، حذف', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'quran-sync-files-'));
+  const s = await start({ dataDir: dir, maxFileBytes: 1024 });
+  try {
+    await signUp('f@example.com', '123456', s.origin);
+    await s.accounts.setApproved('f@example.com', true);
+    const auth = basic('f@example.com', '123456', devices['f@example.com']);
+    const pdf = Buffer.from('%PDF-1.4 test');
+    const put = (id, body) => fetch(s.origin + '/api/files/ijaza/' + id, {
+      method: 'PUT',
+      headers: { ...auth, 'Content-Type': 'application/pdf', 'X-File-Name': encodeURIComponent('إجازة.pdf') },
+      body,
+    });
+
+    assert.equal((await fetch(s.origin + '/api/files/ijaza/ij-1', { method: 'PUT', body: pdf })).status, 401);
+    const up = await put('ij-1', pdf);
+    assert.equal(up.status, 200);
+    assert.equal((await up.json()).name, 'إجازة.pdf');
+    assert.equal((await put('../x', pdf)).status, 404);
+    assert.equal((await put('ij-2', Buffer.alloc(2048))).status, 413);
+
+    const list = await call('GET', '/api/files/ijaza', { headers: auth }, s.origin);
+    assert.deepEqual(Object.keys(list.json), ['ij-1']);
+    const down = await fetch(s.origin + '/api/files/ijaza/ij-1', { headers: auth });
+    assert.equal(Buffer.from(await down.arrayBuffer()).toString(), '%PDF-1.4 test');
+
+    assert.equal((await call('DELETE', '/api/files/ijaza/ij-1', { headers: auth }, s.origin)).status, 200);
+    assert.equal((await fetch(s.origin + '/api/files/ijaza/ij-1', { headers: auth })).status, 404);
+  } finally {
+    s.srv.close();
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});

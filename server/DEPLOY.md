@@ -49,6 +49,8 @@ server {
     listen 80;
     server_name YOUR_DOMAIN.com;
 
+    client_max_body_size 60m;   # ملفات الإجازات حتى MAX_FILE_MB
+
     location / {
         proxy_pass http://127.0.0.1:3001;
         proxy_set_header Host $host;
@@ -189,4 +191,8 @@ the deployed file may contain endpoints that were never committed here.
 - Pending sign-ups and reset codes live in `data/pending/` and are safe to delete.
 - Manual password reset (e.g. the owner's non-email account): delete that user's
   `account.json`; the data files beside it stay.
-- Optional env vars: `PORT` (default 3001), `DATA_DIR` (where data is stored).
+- Optional env vars: `PORT` (default 3001), `DATA_DIR` (where data is stored),
+  `MAX_FILE_MB` (largest ijaza PDF accepted, default 50).
+- Ijaza PDFs live in `data/users/<key>/files/ijaza/`, indexed by `ijaza-files.json`.
+  nginx must accept bodies larger than `MAX_FILE_MB`: add `client_max_body_size 60m;`
+  inside the `server { … }` block, or uploads fail with 413 before reaching Node.

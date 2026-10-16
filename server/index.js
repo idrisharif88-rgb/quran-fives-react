@@ -10,6 +10,8 @@ const PORT = process.env.PORT || 3001;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 // سقف عدد الحسابات — يُرفع بتغيير المتغيّر وإعادة التشغيل، بلا إصدار جديد للتطبيق
 const MAX_USERS = Number(process.env.MAX_USERS) || 100;
+// أكبر ملف إجازة يُقبل (ميغابايت). nginx يحتاج client_max_body_size أكبر منه.
+const MAX_FILE_MB = Number(process.env.MAX_FILE_MB) || 50;
 
 // رموز التأكيد والاسترجاع تُرسل بالبريد عبر Resend. MAIL_FROM عنوان على نطاق موثّق هناك.
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
@@ -37,7 +39,7 @@ if (OWNER_EMAIL && validateEmail(OWNER_EMAIL)) {
 const owner = OWNER_EMAIL || process.env.KHITMA_USER || '';
 if (!owner) console.warn('تنبيه: لا OWNER_EMAIL ولا KHITMA_USER — لا مشرف يوافق على الحسابات الجديدة.');
 
-const { app, store, accounts } = createApp({ dataDir: DATA_DIR, maxUsers: MAX_USERS, sendMail, adminUser: owner });
+const { app, store, accounts } = createApp({ dataDir: DATA_DIR, maxUsers: MAX_USERS, sendMail, adminUser: owner, maxFileBytes: MAX_FILE_MB * 1024 * 1024 });
 
 const migrated = await migrateLegacyOwner({
   store,
