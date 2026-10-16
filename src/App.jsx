@@ -54,6 +54,7 @@ import SyncScopeList from './components/SyncScopeList';
 import CounterPageHead from './components/CounterPageHead';
 import ReviewRecorder from './components/ReviewRecorder/ReviewRecorder';
 import GoogleBackup from './components/GoogleBackup/GoogleBackup';
+import UpdatesNotebook from './components/UpdatesNotebook/UpdatesNotebook';
 import useGoogleDailyBackup from './hooks/useGoogleDailyBackup';
 import { pushLocal, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, fetchMe } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
@@ -308,6 +309,8 @@ function App() {
   const [pendingKhatmaTime, setPendingKhatmaTime] = useState(null);
   const [isKhatmaListOpen, setIsKhatmaListOpen] = useState(false);
   const [isFiqhOpen, setIsFiqhOpen] = useState(false);
+  const [isNotebookOpen, setIsNotebookOpen] = useState(false);   // «دفتر التحديثات» للمالك
+  const notebookBackRef = useRef(null);
   const [isIjazatOpen, setIsIjazatOpen] = useState(false);
   const ijazatBackRef = useRef(null); // يضعه IjazatScreen ما دام خارج قائمة الإجازات
   const [expandedFiqhId, setExpandedFiqhId] = useState(null);
@@ -2058,6 +2061,10 @@ function App() {
       setIsFiqhOpen(false);
       return true;
     }
+    if (notebookBackRef.current) {
+      notebookBackRef.current();
+      return true;
+    }
     // إجازاتي: داخل القسم يرجع درجةً درجة، ومن قائمته يُغلق
     if (ijazatBackRef.current) {
       ijazatBackRef.current();
@@ -2842,7 +2849,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
+                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -2853,6 +2860,7 @@ function App() {
                         if (option === 'ختماتي') { mainKeyboard.closeKeyboard(); setIsKhatmaListOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'إجازاتي') { mainKeyboard.closeKeyboard(); setIsIjazatOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'المحفوظات') { setIsSavedSessionsOpen(true); setIsMoreMenuOpen(false); return; }
+                        if (option === 'دفتر التحديثات') { mainKeyboard.closeKeyboard(); setIsNotebookOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فقهيات') { mainKeyboard.closeKeyboard(); setIsFiqhOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فأل القرآن') { mainKeyboard.closeKeyboard(); setIsFalOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'البحث في القرآن') { mainKeyboard.closeKeyboard(); setIsSearchOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -4256,6 +4264,7 @@ function App() {
         />
       )}
       {/* ─── قسم فقهيات ─── */}
+      {isNotebookOpen && isOwner && <UpdatesNotebook onClose={() => setIsNotebookOpen(false)} backRef={notebookBackRef} />}
       {isFiqhOpen && isOwner && (
         <div style={{
           position: 'fixed', inset: 0, background: 'var(--app-bg)',

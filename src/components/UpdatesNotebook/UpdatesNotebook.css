@@ -1,0 +1,203 @@
+/* «دفتر التحديثات» (UpdatesNotebook) — نافذة كاملة للمالك */
+.notebook-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: var(--app-bg);
+  color: var(--app-text);
+  overflow-y: auto;
+  padding: calc(12px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.notebook-card {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.notebook-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.notebook-head h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--app-accent-ink);
+}
+
+.notebook-close {
+  border: none;
+  background: transparent;
+  color: var(--app-text);
+  font-size: 22px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.notebook-btn {
+  border: 1.5px solid var(--app-accent-ink);
+  border-radius: 10px;
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  padding: 9px 16px;
+  cursor: pointer;
+}
+
+.notebook-btn.primary {
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+  color: var(--app-accent-contrast);
+}
+
+.notebook-btn.danger {
+  background: var(--app-danger);
+  border-color: var(--app-danger);
+  color: #ffffff;
+}
+
+.notebook-add {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.notebook-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.notebook-input,
+.notebook-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 10px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-family: inherit;
+  font-size: 16px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.notebook-input {
+  font-weight: 800;
+}
+
+.notebook-textarea {
+  resize: vertical;
+  line-height: 1.7;
+}
+
+.notebook-input:focus,
+.notebook-textarea:focus {
+  border-color: var(--app-accent-ink);
+}
+
+.notebook-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.notebook-empty {
+  text-align: center;
+  color: var(--app-muted);
+}
+
+.notebook-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notebook-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface);
+}
+
+.notebook-check {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 2px solid var(--app-accent-ink);
+  background: transparent;
+  color: var(--app-accent-contrast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.notebook-note.done .notebook-check {
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+}
+
+.notebook-note-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: right;
+  padding: 0;
+  cursor: pointer;
+}
+
+.notebook-note-body strong {
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.notebook-note-text {
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.notebook-note-date {
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+.notebook-note.done strong,
+.notebook-note.done .notebook-note-text {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.notebook-done-toggle {
+  border: none;
+  background: none;
+  color: var(--app-muted);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 6px 0;
+  cursor: pointer;
+}
