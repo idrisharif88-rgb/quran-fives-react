@@ -4,6 +4,7 @@ import HifzCelebration from './HifzCelebration';
 import HifzContacts from './HifzContacts';
 import HifzRecorder from './HifzRecorder';
 import HifzRecordingsList from './HifzRecordingsList';
+import HifzReminderSettings from './HifzReminderSettings';
 import HifzListenView from './HifzListenView';
 import HifzCustomStart from './HifzCustomStart';
 import HifzFooter from './HifzFooter';
@@ -136,6 +137,7 @@ export default function HifzScreen({ hifz, reciter, onReciterChange, contacts, o
 
             <HifzTimeline program={program} plan={plan} reciter={reciter} actions={actions} extras={extras} cover={recording ? 'recording' : methodOpen ? 'method' : null} trial={trial} canTakeExtra={canTakeExtra} />
             <HifzRecordingsList recordings={recordings} />
+            {!trial && <HifzReminderSettings />}
 
             <HifzFooter
               confirming={confirming}

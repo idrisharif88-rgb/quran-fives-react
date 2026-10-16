@@ -3,7 +3,7 @@ import { loadStoredState, saveStoredState } from './persistence';
 
 // ─── تسجيلات الحفظ ───
 // الملف الصوتي في مساحة التطبيق على الجهاز (Filesystem)، وفهرس التسجيلات في التخزين المحلي.
-// التسجيلات لا تُرفع إلى السحابة ولا تدخل حالة التطبيق المُزامَنة: تبقى على هذا الجهاز.
+// لا تدخل حالة التطبيق المُزامَنة: تُرفع ملفاتها إلى حساب صاحبها (hifzRecordingSync.js).
 const INDEX_KEY = 'quran-fives-hifz-recordings-v1';
 const FOLDER = 'hifz-recordings';
 
@@ -24,8 +24,10 @@ function base64ToBlob(base64, mime) {
   return new Blob([bytes], { type: mime });
 }
 
-// فهرس التسجيلات: [{ id, verseIndex, s, a, refs, file, mime, durationMs, createdAt }]
+// فهرس التسجيلات: [{ id, verseIndex, s, a, refs, file, mime, durationMs, createdAt, account, uploaded }]
 // s/a أول آية؛ refs آيات الورد كلّها [{ s, a }] — تُظلَّل عند السماع. التسجيلات الأقدم بلا refs.
+// type 'review' تسجيل مراجعة من العدّاد، معه fromPage/toPage (بلا آيات)؛ غيابه = تسجيل حفظ.
+// account الحساب الذي سُجّل به (null: بلا حساب أو قبل المزامنة)؛ uploaded وصل ملفه إلى السيرفر.
 export function loadRecordingIndex() {
   const list = loadStoredState(INDEX_KEY);
   return Array.isArray(list) ? list.filter((r) => r && r.id && r.file) : [];
@@ -34,19 +36,33 @@ export function loadRecordingIndex() {
 export const saveRecordingIndex = (list) => saveStoredState(INDEX_KEY, list);
 
 // يحفظ المقطع ملفاً ويعيد مدخله في الفهرس
-export async function writeRecording(blob, { verseIndex, s, a, refs, durationMs }) {
+export const recordingPath = (id, mime) => `${FOLDER}/${id}.${extensionOf(mime)}`;
+
+export async function writeRecording(blob, { verseIndex, s, a, refs, durationMs, type, fromPage, toPage }, account = null) {
   const id = `${Date.now()}`;
   const mime = blob.type || 'audio/webm';
-  const file = `${FOLDER}/${id}.${extensionOf(mime)}`;
+  const file = recordingPath(id, mime);
   await Filesystem.writeFile({ path: file, data: await blobToBase64(blob), directory: Directory.Data, recursive: true });
-  return { id, verseIndex, s, a, refs, file, mime, durationMs, createdAt: Date.now() };
+  const extra = type === 'review' ? { type, fromPage, toPage } : {};
+  return { id, verseIndex, s, a, refs, ...extra, file, mime, durationMs, createdAt: Date.now(), account, uploaded: false };
+}
+
+export const recordingExists = (recording) =>
+  Filesystem.stat({ path: recording.file, directory: Directory.Data }).then(() => true, () => false);
+
+export async function readRecordingBlob(recording) {
+  const { data } = await Filesystem.readFile({ path: recording.file, directory: Directory.Data });
+  return typeof data === 'string' ? base64ToBlob(data, recording.mime) : data;
+}
+
+// ملف نزل من السيرفر في المتصفح (Blob) يُحفظ كما يُحفظ التسجيل الجديد
+export async function writeRecordingBlob(recording, blob) {
+  await Filesystem.writeFile({ path: recording.file, data: await blobToBase64(blob), directory: Directory.Data, recursive: true });
 }
 
 // يقرأ المقطع ويعيد رابطاً مؤقتاً لتشغيله — على المستدعي تحريره بـURL.revokeObjectURL
 export async function readRecordingUrl(recording) {
-  const { data } = await Filesystem.readFile({ path: recording.file, directory: Directory.Data });
-  const blob = typeof data === 'string' ? base64ToBlob(data, recording.mime) : data;
-  return URL.createObjectURL(blob);
+  return URL.createObjectURL(await readRecordingBlob(recording));
 }
 
 export async function deleteRecordingFile(recording) {

@@ -19,6 +19,7 @@ export const SESSION_STORAGE_KEYS = [
   PAGE_STARTS_QUIZ_STORAGE_KEY,
   SURAH_NAMES_QUIZ_STORAGE_KEY,
   'quran-fives-hifz-trial-v1',   // وضع التجربة للمشرف (useHifzTrial)
+  'quran-fives-updates-notebook-v1',   // دفتر التحديثات للمالك
 ];
 const KHITMA_CACHE_KEY = 'quran-fives-khitma-cache-v1';
 

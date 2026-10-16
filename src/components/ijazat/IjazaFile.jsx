@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react';
-import { attachIjazaFile, removeIjazaFile, openIjazaFile, loadIjazaFiles, MAX_FILE_BYTES } from '../../utils/ijazaFileStore';
+import { useEffect, useRef, useState } from 'react';
+import { attachIjazaFile, removeIjazaFile, openIjazaFile, loadIjazaFiles, syncIjazaFile, MAX_FILE_BYTES } from '../../utils/ijazaFileStore';
 
 /**
- * ملف الإجازة (PDF) المرفق بها: إرفاق، عرض، استبدال، إزالة. يبقى على هذا الجهاز وحده.
+ * ملف الإجازة (PDF) المرفق بها: إرفاق، عرض، استبدال، إزالة. يُحفظ على السيرفر ونسخة على الجهاز.
  */
 export default function IjazaFile({ ijazaId }) {
   const [info, setInfo] = useState(() => loadIjazaFiles()[ijazaId] || null);
@@ -10,6 +10,13 @@ export default function IjazaFile({ ijazaId }) {
   const [message, setMessage] = useState('');
   const [confirmRemove, setConfirmRemove] = useState(false);
   const inputRef = useRef(null);
+
+  // رفع ما لم يُرفع، أو إظهار ملف موجود على السيرفر فقط (جهاز جديد)
+  useEffect(() => {
+    let alive = true;
+    syncIjazaFile(ijazaId).then((entry) => { if (alive) setInfo(entry); }).catch(() => {});
+    return () => { alive = false; };
+  }, [ijazaId]);
 
   const run = async (task) => {
     setBusy(true);
@@ -23,8 +30,8 @@ export default function IjazaFile({ ijazaId }) {
     event.target.value = '';
     if (!file) return;
     if (file.type && file.type !== 'application/pdf') { setMessage('اختر ملف PDF'); return; }
-    if (file.size > MAX_FILE_BYTES) { setMessage('الملف أكبر من 20 ميغابايت'); return; }
-    run(async () => setInfo((await attachIjazaFile(ijazaId, file))[ijazaId]));
+    if (file.size > MAX_FILE_BYTES) { setMessage('الملف أكبر من 50 ميغابايت'); return; }
+    run(async () => setInfo(await attachIjazaFile(ijazaId, file)));
   };
 
   const pick = () => inputRef.current?.click();
@@ -38,6 +45,7 @@ export default function IjazaFile({ ijazaId }) {
             عرض ملف الإجازة
           </button>
           <span className="ijaza-file-name">{info.name}</span>
+          {info.uploaded === false && <span className="ijaza-file-msg">على الجهاز فقط — يُرفع عند الاتصال</span>}
           <div className="ijaza-actions">
             <button type="button" className="ijaza-btn" onClick={pick} disabled={busy}>استبدال</button>
             <button

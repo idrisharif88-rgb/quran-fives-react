@@ -52,6 +52,11 @@ import {
 } from './utils/persistence';
 import SyncScopeList from './components/SyncScopeList';
 import CounterPageHead from './components/CounterPageHead';
+import ReviewRecorder from './components/ReviewRecorder/ReviewRecorder';
+import GoogleBackup from './components/GoogleBackup/GoogleBackup';
+import UpdatesNotebook from './components/UpdatesNotebook/UpdatesNotebook';
+import useGoogleDailyBackup from './hooks/useGoogleDailyBackup';
+import useHifzReminder from './hooks/useHifzReminder';
 import { pushLocal, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, fetchMe } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
 import { getSyncMeta, deviceDataIsForeign, clearSyncMeta } from './utils/syncMeta';
@@ -305,6 +310,8 @@ function App() {
   const [pendingKhatmaTime, setPendingKhatmaTime] = useState(null);
   const [isKhatmaListOpen, setIsKhatmaListOpen] = useState(false);
   const [isFiqhOpen, setIsFiqhOpen] = useState(false);
+  const [isNotebookOpen, setIsNotebookOpen] = useState(false);   // «دفتر التحديثات» للمالك
+  const notebookBackRef = useRef(null);
   const [isIjazatOpen, setIsIjazatOpen] = useState(false);
   const ijazatBackRef = useRef(null); // يضعه IjazatScreen ما دام خارج قائمة الإجازات
   const [expandedFiqhId, setExpandedFiqhId] = useState(null);
@@ -395,10 +402,12 @@ function App() {
   const hifzTrial = useHifzTrial();   // وضع التجربة للمشرف: برنامج منفصل على الجهاز، لا يُزامَن
   const hifzContacts = useHifzContacts(persistedAppState.hifzContacts);
   const [isHifzOpen, setIsHifzOpen] = useState(false);
+  useHifzReminder({ hasProgram: Boolean(hifz.program), todayDone: Boolean(hifz.plan?.complete), onOpen: () => setIsHifzOpen(true) });
   const celebrationBackRef = useRef(null); // نافذة تهنئة مفتوحة (نتيجة اختبار، ختمة) — تضع هنا دالّة إغلاقها
   const hifzBackRef = useRef(null);      // يضعه HifzScreen حين يكون فوقه شيء مفتوح
   const cornerNavBackRef = useRef(null); // يضعه CornerNav حين تكون قائمة السور أو الخطوة مفتوحة
   const counterMarksBackRef = useRef(null); // يضعه CounterFivesMarks حين تكون قائمة «…» مفتوحة
+  const reviewRecordingsBackRef = useRef(null); // يضعه ReviewRecorder حين تكون «تسجيلات المراجعة» مفتوحة
   const returnToCounterRef = useRef(false); // خماسية فُتحت من أيقونات العدّاد: الرجوع يعيد إليه
   const resumeStopwatchRef = useRef(false); // والساعة كانت تعمل عند فتحها: تُستأنف مع الرجوع
   const [quranicWondersNotes, setQuranicWondersNotes] = useState(() => (
@@ -424,6 +433,7 @@ function App() {
   const { account, signOut } = auth;
   // حالة الحساب على الخادم: { approved, admin }. الحساب الجديد لا يزامن قبل موافقة المشرف.
   const [accountStatus, setAccountStatus] = useState(readAccountStatus);   // آخر حالة معروفة، تعمل بلا شبكة
+  useGoogleDailyBackup(Boolean(accountStatus?.googleBackup));
   // «فقهيات» محتوى خاص بالمالك: لا يظهر لغير حسابه
   const isOwner = Boolean(account && accountStatus?.admin);
   const hijriReminder = useHijriReminder(isOwner);   // المشرف: إضافة بدايات الأشهر الهجرية كل شهر
@@ -1966,6 +1976,11 @@ function App() {
       cornerNavBackRef.current();
       return true;
     }
+    // «تسجيلات المراجعة» فوق العدّاد
+    if (reviewRecordingsBackRef.current) {
+      reviewRecordingsBackRef.current();
+      return true;
+    }
     // قائمة «…» لآيات الخمسات حول دائرة العدّاد
     if (counterMarksBackRef.current) {
       counterMarksBackRef.current();
@@ -2046,6 +2061,10 @@ function App() {
     }
     if (isFiqhOpen) {
       setIsFiqhOpen(false);
+      return true;
+    }
+    if (notebookBackRef.current) {
+      notebookBackRef.current();
       return true;
     }
     // إجازاتي: داخل القسم يرجع درجةً درجة، ومن قائمته يُغلق
@@ -2832,7 +2851,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
+                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -2843,6 +2862,7 @@ function App() {
                         if (option === 'ختماتي') { mainKeyboard.closeKeyboard(); setIsKhatmaListOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'إجازاتي') { mainKeyboard.closeKeyboard(); setIsIjazatOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'المحفوظات') { setIsSavedSessionsOpen(true); setIsMoreMenuOpen(false); return; }
+                        if (option === 'دفتر التحديثات') { mainKeyboard.closeKeyboard(); setIsNotebookOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فقهيات') { mainKeyboard.closeKeyboard(); setIsFiqhOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فأل القرآن') { mainKeyboard.closeKeyboard(); setIsFalOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'البحث في القرآن') { mainKeyboard.closeKeyboard(); setIsSearchOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -3288,6 +3308,7 @@ function App() {
                 onToggleKeepLap={stopwatch.toggleKeepLap}
               />
 
+              <ReviewRecorder page={activeNightCounter?.value ?? 0} backRef={reviewRecordingsBackRef} />
               <CounterPageHead page={activeNightCounter?.value ?? 0} />
               <div className="night-counter-screen">
                 <CounterFivesMarks
@@ -4155,6 +4176,7 @@ function App() {
                   </>
                 )}
 
+                {accountStatus?.googleBackup && <GoogleBackup />}
                 {accountStatus?.admin && (
                   <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => setIsAdminUsersOpen(true)} style={{ width: '100%', marginBottom: '10px' }}>
                     إدارة المستخدمين
@@ -4244,6 +4266,7 @@ function App() {
         />
       )}
       {/* ─── قسم فقهيات ─── */}
+      {isNotebookOpen && isOwner && <UpdatesNotebook onClose={() => setIsNotebookOpen(false)} backRef={notebookBackRef} />}
       {isFiqhOpen && isOwner && (
         <div style={{
           position: 'fixed', inset: 0, background: 'var(--app-bg)',

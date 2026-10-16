@@ -41,6 +41,17 @@ export default function AdminUsersSheet({ onClose, formatTime }) {
                   حفظ من آية محدّدة
                 </label>
               )}
+              {!u.admin && (
+                <label className="admin-users-permission">
+                  <input
+                    type="checkbox"
+                    checked={u.googleBackup}
+                    disabled={busyUser === u.user}
+                    onChange={(e) => setPermission(u.user, 'googleBackup', e.target.checked)}
+                  />
+                  نسخ جوجل درايف
+                </label>
+              )}
             </div>
             {!u.admin && (
               <button

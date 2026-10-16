@@ -111,7 +111,7 @@ test('موافقة المشرف: الحساب الجديد لا يزامن قب�
   const ahmad = basic('ahmad@example.com', 'secret1', devices.ahmad);
   const owner = basic('owner', '12345');
   // داخلٌ لكن بانتظار الموافقة
-  assert.deepEqual((await call('GET', '/api/auth/me', { headers: ahmad })).json, { name: 'أحمد علي', approved: false, admin: false, hifzCustomStart: false });
+  assert.deepEqual((await call('GET', '/api/auth/me', { headers: ahmad })).json, { name: 'أحمد علي', approved: false, admin: false, hifzCustomStart: false, googleBackup: false });
   assert.equal((await call('GET', '/api/state', { headers: ahmad })).status, 403);
   assert.equal((await call('PUT', '/api/khitma', { headers: ahmad, body: { list: [], baseUpdatedAt: 0 } })).status, 403);
   // غير المشرف لا يرى اللوحة ولا يوافق على نفسه
@@ -119,7 +119,7 @@ test('موافقة المشرف: الحساب الجديد لا يزامن قب�
   const approve = (headers, user, approved) => call('POST', '/api/admin/users/approval', { headers, body: { user, approved } });
   assert.equal((await approve(ahmad, 'ahmad@example.com', true)).status, 403);
 
-  assert.deepEqual((await call('GET', '/api/auth/me', { headers: owner })).json, { name: 'owner', approved: true, admin: true, hifzCustomStart: true });
+  assert.deepEqual((await call('GET', '/api/auth/me', { headers: owner })).json, { name: 'owner', approved: true, admin: true, hifzCustomStart: true, googleBackup: true });
   const listed = await call('GET', '/api/admin/users', { headers: owner });
   assert.deepEqual(listed.json.users.map(u => [u.user, u.approved, u.admin]), [['ahmad@example.com', false, false], ['owner', true, true]]);
   assert.equal('hash' in listed.json.users[0], false);
@@ -315,6 +315,120 @@ test('فشل خدمة البريد يُعلن 503 ولا يُنشئ حساباً
     const r = await call('POST', '/api/auth/register', { body: { name: 'أحمد علي', user: 'x@example.com', code: '123456' } }, s.origin);
     assert.equal(r.status, 503);
     assert.equal(await s.accounts.exists('x@example.com'), false);
+  } finally {
+    s.srv.close();
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('ملف الإجازة: رفع، قائمة، تنزيل، حدّ الحجم، حذف', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'quran-sync-files-'));
+  const s = await start({ dataDir: dir, maxFileBytes: 1024 });
+  try {
+    await signUp('f@example.com', '123456', s.origin);
+    await s.accounts.setApproved('f@example.com', true);
+    const auth = basic('f@example.com', '123456', devices['f@example.com']);
+    const pdf = Buffer.from('%PDF-1.4 test');
+    const put = (id, body) => fetch(s.origin + '/api/files/ijaza/' + id, {
+      method: 'PUT',
+      headers: { ...auth, 'Content-Type': 'application/pdf', 'X-File-Name': encodeURIComponent('إجازة.pdf') },
+      body,
+    });
+
+    assert.equal((await fetch(s.origin + '/api/files/ijaza/ij-1', { method: 'PUT', body: pdf })).status, 401);
+    const up = await put('ij-1', pdf);
+    assert.equal(up.status, 200);
+    assert.equal((await up.json()).name, 'إجازة.pdf');
+    assert.equal((await put('../x', pdf)).status, 404);
+    assert.equal((await put('ij-2', Buffer.alloc(2048))).status, 413);
+
+    const list = await call('GET', '/api/files/ijaza', { headers: auth }, s.origin);
+    assert.deepEqual(Object.keys(list.json), ['ij-1']);
+    const down = await fetch(s.origin + '/api/files/ijaza/ij-1', { headers: auth });
+    assert.equal(Buffer.from(await down.arrayBuffer()).toString(), '%PDF-1.4 test');
+
+    assert.equal((await call('DELETE', '/api/files/ijaza/ij-1', { headers: auth }, s.origin)).status, 200);
+    assert.equal((await fetch(s.origin + '/api/files/ijaza/ij-1', { headers: auth })).status, 404);
+  } finally {
+    s.srv.close();
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('تسجيلات الحفظ: رفع مع بيانات، نوع مقبول، مساحة الحساب', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'quran-sync-hifz-'));
+  const s = await start({ dataDir: dir, maxFileBytes: 4096, maxUserBytes: 3000 });
+  try {
+    await signUp('h@example.com', '123456', s.origin);
+    await s.accounts.setApproved('h@example.com', true);
+    const auth = basic('h@example.com', '123456', devices['h@example.com']);
+    const put = (id, body, type = 'audio/webm', meta) => fetch(s.origin + '/api/files/hifz/' + id, {
+      method: 'PUT',
+      headers: { ...auth, 'Content-Type': type, ...(meta ? { 'X-File-Meta': encodeURIComponent(JSON.stringify(meta)) } : {}) },
+      body,
+    });
+
+    assert.equal((await put('1', Buffer.alloc(1000), 'audio/webm', { s: 2, a: 5, refs: [{ s: 2, a: 5 }] })).status, 200);
+    assert.equal((await put('2', Buffer.alloc(10), 'application/pdf')).status, 415);
+    assert.equal((await fetch(s.origin + '/api/files/other', { headers: auth })).status, 404);
+    assert.equal((await put('3', Buffer.alloc(1500))).status, 200);
+    assert.equal((await put('4', Buffer.alloc(1000))).status, 507);   // 1000 + 1500 + 1000 > 3000
+    assert.equal((await put('3', Buffer.alloc(1900))).status, 200);   // الاستبدال لا يُحسب مرتين
+
+    const list = await call('GET', '/api/files/hifz', { headers: auth }, s.origin);
+    assert.deepEqual(list.json['1'].meta, { s: 2, a: 5, refs: [{ s: 2, a: 5 }] });
+    assert.equal(list.json['1'].mime, 'audio/webm');
+    const usage = await call('GET', '/api/files-usage', { headers: auth }, s.origin);
+    assert.deepEqual(usage.json, { used: 2900, limit: 3000 });
+    const down = await fetch(s.origin + '/api/files/hifz/1', { headers: auth });
+    assert.equal(down.headers.get('content-type'), 'audio/webm');
+    assert.equal((await down.arrayBuffer()).byteLength, 1000);
+  } finally {
+    s.srv.close();
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('ملف إجازة بالاسم القديم (<id>.pdf) يُقرأ ويُحذف', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'quran-sync-legacy-'));
+  const s = await start({ dataDir: dir });
+  try {
+    await signUp('l@example.com', '123456', s.origin);
+    await s.accounts.setApproved('l@example.com', true);
+    const auth = basic('l@example.com', '123456', devices['l@example.com']);
+    const { userKey } = await import('../store.js');
+    const folder = path.join(dir, 'users', userKey('l@example.com'), 'files', 'ijaza');
+    await fs.mkdir(folder, { recursive: true });
+    await fs.writeFile(path.join(folder, 'ij-old.pdf'), '%PDF old');
+    await s.store.write(userKey('l@example.com'), 'ijaza-files.json', { 'ij-old': { name: 'a.pdf', size: 8, addedAt: 1 } });
+
+    const down = await fetch(s.origin + '/api/files/ijaza/ij-old', { headers: auth });
+    assert.equal(Buffer.from(await down.arrayBuffer()).toString(), '%PDF old');
+    assert.equal(down.headers.get('content-type'), 'application/pdf');
+    await call('DELETE', '/api/files/ijaza/ij-old', { headers: auth }, s.origin);
+    assert.equal((await fetch(s.origin + '/api/files/ijaza/ij-old', { headers: auth })).status, 404);
+  } finally {
+    s.srv.close();
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('صلاحية نسخ جوجل: يمنحها المشرف لحساب بعينه', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'quran-sync-gb-'));
+  const s = await start({ dataDir: dir, adminUser: 'boss@example.com' });
+  try {
+    await signUp('boss@example.com', '123456', s.origin);
+    await signUp('g@example.com', '123456', s.origin);
+    await s.accounts.setApproved('g@example.com', true);
+    const boss = basic('boss@example.com', '123456', devices['boss@example.com']);
+    const g = basic('g@example.com', '123456', devices['g@example.com']);
+    assert.equal((await call('GET', '/api/auth/me', { headers: g }, s.origin)).json.googleBackup, false);
+    const grant = { user: 'g@example.com', permission: 'googleBackup', allowed: true };
+    assert.equal((await call('POST', '/api/admin/users/permission', { headers: g, body: grant }, s.origin)).status, 403);
+    assert.equal((await call('POST', '/api/admin/users/permission', { headers: boss, body: grant }, s.origin)).status, 200);
+    assert.equal((await call('GET', '/api/auth/me', { headers: g }, s.origin)).json.googleBackup, true);
+    const users = (await call('GET', '/api/admin/users', { headers: boss }, s.origin)).json.users;
+    assert.equal(users.find(u => u.user === 'g@example.com').googleBackup, true);
   } finally {
     s.srv.close();
     await fs.rm(dir, { recursive: true, force: true });
