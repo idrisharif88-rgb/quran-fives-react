@@ -1,0 +1,94 @@
+/* «نسخة في جوجل درايف» داخل لوحة المزامنة (GoogleBackup) */
+.google-backup {
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface);
+  padding: 12px;
+  margin-bottom: 10px;
+  text-align: right;
+}
+
+.google-backup-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--app-accent-ink);
+  font-size: 16px;
+}
+
+.google-backup-info {
+  margin: 8px 0 10px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--app-muted);
+}
+
+.google-backup-stale {
+  color: var(--app-danger);
+  font-weight: 700;
+}
+
+.google-backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.google-backup-btn {
+  border: 1.5px solid var(--app-accent-ink);
+  border-radius: 10px;
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.google-backup-btn.primary {
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+  color: var(--app-accent-contrast);
+}
+
+.google-backup-btn.danger {
+  background: var(--app-danger);
+  border-color: var(--app-danger);
+  color: #ffffff;
+}
+
+.google-backup-btn:disabled,
+.google-backup-link:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.google-backup-link {
+  border: none;
+  background: none;
+  color: var(--app-muted);
+  font-family: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-inline-start: auto;
+}
+
+.google-backup-confirm p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.google-backup-msg {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-danger);
+}
+
+.google-backup-msg.ok {
+  color: var(--app-accent-ink);
+}

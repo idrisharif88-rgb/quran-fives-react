@@ -10,7 +10,7 @@ export function registerAdminRoutes(app, { accounts, signedIn, adminName }) {
   app.get('/api/admin/users', requireAdmin, async (req, res) => {
     const users = (await accounts.list()).map(u => {
       const admin = u.user === adminName;
-      return { ...u, admin, approved: u.approved || admin, hifzCustomStart: u.hifzCustomStart || admin };
+      return { ...u, admin, approved: u.approved || admin, hifzCustomStart: u.hifzCustomStart || admin, googleBackup: u.googleBackup || admin };
     });
     res.json({ users });
   });
@@ -26,8 +26,8 @@ export function registerAdminRoutes(app, { accounts, signedIn, adminName }) {
     res.json({ ok: true });
   });
 
-  // صلاحية لحساب بعينه. المسموح: hifzCustomStart (بدء الحفظ من آية يختارها المستخدم)
-  const PERMISSIONS = ['hifzCustomStart'];
+  // صلاحية لحساب بعينه: hifzCustomStart (بدء الحفظ من آية يختارها)، googleBackup (نسخة في جوجل درايف)
+  const PERMISSIONS = ['hifzCustomStart', 'googleBackup'];
   app.post('/api/admin/users/permission', requireAdmin, async (req, res) => {
     const { user, permission, allowed } = req.body || {};
     if (typeof user !== 'string' || !PERMISSIONS.includes(permission) || typeof allowed !== 'boolean') {

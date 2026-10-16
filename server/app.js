@@ -104,6 +104,7 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
       admin: req.isAdmin,
       // المشرف له كل الصلاحيات
       hifzCustomStart: req.isAdmin || permissions.hifzCustomStart,
+      googleBackup: req.isAdmin || permissions.googleBackup,
     });
   });
 

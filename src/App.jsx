@@ -53,6 +53,8 @@ import {
 import SyncScopeList from './components/SyncScopeList';
 import CounterPageHead from './components/CounterPageHead';
 import ReviewRecorder from './components/ReviewRecorder/ReviewRecorder';
+import GoogleBackup from './components/GoogleBackup/GoogleBackup';
+import useGoogleDailyBackup from './hooks/useGoogleDailyBackup';
 import { pushLocal, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, fetchMe } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
 import { getSyncMeta, deviceDataIsForeign, clearSyncMeta } from './utils/syncMeta';
@@ -426,6 +428,7 @@ function App() {
   const { account, signOut } = auth;
   // حالة الحساب على الخادم: { approved, admin }. الحساب الجديد لا يزامن قبل موافقة المشرف.
   const [accountStatus, setAccountStatus] = useState(readAccountStatus);   // آخر حالة معروفة، تعمل بلا شبكة
+  useGoogleDailyBackup(Boolean(accountStatus?.googleBackup));
   // «فقهيات» محتوى خاص بالمالك: لا يظهر لغير حسابه
   const isOwner = Boolean(account && accountStatus?.admin);
   const hijriReminder = useHijriReminder(isOwner);   // المشرف: إضافة بدايات الأشهر الهجرية كل شهر
@@ -4163,6 +4166,7 @@ function App() {
                   </>
                 )}
 
+                {accountStatus?.googleBackup && <GoogleBackup />}
                 {accountStatus?.admin && (
                   <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => setIsAdminUsersOpen(true)} style={{ width: '100%', marginBottom: '10px' }}>
                     إدارة المستخدمين

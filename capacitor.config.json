@@ -7,6 +7,14 @@
       "resize": "body",
       "style": "dark",
       "resizeOnFullScreen": true
+    },
+    "SocialLogin": {
+      "providers": {
+        "google": true,
+        "facebook": false,
+        "apple": false,
+        "twitter": false
+      }
     }
   }
 }

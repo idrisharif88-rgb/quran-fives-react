@@ -75,6 +75,7 @@ export function createAccounts(store, { maxUsers }) {
 
   // صلاحيات يمنحها المشرف لحساب بعينه. المعروف منها:
   //   hifzCustomStart  بدء الحفظ من آية يختارها (لا من أول المصحف أو آخره فقط)
+  //   googleBackup     نسخة البيانات في جوجل درايف المستخدم
   async function setPermission(user, name, allowed) {
     const key = userKey(user);
     const account = await store.read(key, ACCOUNT_FILE, null);
@@ -85,7 +86,10 @@ export function createAccounts(store, { maxUsers }) {
 
   async function permissionsOf(user) {
     const account = await store.read(userKey(user), ACCOUNT_FILE, null);
-    return { hifzCustomStart: account?.permissions?.hifzCustomStart === true };
+    return {
+      hifzCustomStart: account?.permissions?.hifzCustomStart === true,
+      googleBackup: account?.permissions?.googleBackup === true,
+    };
   }
 
   // كل الحسابات للوحة المشرف — بلا بصمات كلمات السر
@@ -99,6 +103,7 @@ export function createAccounts(store, { maxUsers }) {
         createdAt: a.createdAt,
         approved: a.approved === true,
         hifzCustomStart: a.permissions?.hifzCustomStart === true,
+        googleBackup: a.permissions?.googleBackup === true,
       }))
       .sort((a, b) => b.createdAt - a.createdAt);
   }
