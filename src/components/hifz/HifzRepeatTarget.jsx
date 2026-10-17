@@ -7,7 +7,7 @@ const clamp = (n) => Math.min(REPEAT_MAX, Math.max(REPEAT_MIN, n));
 const latin = (text) => text.replace(/[٠-٩۰-۹]/g, (d) => String(d.charCodeAt(0) & 0xf));
 
 /**
- * عدد التكرار: − [العدد] + ، من 1 إلى 100. الكتابة تُعتمد عند الخروج من الخانة أو «تم».
+ * عدد التكرار: خانة تُكتب فيها من 1 إلى 100، وتُعتمد عند الخروج منها أو «تم».
  */
 export default function HifzRepeatTarget({ value, onChange }) {
   const [draft, setDraft] = useState(null);   // نصّ يُكتب الآن؛ null = يُعرض العدد المحفوظ
@@ -21,8 +21,6 @@ export default function HifzRepeatTarget({ value, onChange }) {
 
   return (
     <div className="hifz-repeat-target">
-      <span className="hifz-repeat-target-label">عدد التكرار</span>
-      <button type="button" className="hifz-repeat-target-step" onClick={() => onChange(clamp(value - 1))} disabled={value <= REPEAT_MIN} aria-label="إنقاص عدد التكرار">−</button>
       <input
         type="text"
         inputMode="numeric"
@@ -33,9 +31,9 @@ export default function HifzRepeatTarget({ value, onChange }) {
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
         aria-label={`عدد التكرار من ${REPEAT_MIN} إلى ${REPEAT_MAX}`}
+        title="عدد التكرار"
         dir="ltr"
       />
-      <button type="button" className="hifz-repeat-target-step" onClick={() => onChange(clamp(value + 1))} disabled={value >= REPEAT_MAX} aria-label="زيادة عدد التكرار">+</button>
     </div>
   );
 }

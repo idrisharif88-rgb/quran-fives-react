@@ -62,29 +62,58 @@
 .hifz-reminder-time {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 }
 
-.hifz-reminder-time button {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+.hifz-reminder-num {
+  width: 46px;
+  height: 38px;
+  box-sizing: border-box;
   border: 1.5px solid var(--app-accent-ink);
+  border-radius: 10px;
   background: var(--app-surface);
   color: var(--app-accent-ink);
   font-family: inherit;
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+  outline: none;
+}
+
+.hifz-reminder-num:focus {
+  box-shadow: 0 0 0 3px var(--app-accent-glow);
+}
+
+.hifz-reminder-colon {
   font-size: 20px;
+  font-weight: 900;
+  color: var(--app-accent-ink);
+}
+
+.hifz-reminder-ampm {
+  display: flex;
+  margin-inline-start: 6px;
+  border: 1.5px solid var(--app-accent-ink);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.hifz-reminder-ampm button {
+  width: 34px;
+  height: 35px;
+  border: none;
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 15px;
   font-weight: 900;
   padding: 0;
   cursor: pointer;
 }
 
-.hifz-reminder-time bdi {
-  min-width: 78px;
-  text-align: center;
-  font-size: 17px;
-  font-weight: 900;
-  color: var(--app-accent-ink);
+.hifz-reminder-ampm button.on {
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
 }
 
 .hifz-reminder-msg {

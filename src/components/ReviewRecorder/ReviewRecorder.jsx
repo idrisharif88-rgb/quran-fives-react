@@ -55,9 +55,8 @@ export default function ReviewRecorder({ page, backRef }) {
       </button>
       {recording && <bdi className="review-recorder-time" dir="ltr">{clock(recorder.elapsedMs)}</bdi>}
       {!recording && recordings.list.length > 0 && (
-        <button type="button" className="review-recorder-list" onClick={() => setOpen(true)} aria-label="تسجيلات المراجعة">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" /></svg>
-          <span>{recordings.list.length}</span>
+        <button type="button" className="review-recorder-list" onClick={() => setOpen(true)} aria-label="تسجيلات المراجعة" title="تسجيلاتي">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
         </button>
       )}
       {message && <span className="review-recorder-msg" role="alert">{message}</span>}
