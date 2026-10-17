@@ -26,17 +26,36 @@ export async function fetchRemoteIndex(kind) {
 }
 
 // الملف يُرسل كما هو (لا base64)، فلا يُحمَّل في الذاكرة مرتين. meta يُخزَّن مع الملف على السيرفر.
-export async function uploadFile(kind, id, blob, { name, mime, meta } = {}) {
-  const res = await request(route(kind, id), {
-    method: 'PUT',
-    headers: {
+// XMLHttpRequest لا fetch: وحده يُبلغ بتقدّم الرفع (onProgress بين 0 و1)، ويُلغى بـ signal.
+export function uploadFile(kind, id, blob, { name, mime, meta } = {}, { onProgress, signal } = {}) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', route(kind, id));
+    const headers = {
+      ...authHeaders(readAccount()),
       'Content-Type': mime || blob.type,
       ...(name ? { 'X-File-Name': encodeURIComponent(name) } : {}),
       ...(meta ? { 'X-File-Meta': encodeURIComponent(JSON.stringify(meta)) } : {}),
-    },
-    body: blob,
+    };
+    Object.entries(headers).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+    if (onProgress) xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)); } catch { resolve({}); }
+        return;
+      }
+      const err = new Error('file http ' + xhr.status);
+      err.status = xhr.status;
+      reject(err);
+    };
+    xhr.onerror = () => reject(new Error('file network error'));
+    xhr.onabort = () => reject(new DOMException('cancelled', 'AbortError'));
+    if (signal) {
+      if (signal.aborted) { xhr.abort(); return; }
+      signal.addEventListener('abort', () => xhr.abort(), { once: true });
+    }
+    xhr.send(blob);
   });
-  return res.json();
 }
 
 export async function deleteRemoteFile(kind, id) {
