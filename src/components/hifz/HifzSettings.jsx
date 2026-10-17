@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { VERSES_PER_DAY_CHOICES } from '../../utils/hifzSchedule';
 import useSurahDownload from '../../hooks/useSurahDownload';
 import { surahName } from './hifzText';
@@ -25,10 +26,17 @@ function Row({ label, hint, children }) {
 export default function HifzSettings({ program, reciter, surah, onVersesPerDay, onBackToStart, onTrialStart }) {
   const audio = useSurahDownload();
   const perDay = program.rules.versesPerDay;
+  const boxRef = useRef(null);
+
+  // تُفتح أسفل الشاشة: تُمرَّر إلى مكانها فوراً كي لا تبقى مخفيّة تحت آخر الصفحة
+  useEffect(() => {
+    const timer = setTimeout(() => boxRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 50);
+    return () => clearTimeout(timer);
+  }, []);
   const progress = audio.progress?.total > 0 ? `${audio.progress.downloaded} / ${audio.progress.total}` : null;
 
   return (
-    <div className="hifz-set">
+    <div className="hifz-set" ref={boxRef}>
       <Row label="آيات اليوم" hint="يسري من الورد القادم">
         <div className="hifz-set-chips" role="radiogroup" aria-label="عدد آيات اليوم">
           {VERSES_PER_DAY_CHOICES.map((n) => (
