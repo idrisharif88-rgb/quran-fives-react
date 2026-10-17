@@ -2,12 +2,13 @@ import { useState } from 'react';
 
 const latin = (text) => text.replace(/[٠-٩۰-۹]/g, (d) => String(d.charCodeAt(0) & 0xf));
 
-// خانة رقم تُكتب، وتُعتمد عند الخروج منها أو «تم»
+// خانة رقم تُكتب، وتُعتمد عند الخروج منها أو «تم». اللمس يُفرغها (القيمة الحالية باهتة) بدل
+// تحديد النصّ، فلا تظهر مقابض النسخ في أندرويد؛ تُترك فارغة فتبقى القيمة.
 function NumberBox({ value, min, max, pad, label, onCommit }) {
   const [draft, setDraft] = useState(null);
   const shown = pad ? String(value).padStart(2, '0') : String(value);
   const commit = () => {
-    if (draft === null) return;
+    if (draft === null || draft === '') { setDraft(null); return; }
     const n = parseInt(latin(draft), 10);
     setDraft(null);
     if (Number.isInteger(n) && n >= min && n <= max) onCommit(n);
@@ -18,8 +19,9 @@ function NumberBox({ value, min, max, pad, label, onCommit }) {
       inputMode="numeric"
       className="hifz-reminder-num"
       value={draft ?? shown}
+      placeholder={shown}
       onChange={(e) => setDraft(e.target.value.slice(0, 2))}
-      onFocus={(e) => e.target.select()}
+      onFocus={() => setDraft('')}
       onBlur={commit}
       onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
       aria-label={label}

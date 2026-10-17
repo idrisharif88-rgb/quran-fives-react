@@ -80,6 +80,11 @@
   outline: none;
 }
 
+.hifz-reminder-num::placeholder {
+  color: var(--app-muted);
+  opacity: 0.6;
+}
+
 .hifz-reminder-num:focus {
   box-shadow: 0 0 0 3px var(--app-accent-glow);
 }
