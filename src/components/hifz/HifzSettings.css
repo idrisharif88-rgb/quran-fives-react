@@ -1,5 +1,7 @@
 /* إعدادات الحفظ (HifzSettings): صفوف — العنوان يميناً والأداة يساراً */
 .hifz-set {
+  /* داخل .hifz-body (عمود مرن يُمرَّر): overflow: hidden يسمح للصندوق بالانكماش إلى لا شيء على شاشة قصيرة */
+  flex-shrink: 0;
   margin-top: 12px;
   border: 1px solid var(--app-border);
   border-radius: 14px;
