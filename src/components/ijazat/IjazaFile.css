@@ -1,0 +1,44 @@
+/* رفع ملف الإجازة (IjazaFile): شريط تقدّم ونسبة وزرّ إلغاء */
+.ijaza-upload {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.ijaza-upload-bar {
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--app-border);
+  overflow: hidden;
+}
+
+.ijaza-upload-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  background: var(--app-accent);
+  transition: width 0.2s ease;
+}
+
+.ijaza-upload-pct {
+  min-width: 40px;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--app-accent-ink);
+  text-align: center;
+}
+
+.ijaza-upload-cancel {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--app-danger);
+  background: var(--app-surface);
+  color: var(--app-danger);
+  font-size: 15px;
+  font-weight: 900;
+  padding: 0;
+  cursor: pointer;
+}
