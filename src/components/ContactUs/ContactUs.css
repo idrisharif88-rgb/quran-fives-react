@@ -1,0 +1,89 @@
+/* «تواصل معنا» (ContactUs) */
+.contact-dialog .modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contact-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  background: var(--app-bg);
+  color: var(--app-text);
+  text-decoration: none;
+}
+
+.contact-row:active {
+  background: var(--app-surface-3);
+}
+
+.contact-icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--app-accent-deep);
+  color: #fff;
+}
+
+.contact-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.contact-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-muted);
+}
+
+.contact-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--app-text-strong);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.contact-dev {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 4px;
+  color: var(--app-text-strong);
+}
+
+.contact-dua {
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--app-surface-3);
+  text-align: center;
+  line-height: 1.9;
+  color: var(--app-accent-ink);
+}
+
+.contact-dua p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.contact-dua p:first-child {
+  font-size: 18px;
+  font-weight: 900;
+}

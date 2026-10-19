@@ -1,9 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
+import UserGuide from './UserGuide';
+import './UserManual.css';
+
+const TABS = [
+  { id: 'guide', label: 'طريقة الاستخدام' },
+  { id: 'story', label: 'قصة التطبيق' },
+];
 
 export default function UserManual({ onClose }) {
+  const [tab, setTab] = useState('guide');
   return (
     <div className="khmasiyat-quiz-panel" dir="rtl" style={{ textAlign: 'right', lineHeight: '1.8', padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
       <h2 className="khmasiyat-quiz-title" style={{ marginBottom: '20px' }}>شرح البرنامج</h2>
+      <div className="manual-tabs" role="tablist">
+        {TABS.map((t) => (
+          <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={`manual-tab ${tab === t.id ? 'active' : ''}`.trim()} onClick={() => setTab(t.id)}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {tab === 'guide' && <UserGuide />}
+      {tab === 'story' && (
       <div style={{ fontSize: '1.1rem' }}>
         <h3 style={{ color: 'var(--app-accent)', marginTop: '20px' }}>رحلة الإتقان الرقمي: قصة تطبيق الخماسيات ومنهجية هندسة الحفظ</h3>
         <p>
@@ -119,6 +136,7 @@ export default function UserManual({ onClose }) {
           قل بسم الله.. وابدأ الآن!
         </p>
       </div>
+      )}
     </div>
   );
 }

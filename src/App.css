@@ -264,11 +264,14 @@ body.night-mode #root {
   border: none;
   box-shadow: none;
   min-height: 0;
+  /* الدائرة لا تتجاوز ارتفاع ما بقي بين الشريطين (cqh): على الشاشات العريضة مع حجم العرض
+     كان قطرها من العرض يدفع أزرار الأسفل خارج الشاشة */
+  container-type: size;
 }
 
 .night-counter-circle {
-  width: clamp(200px, min(calc(80 * var(--vw)), calc(55 * var(--vh))), 600px);
-  height: clamp(200px, min(calc(80 * var(--vw)), calc(55 * var(--vh))), 600px);
+  width: clamp(200px, min(calc(80 * var(--vw)), calc(55 * var(--vh)), 96cqh), 600px);
+  height: clamp(200px, min(calc(80 * var(--vw)), calc(55 * var(--vh)), 96cqh), 600px);
   border-radius: 50%;
   border: clamp(12px, 3vmin, 26px) solid var(--app-accent);
   background: var(--app-surface-3);
@@ -1977,8 +1980,8 @@ button.nc-khitma-circle:active {
   .night-counter-screen {
   }
   .night-counter-circle {
-    width: min(calc(86 * var(--vw)), calc(50 * var(--vh)));
-    height: min(calc(86 * var(--vw)), calc(50 * var(--vh)));
+    width: min(calc(86 * var(--vw)), calc(50 * var(--vh)), 96cqh);
+    height: min(calc(86 * var(--vw)), calc(50 * var(--vh)), 96cqh);
     border-width: 16px;
     font-size: clamp(40px, 12vmin, 80px);
     margin-top: 0;

@@ -23,7 +23,7 @@ export default function HifzMushafVerses({ refs }) {
 
   const keys = verseKeys(refs);
   return (
-    <div className="hifz-mushaf" ref={hostRef}>
+    <div className="hifz-mushaf app-unzoom" ref={hostRef}>
       {width > 0 && pagesOfRefs(refs).map((page) => (
         <MushafPage key={page} page={page} width={width} highlightVerse={keys} onlyVerses />
       ))}

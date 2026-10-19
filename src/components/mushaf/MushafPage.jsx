@@ -15,6 +15,7 @@ const EXCERPT_LINE_RATIO = 2;
 // @param groups [{ family, glyphs: [] }] ← [[عرض كل رمز]]
 function measureGlyphs(groups) {
   const host = document.createElement('div');
+  host.className = 'app-unzoom';   // قياس بالحجم الذي تُرسم به الصفحة (خارج تكبير حجم العرض)
   host.style.cssText = `position:absolute;left:-99999px;top:0;visibility:hidden;white-space:nowrap;line-height:1;font-size:${BASE_SIZE}px`;
   for (const group of groups) {
     const row = document.createElement('div');

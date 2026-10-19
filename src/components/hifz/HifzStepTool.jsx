@@ -47,6 +47,9 @@ function ListenTool({ verses, reciter, value, target, onCount, onTarget, reciter
       <button type="button" className="hifz-btn primary" onClick={playing ? stop : start}>
         {audio.status === 'loading' && !heard ? 'جارٍ التحميل…' : playing ? 'إيقاف' : 'تشغيل التلاوة'}
       </button>
+      {playing && heard && (
+        <span className="hifz-listen-count">{Math.min(value + 1, target)} من {target} · بقي {Math.max(0, target - value - 1)}</span>
+      )}
       <HifzListenTimes value={target} onChange={onTarget} backRef={backRef} />
       {reciterSelect}
       {audio.status === 'error' && <span className="hifz-tool-error">تعذّر تشغيل التلاوة — تحقّق من الإنترنت</span>}

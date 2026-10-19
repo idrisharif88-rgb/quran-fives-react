@@ -101,7 +101,7 @@ export default function MushafPager({ page, onPageChange, onTap }) {
   const linesHeight = size.height - PAD_TOP - FOOT_HEIGHT;
 
   return (
-    <div className="mushaf-pager" dir="ltr" ref={pagerRef} onScroll={handleScroll} onClick={onTap}>
+    <div className="mushaf-pager app-unzoom" dir="ltr" ref={pagerRef} onScroll={handleScroll} onClick={onTap}>
       {Array.from({ length: total }, (_, i) => {
         const slotPage = total - i;
         const near = Math.abs(slotPage - page) <= RENDER_AHEAD;
