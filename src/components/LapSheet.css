@@ -14,7 +14,7 @@
 .lap-sheet {
   width: 100%;
   max-width: 640px;
-  max-height: 80vh;
+  max-height: calc(80 * var(--vh));
   background: var(--app-surface);
   color: var(--app-text);
   border-radius: 22px;

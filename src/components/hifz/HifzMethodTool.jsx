@@ -6,12 +6,14 @@ import HifzFivesScreen from './HifzFivesScreen';
  * ورد اليوم: كل آية خمس مرات غيباً، ثم مع ما قبلها خمساً، وبعد كل خمس يُسأل عن حفظه.
  * إتمامها لا يُتمّ الخطوة: يظهر زرّ تأكيد. ومن شاء أتمّ الخطوة بـ«تم» بلا الطريقة.
  * @param refs         آيات الورد [{ s, a }]
+ * @param reciter      المقرئ المختار (تلاوة المقطع داخل الطريقة)
+ * @param linkRef      آخر آية من الأمس لمرحلة «الربط»، أو null
  * @param method       { taps, checked } التقدّم في الطريقة لهذا الورد
  * @param open         الطريقة مفتوحة — الشاشة تغطّي نصّ الورد ما دامت كذلك
  * @param onTap        (delta | 'reset') ← يعدّ، onAnswer (نعم: true) ← جواب السؤال
  * @param onDone       يُتمّ خطوة الحفظ
  */
-export default function HifzMethodTool({ refs, method, open, onOpenChange, onTap, onAnswer, onDone }) {
+export default function HifzMethodTool({ refs, linkRef, reciter, method, open, onOpenChange, onTap, onAnswer, onDone }) {
   // الخروج من الخطوة يغلق الطريقة (ويكشف النصّ)
   useEffect(() => () => onOpenChange(false), [onOpenChange]);
 
@@ -26,6 +28,8 @@ export default function HifzMethodTool({ refs, method, open, onOpenChange, onTap
       {open && (
         <HifzFivesScreen
           refs={refs}
+          linkRef={linkRef}
+          reciter={reciter}
           method={method}
           onTap={onTap}
           onAnswer={onAnswer}

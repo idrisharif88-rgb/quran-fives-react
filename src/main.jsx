@@ -12,6 +12,11 @@ window.addEventListener('unhandledrejection', (e) => {
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
+import './styles/appScale.css'
+import { applyScale, loadScale } from './utils/appScale'
+
+// حجم العرض قبل أوّل رسم، فلا يقفز التطبيق من حجم إلى آخر عند الفتح
+applyScale(loadScale())
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

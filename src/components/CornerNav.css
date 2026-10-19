@@ -10,7 +10,7 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  max-width: 60vw;
+  max-width: calc(60 * var(--vw));
   padding: 7px 9px 7px 16px;   /* الطرف الأيسر أضيق: شارة الرقم الدائرية تملؤه */
   border: 1.5px solid var(--app-accent);
   border-radius: 999px;
@@ -97,7 +97,7 @@
 
 /* ── الألواح المنبثقة ──
    الهيكل والحاجب والحبس في ModalDialog؛ هنا محتوى اللوحين فقط. */
-.modal-dialog.corner-nav-modal { max-height: min(78vh, 660px); }
+.modal-dialog.corner-nav-modal { max-height: min(calc(78 * var(--vh)), 660px); }
 
 /* ── اختيار الخطوة ── */
 .corner-nav-steps { display: flex; flex-direction: column; gap: 6px; }
@@ -219,7 +219,7 @@
 
 @media (max-width: 600px) {
   .corner-nav-step-digit { font-size: 54px; }   /* يطابق رقم الآية على الجوال */
-  .corner-nav-surah-btn { font-size: 15.5px; padding: 6px 8px 6px 14px; max-width: 56vw; gap: 8px; }
+  .corner-nav-surah-btn { font-size: 15.5px; padding: 6px 8px 6px 14px; max-width: calc(56 * var(--vw)); gap: 8px; }
   .corner-nav-surah-number { min-width: 24px; height: 24px; line-height: 24px; font-size: 13px; }
   .corner-nav-step-caption { font-size: 11px; }
 }

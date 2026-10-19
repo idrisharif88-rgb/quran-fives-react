@@ -79,6 +79,15 @@ export function portionOf(state, today) {
   return { start: total, count: Math.min(state.rules.versesPerDay, TOTAL_VERSES - total), done: false };
 }
 
+// آية «الربط»: آخر ما حُفظ قبل الورد، تُوصل بأول آياته في آخر مراحل طريقة الخماسيات.
+// لا ربط في أول يوم، ولا حين يبدأ الورد سورة جديدة (آخر الأمس من سورة أخرى).
+export function linkRefOf(state, portionStart) {
+  if (portionStart < 1) return null;
+  const first = verseAt(state.direction, portionStart, state.origin);
+  if (!first || first.a === 1) return null;
+  return verseAt(state.direction, portionStart - 1, state.origin);
+}
+
 /**
  * خطة اليوم: ما يظهر في الخط الزمني.
  * الصناديق الفارغة لا تُعدّ مهامّ. اليوم يكتمل بإنجاز آية اليوم وكل صندوق فيه آيات.
@@ -104,6 +113,7 @@ export function dailyPlan(state, today) {
       ref: verseAt(state.direction, portion.start, state.origin),
       indices,
       refs: indices.map((i) => verseAt(state.direction, i, state.origin)),
+      linkRef: linkRefOf(state, portion.start),
       done: doneToday,
     } : null,
     openStep: doneToday || finished ? null : currentStep(state.progress, state.rules),
@@ -257,7 +267,7 @@ export function answerMethod(state, today, good) {
   if (!inMemorize(state, today)) return state;
   const portion = portionOf(state, today);
   const { taps, checked } = currentMethod(state);
-  const pos = methodPosition(portion.count, taps, checked);
+  const pos = methodPosition(portion.count, taps, checked, Boolean(linkRefOf(state, portion.start)));
   if (!pos.asking) return state;
   const at = state.memorizedOn.length;
   if (good) return { ...state, method: { at, taps, checked: checked + 1 } };

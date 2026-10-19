@@ -10,12 +10,14 @@ const CHEERS = ['أحسنت!', 'بارك الله فيك!'];
 
 // عنوان المرحلة: ما يُقرأ الآن
 export function stageTitle(stage, count) {
+  if (stage.link) return 'الربط';
   if (stage.to > stage.from) return `من الأولى إلى ${ordinal(stage.to)}`;
   return count === 1 ? 'آية اليوم' : `الآية ${ordinal(stage.to)}`;
 }
 
 // ما يُطلب في المرحلة
 export function stageMessage(stage, count) {
+  if (stage.link) return { text: 'اربط آخر محفوظ بأول آية، خمس مرات.', clips: ['link'] };
   if (stage.to > stage.from) {
     return { text: `من الأولى إلى ${ordinal(stage.to)}، خمس مرات.`, clips: [`join-${stage.to}`] };
   }

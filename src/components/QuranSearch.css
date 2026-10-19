@@ -25,7 +25,7 @@
   padding: 18px;
   width: 100%;
   max-width: 560px;
-  height: min(88vh, 720px);
+  height: min(calc(88 * var(--vh)), 720px);
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);

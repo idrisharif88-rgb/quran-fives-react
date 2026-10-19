@@ -76,7 +76,7 @@
 .review-sheet {
   width: 100%;
   max-width: 560px;
-  max-height: 80vh;
+  max-height: calc(80 * var(--vh));
   overflow-y: auto;
   box-sizing: border-box;
   padding: 16px 16px calc(16px + env(safe-area-inset-bottom));

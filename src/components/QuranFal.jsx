@@ -64,7 +64,7 @@ export default function QuranFal({ onClose }) {
 
   return (
     <div className="audio-settings-overlay" dir="rtl" style={{ zIndex: 10000 }}>
-      <div className="audio-settings-card" style={{ maxWidth: '420px', maxHeight: '92vh', overflowY: 'auto', textAlign: 'center' }}>
+      <div className="audio-settings-card" style={{ maxWidth: '420px', maxHeight: 'calc(92 * var(--vh))', overflowY: 'auto', textAlign: 'center' }}>
         <h2 className="audio-settings-title">فأل القرآن</h2>
         <p style={{ fontSize: '14px', color: 'var(--app-muted)', margin: '0 0 16px', lineHeight: 1.7 }}>
           اضغط في أيّ موضع لتدور الحلقة، فتظهر لك آية من كتاب الله — وتفاءل خيراً.
@@ -76,7 +76,7 @@ export default function QuranFal({ onClose }) {
             width="280"
             height="280"
             style={{
-              maxWidth: '78vw',
+              maxWidth: 'calc(78 * var(--vw))',
               cursor: spinning ? 'default' : 'pointer',
               touchAction: 'manipulation',
               WebkitTapHighlightColor: 'transparent',
@@ -117,7 +117,7 @@ export default function QuranFal({ onClose }) {
             </div>
             <div style={{
               fontSize: '24px', lineHeight: 2, color: 'var(--app-text)',
-              fontFamily: "'Amiri', serif", maxHeight: '34vh', overflowY: 'auto',
+              fontFamily: "'Amiri', serif", maxHeight: 'calc(34 * var(--vh))', overflowY: 'auto',
             }}>
               {verse.t}
             </div>

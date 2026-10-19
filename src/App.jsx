@@ -55,6 +55,8 @@ import CounterPageHead from './components/CounterPageHead';
 import ReviewRecorder from './components/ReviewRecorder/ReviewRecorder';
 import GoogleBackup from './components/GoogleBackup/GoogleBackup';
 import UpdatesNotebook from './components/UpdatesNotebook/UpdatesNotebook';
+import AppScaleSheet from './components/AppScale/AppScaleSheet';
+import useAppScale from './hooks/useAppScale';
 import useGoogleDailyBackup from './hooks/useGoogleDailyBackup';
 import useHifzReminder from './hooks/useHifzReminder';
 import { pushLocal, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, fetchMe } from './utils/cloudSync';
@@ -86,6 +88,7 @@ import QuranFal from './components/QuranFal';
 import QuranSearch from './components/QuranSearch';
 import useAccentTheme from './hooks/useAccentTheme';
 import { ACCENT_THEME_LABEL, ACCENT_THEME_NAMES, nextAccentTheme, getPageBg } from './constants/themes';
+import { applySystemBars } from './utils/systemBars';
 import { shareCounterResultsPdf } from './utils/counterPdf';
 import { buildSessionFromLaps, sameSession } from './utils/sessions';
 import { blockEndOf, lapsOfBlock } from './data/pageBlocks';
@@ -312,6 +315,9 @@ function App() {
   const [isFiqhOpen, setIsFiqhOpen] = useState(false);
   const [isNotebookOpen, setIsNotebookOpen] = useState(false);   // «دفتر التحديثات» للمالك
   const notebookBackRef = useRef(null);
+  const appScale = useAppScale();   // «حجم العرض»
+  const [isScaleOpen, setIsScaleOpen] = useState(false);
+  const scaleBackRef = useRef(null);
   const [isIjazatOpen, setIsIjazatOpen] = useState(false);
   const ijazatBackRef = useRef(null); // يضعه IjazatScreen ما دام خارج قائمة الإجازات
   const [expandedFiqhId, setExpandedFiqhId] = useState(null);
@@ -745,10 +751,12 @@ function App() {
       setActiveNightCounterId('counter-1');
       return;
     }
-    if (!activeNightCounter) {
+    // معرّف العدّاد النشط قد يشير إلى عدّاد محذوف: الشاشة تعرض الأول احتياطاً بينما الضغط
+    // يحدّث المعرّف الضائع فلا يتحرّك الرقم. نعيده إلى عدّاد موجود
+    if (!nightCounters.some(counter => counter.id === activeNightCounterId)) {
       setActiveNightCounterId(nightCounters[0].id);
     }
-  }, [activeNightCounter, nightCounters]);
+  }, [activeNightCounterId, nightCounters]);
 
   useEffect(() => {
     if (!activeNightCounter) return;
@@ -1175,20 +1183,8 @@ function App() {
     // الخلفية تتبع الوضع واللون معاً، وإلّا ظهرت حوافّ رمادية باردة حول التشكيلة الذهبية
     const pageBg = getPageBg(isNightMode, accentTheme);
     document.documentElement.style.backgroundColor = pageBg;
-
-    // تحديث لون شريط النظام (Navigation & Status bar) في الأندرويد
-    let metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (!metaThemeColor) {
-      metaThemeColor = document.createElement('meta');
-      metaThemeColor.name = 'theme-color';
-      document.head.appendChild(metaThemeColor);
-    }
-    metaThemeColor.content = pageBg;
-
-    // يلوّن خلفية النافذة الأصلية (الشريط أسفل WebView) ليطابق خلفية التطبيق في الوضعين
-    if (window.AndroidApp && window.AndroidApp.setWindowBackground) {
-      window.AndroidApp.setWindowBackground(pageBg);
-    }
+    // meta[theme-color] وأيقونات أشرطة النظام وخلفية النافذة الأصلية في أندرويد
+    applySystemBars(pageBg, isNightMode);
   }, [isNightMode, accentTheme]);
 
   // اتّباع وضع النظام الداكن دائماً — زرّ الهاتف يقلب وضع التطبيق في كل مرة
@@ -1969,6 +1965,10 @@ function App() {
     // نافذة التهنئة (نتيجة اختبار، محطّة، ختمة)
     if (celebrationBackRef.current) {
       celebrationBackRef.current();
+      return true;
+    }
+    if (scaleBackRef.current) {
+      scaleBackRef.current();
       return true;
     }
     // قائمة السور أو خطوة التنقّل (من اسم السورة ورقمها أسفل البطاقة)
@@ -2851,7 +2851,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
+                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'حجم العرض', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -2870,6 +2870,7 @@ function App() {
                         if (option === 'الوضع الليلي') { setIsNightMode(prev => !prev); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === ACCENT_THEME_LABEL) { setAccentTheme(nextAccentTheme); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'إعدادات الصوت') { mainKeyboard.closeKeyboard(); setIsAudioSettingsOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'حجم العرض') { mainKeyboard.closeKeyboard(); setIsScaleOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'الخط') { mainKeyboard.closeKeyboard(); setIsMoreMenuOpen(false); setIsFontMenuOpen(true); return; }
                         if (option === 'عجائب قرآنية') { mainKeyboard.closeKeyboard(); setViewMode('quranic-wonders'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'اختبار سور') { mainKeyboard.closeKeyboard(); setActiveSurahNamesQuiz(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -3769,7 +3770,7 @@ function App() {
       )}
       {isNightCounterSettingsOpen && (
         <div className="session-overlay" dir="rtl" style={{ zIndex: 10000, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
-          <div className="session-card" style={{ maxWidth: '420px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', textAlign: 'right' }}>
+          <div className="session-card" style={{ maxWidth: '420px', maxHeight: 'calc(90 * var(--vh))', overflowY: 'auto', padding: '24px', textAlign: 'right' }}>
             <h2 className="session-title" style={{ textAlign: 'center', marginBottom: '20px', fontSize: '24px' }}>إعدادات العدادات</h2>
 
             <div style={{ background: 'var(--app-surface-3)', borderRadius: '12px', padding: '14px', border: '1px solid var(--app-border)', marginBottom: '18px' }}>
@@ -4266,6 +4267,7 @@ function App() {
         />
       )}
       {/* ─── قسم فقهيات ─── */}
+      {isScaleOpen && <AppScaleSheet scale={appScale.scale} onChange={appScale.setScale} onClose={() => setIsScaleOpen(false)} backRef={scaleBackRef} />}
       {isNotebookOpen && isOwner && <UpdatesNotebook onClose={() => setIsNotebookOpen(false)} backRef={notebookBackRef} />}
       {isFiqhOpen && isOwner && (
         <div style={{

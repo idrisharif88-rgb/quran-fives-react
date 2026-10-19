@@ -5,7 +5,7 @@ import {
 } from './hifzSchedule';
 import {
   startProgram, loadProgram, dailyPlan, rollDay, countStep, confirmStep, tickStep, recordStep, checkBox,
-  verseDoneToday, shouldCelebrate, markCelebrated, portionOf, openExtraPortion, changeVersesPerDay,
+  linkRefOf, verseDoneToday, shouldCelebrate, markCelebrated, portionOf, openExtraPortion, changeVersesPerDay,
   cancelSession, sessionStarted, effectiveDay, tapMethod, answerMethod, methodTaps, methodChecked, changeListenTarget, changeRepeatTarget,
 } from './hifzState';
 import { methodStages, methodTotal, methodPosition } from './hifzMethod';
@@ -510,6 +510,30 @@ describe('طريقة الخماسيات', () => {
     ]);
     expect(methodStages(7)).toHaveLength(13);
     expect(methodTotal(3)).toBe(25);
+  });
+
+  it('a chosen start verse goes toward An-Nas or toward Al-Fatiha', () => {
+    const fwd = indexOfVerse('forward', 112, 4);
+    const back = indexOfVerse('backward', 112, 4);
+    expect(verseAt('forward', 1, fwd)).toEqual({ s: 113, a: 1 });
+    expect(verseAt('backward', 1, back)).toEqual({ s: 111, a: 1 });
+  });
+
+  it('adds «الربط» as the last stage when there is a verse from yesterday', () => {
+    expect(methodStages(3, true)).toHaveLength(6);
+    expect(methodStages(3, true)[5]).toEqual({ link: true, from: 0, to: 0 });
+    expect(methodStages(0, true)).toEqual([]);
+    expect(methodPosition(3, 25, 5, true)).toMatchObject({ done: false, stageIndex: 5, stage: { link: true } });
+    expect(methodPosition(3, 30, 6, true)).toMatchObject({ done: true });
+  });
+
+  it('links yesterday\'s last verse to today\'s first, never across a surah or on day one', () => {
+    const s = startProgram('forward', day(1));
+    expect(linkRefOf(s, 0)).toBeNull();
+    expect(linkRefOf(s, 1)).toEqual({ s: 1, a: 1 });
+    expect(linkRefOf(s, 7)).toBeNull();   // 2:1 بداية سورة
+    expect(dailyPlan(runDays(1), day(2)).verse.linkRef).toEqual({ s: 1, a: 1 });
+    expect(dailyPlan(startProgram('forward', day(1)), day(1)).verse.linkRef).toBeNull();
   });
 
   it('moves to the next stage after five repetitions', () => {

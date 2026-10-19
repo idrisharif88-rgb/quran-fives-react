@@ -163,3 +163,24 @@
   line-height: 1.6;
   color: #b91c1c;
 }
+
+/* «من جهات الاتصال» في نموذج إضافة شيخ (أندرويد فقط) */
+.hifz-contact-pick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 0;
+  border: 1.5px dashed var(--app-accent-ink);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.hifz-contact-pick:active {
+  transform: scale(0.98);
+}

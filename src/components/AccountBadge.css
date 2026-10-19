@@ -7,7 +7,7 @@
   align-items: center;
   gap: 6px;
   width: fit-content;
-  max-width: calc(100vw - 32px);   /* الاسم كاملاً؛ لا يُقصّ إلا إن جاوز عرض الشاشة */
+  max-width: calc(calc(100 * var(--vw)) - 32px);   /* الاسم كاملاً؛ لا يُقصّ إلا إن جاوز عرض الشاشة */
   margin: 8px 16px 0;
   margin-inline-end: auto;
   padding: 5px 14px;

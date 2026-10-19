@@ -643,3 +643,39 @@
   font-size: 14px;
 }
 
+
+/* اتجاه الحفظ من آية محدّدة: سهمان دائريان بلون التشكيلة المختارة (HifzCustomStart) */
+.hifz-start-arrows {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  padding: 4px 0;
+}
+
+.hifz-start-arrow {
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 2.5px solid var(--app-accent-ink);
+  border-radius: 50%;
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hifz-start-arrow.active {
+  border-color: var(--app-accent);
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--app-accent) 22%, transparent), 0 4px 12px rgba(0, 0, 0, 0.22);
+  transform: scale(1.06);
+}
+
+.hifz-start-arrow:active {
+  transform: scale(0.92);
+}
