@@ -135,7 +135,7 @@
 }
 
 .hifz-fives-tap {
-  width: min(62vw, 240px);
+  width: min(calc(62 * var(--vw)), 240px);
   aspect-ratio: 1;
   display: flex;
   flex-direction: column;
@@ -235,4 +235,47 @@
 .hifz-fives-finish {
   margin-top: auto;
   font-size: 22px;
+}
+
+/* ▶ تلاوة المقطع بجانب «أرني الآية» (HifzSegmentAudio) */
+.hifz-fives-verse-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.hifz-fives-play {
+  border-color: var(--app-accent-ink);
+}
+
+.hifz-fives-play.on {
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+  color: var(--app-accent-contrast);
+}
+
+.hifz-fives-play:active {
+  transform: scale(0.94);
+}
+
+.hifz-fives-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: hifz-fives-spin 0.8s linear infinite;
+}
+
+@keyframes hifz-fives-spin {
+  to { transform: rotate(360deg); }
+}
+
+.hifz-fives-audio-error {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 13px;
+  color: var(--app-danger);
 }

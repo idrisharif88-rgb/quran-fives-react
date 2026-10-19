@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { SocialLogin } from '@capgo/capacitor-social-login';
 
 // ─── جوجل درايف: مجلّد التطبيق المخفي في درايف المستخدم ───
@@ -34,12 +35,32 @@ const writeToken = (value) => {
 // الحساب المربوط (بريده) إن وُجد — يبقى بعد انتهاء المفتاح
 export const linkedEmail = () => readToken()?.email || null;
 
+const freshExpiry = () => Date.now() + 55 * 60 * 1000;
+
+// تجديد صامت لحساب رُبط من قبل (أندرويد): يختار جوجل الحساب المأذون نفسه دون نافذة اختيار،
+// والإذن بدرايف ممنوح سلفاً فلا يُطلب ثانية. قبله كان كل انتهاء للمفتاح (ساعة) يعيد نافذة الحسابات.
+async function renewSilently(saved) {
+  if (!saved?.email || !Capacitor.isNativePlatform()) return null;
+  try {
+    await init();
+    await SocialLogin.refresh({ provider: 'google', options: { scopes: ['email', SCOPE] } });
+    const { accessToken } = await SocialLogin.getAuthorizationCode({ provider: 'google' });
+    if (!accessToken) return null;
+    writeToken({ ...saved, token: accessToken, expiresAt: freshExpiry() });
+    return accessToken;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * مفتاح درايف صالح. interactive=false لا يفتح نافذة جوجل: يعيد null إن انتهى المفتاح.
+ * مفتاح درايف صالح. interactive=false لا يفتح نافذة جوجل: يجرّب التجديد الصامت فقط، وإلا null.
  */
 export async function getAccessToken({ interactive }) {
   const saved = readToken();
   if (saved?.token && saved.expiresAt - MARGIN_MS > Date.now()) return saved.token;
+  const renewed = await renewSilently(saved);
+  if (renewed) return renewed;
   if (!interactive) return null;
   await init();
   const { result } = await SocialLogin.login({ provider: 'google', options: { scopes: ['email', SCOPE] } });
@@ -48,7 +69,7 @@ export async function getAccessToken({ interactive }) {
   const expires = result.accessToken.expires ? new Date(result.accessToken.expires).getTime() : NaN;
   writeToken({
     token,
-    expiresAt: Number.isFinite(expires) ? expires : Date.now() + 55 * 60 * 1000,
+    expiresAt: Number.isFinite(expires) ? expires : freshExpiry(),
     email: result.profile?.email || saved?.email || null,
   });
   return token;

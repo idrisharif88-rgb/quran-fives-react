@@ -12,6 +12,9 @@ import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
 import android.webkit.JavascriptInterface;
 import android.content.Intent;
+import android.database.Cursor;
+import android.provider.ContactsContract;
+import org.json.JSONObject;
 import com.getcapacitor.PluginHandle;
 import ee.forgr.capacitor.social.login.GoogleProvider;
 import ee.forgr.capacitor.social.login.ModifiedMainActivityForSocialLoginPlugin;
@@ -22,6 +25,8 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     // آخر خلفية طلبها التطبيق: يُعاد تطبيقها (مع لون أيقونات أشرطة النظام) عند العودة إلى الشاشة
     // وعند تغيّر وضع الهاتف، فقد يعيدها أندرويد إلى لون الثيم فتختفي أيقونات الوقت والبطارية
     private volatile Integer windowBackground = null;
+    // اختيار جهة اتصال (رقم شيخ): نافذة أندرويد نفسها، فلا يُطلب إذن قراءة جهات الاتصال كلّها
+    private static final int PICK_CONTACT_REQUEST = 2001;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -70,6 +75,16 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                 });
             }
 
+            // يفتح قائمة جهات الاتصال لاختيار رقم؛ النتيجة تصل إلى window.onAndroidContactPicked
+            @JavascriptInterface
+            public void pickContact() {
+                runOnUiThread(() -> {
+                    Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI);
+                    try { startActivityForResult(intent, PICK_CONTACT_REQUEST); }
+                    catch (Exception e) { sendPickedContact(null, null); }
+                });
+            }
+
             // إنهاء التطبيق (يُستدعى من زر «خروج» في مربع تأكيد الخروج)
             @JavascriptInterface
             public void finishApp() {
@@ -107,6 +122,9 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         applyWindowBackground();
+        // تغيّر وضع الهاتف (ليلي/نهاري، ومنه الجدولة بالوقت) قد يعيد أندرويد بعده لون الأيقونات
+        // من الثيم، فنعيد التطبيق بعد لحظة أيضاً
+        getWindow().getDecorView().postDelayed(this::applyWindowBackground, 400);
     }
 
     // يعيد true إن كان اللون داكناً (لتحديد لون أيقونات أشرطة النظام فوق خلفية الوضع)
@@ -123,11 +141,41 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == PICK_CONTACT_REQUEST) {
+            handlePickedContact(resultCode, data);
+            return;
+        }
         if (requestCode < GoogleProvider.REQUEST_AUTHORIZE_GOOGLE_MIN || requestCode >= GoogleProvider.REQUEST_AUTHORIZE_GOOGLE_MAX) return;
         PluginHandle handle = getBridge().getPlugin("SocialLogin");
         if (handle != null && handle.getInstance() instanceof SocialLoginPlugin) {
             ((SocialLoginPlugin) handle.getInstance()).handleGoogleLoginIntent(requestCode, data);
         }
+    }
+
+    // الاختيار يمنح قراءة هذا السطر وحده من جهات الاتصال
+    private void handlePickedContact(int resultCode, Intent data) {
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) { sendPickedContact(null, null); return; }
+        String[] columns = {
+            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+            ContactsContract.CommonDataKinds.Phone.NUMBER,
+        };
+        try (Cursor cursor = getContentResolver().query(data.getData(), columns, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                sendPickedContact(cursor.getString(0), cursor.getString(1));
+                return;
+            }
+        } catch (Exception ignored) { }
+        sendPickedContact(null, null);
+    }
+
+    private void sendPickedContact(String name, String phone) {
+        String payload = "null";
+        if (phone != null) {
+            try { payload = new JSONObject().put("name", name == null ? "" : name).put("phone", phone).toString(); }
+            catch (Exception ignored) { }
+        }
+        String script = "window.onAndroidContactPicked && window.onAndroidContactPicked(" + payload + ")";
+        runOnUiThread(() -> this.bridge.getWebView().evaluateJavascript(script, null));
     }
 
     @Override

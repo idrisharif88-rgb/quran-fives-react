@@ -201,3 +201,68 @@
   padding: 6px 0;
   cursor: pointer;
 }
+
+/* المشاركة: اختيار ملاحظات ثم نصّ أو PDF (NotebookShareBar) */
+.notebook-share {
+  margin-inline-start: auto;
+  border: none;
+  background: transparent;
+  color: var(--app-accent-ink);
+  padding: 6px 8px;
+  display: flex;
+  cursor: pointer;
+}
+
+.notebook-note.picking {
+  cursor: pointer;
+}
+
+.notebook-note.picked {
+  border-color: var(--app-accent-ink);
+}
+
+.notebook-check.pick {
+  border-radius: 8px;
+}
+
+.notebook-note.picked .notebook-check.pick {
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+}
+
+.notebook-share-bar {
+  position: sticky;
+  bottom: 0;
+  max-width: 640px;
+  margin: 12px auto 0;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  background: var(--app-surface);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notebook-share-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.notebook-share-row .notebook-btn {
+  flex: 1;
+}
+
+.notebook-share-row .notebook-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.notebook-share-count {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--app-muted);
+}

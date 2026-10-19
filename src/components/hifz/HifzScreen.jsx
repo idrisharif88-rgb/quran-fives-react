@@ -48,7 +48,7 @@ function HifzStart({ onStart, canCustomStart, onTrialStart }) {
         <strong>من آخر المصحف</strong>
         <span>الصفحة 604 — من الناس إلى الفاتحة، وآيات كل سورة بترتيبها</span>
       </button>
-      {canCustomStart && <HifzCustomStart onStart={(origin) => onStart(DIRECTIONS.FORWARD, perDay, origin)} />}
+      {canCustomStart && <HifzCustomStart onStart={(origin, direction) => onStart(direction, perDay, origin)} />}
       <p className="hifz-start-note">{perDayLabel(perDay)} في اليوم، ثم مراجعة ما حُفظ.</p>
       {onTrialStart && <button type="button" className="hifz-link" onClick={onTrialStart}>وضع التجربة (للمشرف)</button>}
     </div>
@@ -111,7 +111,7 @@ export default function HifzScreen({ hifz, reciter, onReciterChange, contacts, o
   const extras = verse ? {
     backRef,
     reciterSelect: <HifzReciterSelect reciter={reciter} onChange={onReciterChange} />,
-    method: <HifzMethodTool refs={verse.refs.filter(Boolean)} method={method} open={methodOpen} onOpenChange={setMethodOpen} onTap={actions.methodTap} onAnswer={actions.methodAnswer} onDone={() => actions.tick('memorize')} />,
+    method: <HifzMethodTool refs={verse.refs.filter(Boolean)} linkRef={verse.linkRef} reciter={reciter} method={method} open={methodOpen} onOpenChange={setMethodOpen} onTap={actions.methodTap} onAnswer={actions.methodAnswer} onDone={() => actions.tick('memorize')} />,
     hafizContacts: <HifzContacts contacts={contacts} verse={verse} backRef={backRef} />,
     recorder: <HifzRecorder value={program.progress.record} latest={latestTake} onSave={saveTake} onListen={setListening} onRecordingChange={setRecording} />,
   } : {};

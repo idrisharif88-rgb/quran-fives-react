@@ -3,6 +3,7 @@ import { METHOD_REPS, methodPosition } from '../../utils/hifzMethod';
 import { stageTitle, stageMessage, withCheer, ASK, RETRY, DONE } from '../../constants/hifzFivesMessages';
 import useSpeech from '../../hooks/useSpeech';
 import HifzMushafVerses from './HifzMushafVerses';
+import HifzSegmentAudio from './HifzSegmentAudio';
 import { refsText } from './hifzText';
 import './HifzFivesScreen.css';
 
@@ -18,19 +19,21 @@ function messageFor({ done, asking, answer, stage, stageIndex, count }) {
 /**
  * نافذة «طريقة الخماسيات» الكاملة: تقود الحافظ مرحلةً مرحلة برسالة كبيرة منطوقة،
  * وعدّاد كبير بلمسة، وبعد كل خمس سؤال «هل حفظك جيد؟» (لا ← خمس أخرى، نعم ← التالية).
- * الآيات مخفية، و«أرني الآية» يُظهر آيات المرحلة.
+ * الآيات مخفية، و«أرني الآية» يُظهر آيات المرحلة، و▶ بجانبه يتلوها بصوت المقرئ.
  * @param refs    آيات الورد [{ s, a }]
+ * @param reciter المقرئ المختار لتلاوة المقطع
+ * @param linkRef آخر آية من الأمس { s, a } — تُضاف مرحلة «الربط» أخيرة، أو null
  * @param method  { taps, checked } من useHifz
  * @param onTap   (delta | 'reset')، onAnswer (نعم: true)، onDone يُتمّ الخطوة، onClose يغلق النافذة
  */
-export default function HifzFivesScreen({ refs, method, onTap, onAnswer, onDone, onClose }) {
+export default function HifzFivesScreen({ refs, linkRef = null, reciter, method, onTap, onAnswer, onDone, onClose }) {
   const [answer, setAnswer] = useState(null);  // آخر جواب: 'yes' | 'no'
   const [peek, setPeek] = useState(false);
   const voice = useSpeech();
-  const { speak } = voice;
+  const { speak, stop: stopVoice } = voice;
 
-  const { done, asking, stage, stageIndex, stageCount, rep } = methodPosition(refs.length, method.taps, method.checked);
-  const stageRefs = refs.slice(stage.from, stage.to + 1);
+  const { done, asking, stage, stageIndex, stageCount, rep } = methodPosition(refs.length, method.taps, method.checked, Boolean(linkRef));
+  const stageRefs = stage.link ? [linkRef, refs[0]] : refs.slice(stage.from, stage.to + 1);
 
   const message = messageFor({ done, asking, answer, stage, stageIndex, count: refs.length });
 
@@ -74,14 +77,11 @@ export default function HifzFivesScreen({ refs, method, onTap, onAnswer, onDone,
 
       <div className="hifz-fives-verse">
         <span className="hifz-fives-refs">{refsText(stageRefs)}</span>
-        {peek ? (
-          <>
-            <div className="hifz-verse mushaf"><HifzMushafVerses refs={stageRefs} /></div>
-            <button type="button" className="hifz-fives-peek" onClick={() => setPeek(false)}>أخفِ الآية</button>
-          </>
-        ) : (
-          <button type="button" className="hifz-fives-peek" onClick={() => setPeek(true)}>أرني الآية</button>
-        )}
+        {peek && <div className="hifz-verse mushaf"><HifzMushafVerses refs={stageRefs} /></div>}
+        <div className="hifz-fives-verse-actions">
+          <HifzSegmentAudio key={stage.link ? 'link' : `${stage.from}-${stage.to}`} refs={stageRefs} reciter={reciter} onStart={stopVoice} />
+          <button type="button" className="hifz-fives-peek" onClick={() => setPeek((v) => !v)}>{peek ? 'أخفِ الآية' : 'أرني الآية'}</button>
+        </div>
       </div>
 
       {done ? (

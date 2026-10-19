@@ -63,7 +63,7 @@ export async function restoreBackup() {
   return true;
 }
 
-// النسخ اليومي: بلا نافذة جوجل — يُنفَّذ فقط إن كان المفتاح ما زال صالحاً
+// النسخ اليومي: بلا نافذة جوجل — بالمفتاح الصالح أو المجدَّد بصمت، وإلا انتظر
 export async function dailyBackupIfDue(now = Date.now()) {
   if (now - lastBackupAt() < DAY_MS) return null;
   return backupNow({ interactive: false });

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { APPS, contactUrl } from '../../utils/hifzContacts';
 import { surahName, refsText } from './hifzText';
+import { canPickContact, pickContact, phoneForField, isInternational } from '../../utils/contactPicker';
 import './HifzContacts.css';
 
 const APP_LABEL = { [APPS.WHATSAPP]: 'واتساب', [APPS.TELEGRAM]: 'تلجرام' };
@@ -17,6 +18,15 @@ function AddContactForm({ onAdd, onCancel }) {
   const [app, setApp] = useState(APPS.WHATSAPP);
   const [handle, setHandle] = useState('');
   const [error, setError] = useState('');
+
+  // من جهات الاتصال: الاسم والرقم في الخانتين، ويُنبَّه إن كان الرقم محلياً بلا مفتاح دولة
+  const fromContacts = async () => {
+    const picked = await pickContact();
+    if (!picked) return;
+    if (picked.name) setName(picked.name);
+    setHandle(phoneForField(picked.phone));
+    setError(isInternational(picked.phone) ? '' : 'أكمل مفتاح الدولة في أول الرقم (مثل 966 بدل 0)');
+  };
 
   const submit = () => {
     if (onAdd({ name, app, handle })) return;
@@ -35,6 +45,12 @@ function AddContactForm({ onAdd, onCancel }) {
             <button type="button" className="hifz-btn primary" onClick={submit}>حفظ</button>
           </div>
         </div>
+        {canPickContact() && (
+          <button type="button" className="hifz-contact-pick" onClick={fromContacts}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M20 0H4v2h16V0zM4 24h16v-2H4v2zM20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 2.75c1.24 0 2.25 1.01 2.25 2.25s-1.01 2.25-2.25 2.25S9.75 10.24 9.75 9 10.76 6.75 12 6.75zM17 17H7v-1.5c0-1.67 3.33-2.5 5-2.5s5 .83 5 2.5V17z" /></svg>
+            من جهات الاتصال
+          </button>
+        )}
         <input className="hifz-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="اسم الشيخ" autoFocus />
         <div className="hifz-contact-apps">
           {[APPS.WHATSAPP, APPS.TELEGRAM].map((id) => (

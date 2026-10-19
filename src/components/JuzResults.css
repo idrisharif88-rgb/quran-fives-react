@@ -14,7 +14,7 @@
 .jz-card {
   width: 100%;
   max-width: 480px;
-  max-height: 92vh;
+  max-height: calc(92 * var(--vh));
   overflow-y: auto;
   background: #ffffff;
   color: #1f2937;

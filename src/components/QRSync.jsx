@@ -127,7 +127,7 @@ const QRSync = ({ appState, onRestore, onClose }) => {
 
   return (
     <div className="audio-settings-overlay" dir="rtl" style={{ zIndex: 10000 }}>
-      <div className="audio-settings-card" style={{ maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto' }}>
+      <div className="audio-settings-card" style={{ maxWidth: '400px', maxHeight: 'calc(90 * var(--vh))', overflowY: 'auto' }}>
         <h2 className="audio-settings-title">مزامنة الحالة عبر QR</h2>
 
         <div className="surah-count-mode-switch" style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>

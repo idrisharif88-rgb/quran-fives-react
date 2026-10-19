@@ -27,7 +27,7 @@
 
 .stopwatch-total {
   font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, 'Liberation Mono', monospace;
-  font-size: clamp(26px, 7.5vw, 38px);
+  font-size: clamp(26px, calc(7.5 * var(--vw)), 38px);
   font-weight: 800;
   letter-spacing: 1px;
   font-variant-numeric: tabular-nums;
@@ -38,7 +38,7 @@
 
 .stopwatch-lap {
   font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, 'Liberation Mono', monospace;
-  font-size: clamp(15px, 4.5vw, 20px);
+  font-size: clamp(15px, calc(4.5 * var(--vw)), 20px);
   font-weight: 800;
   letter-spacing: 1px;
   font-variant-numeric: tabular-nums;
