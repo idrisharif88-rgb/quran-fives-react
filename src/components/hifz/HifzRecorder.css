@@ -243,6 +243,28 @@
   opacity: 0.5;
 }
 
+/* شريط التشغيل قابل للسحب: مساحة لمس أعلى من الخطّ نفسه، ومقبض دائري على موضع التشغيل */
+.hifz-listen-seek {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.hifz-listen-thumb {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--app-accent-deep);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
 .hifz-listen-track {
   flex: 1;
   height: 6px;

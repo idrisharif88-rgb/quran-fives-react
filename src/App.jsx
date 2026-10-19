@@ -56,6 +56,7 @@ import ReviewRecorder from './components/ReviewRecorder/ReviewRecorder';
 import GoogleBackup from './components/GoogleBackup/GoogleBackup';
 import UpdatesNotebook from './components/UpdatesNotebook/UpdatesNotebook';
 import AppScaleSheet from './components/AppScale/AppScaleSheet';
+import ContactUs from './components/ContactUs/ContactUs';
 import useAppScale from './hooks/useAppScale';
 import useGoogleDailyBackup from './hooks/useGoogleDailyBackup';
 import useHifzReminder from './hooks/useHifzReminder';
@@ -318,6 +319,8 @@ function App() {
   const appScale = useAppScale();   // «حجم العرض»
   const [isScaleOpen, setIsScaleOpen] = useState(false);
   const scaleBackRef = useRef(null);
+  const [isContactOpen, setIsContactOpen] = useState(false);
+  const contactBackRef = useRef(null);
   const [isIjazatOpen, setIsIjazatOpen] = useState(false);
   const ijazatBackRef = useRef(null); // يضعه IjazatScreen ما دام خارج قائمة الإجازات
   const [expandedFiqhId, setExpandedFiqhId] = useState(null);
@@ -1971,6 +1974,10 @@ function App() {
       scaleBackRef.current();
       return true;
     }
+    if (contactBackRef.current) {
+      contactBackRef.current();
+      return true;
+    }
     // قائمة السور أو خطوة التنقّل (من اسم السورة ورقمها أسفل البطاقة)
     if (cornerNavBackRef.current) {
       cornerNavBackRef.current();
@@ -2851,7 +2858,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'حجم العرض', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
+                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'حجم العرض', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'تواصل معنا', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -2870,6 +2877,7 @@ function App() {
                         if (option === 'الوضع الليلي') { setIsNightMode(prev => !prev); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === ACCENT_THEME_LABEL) { setAccentTheme(nextAccentTheme); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'إعدادات الصوت') { mainKeyboard.closeKeyboard(); setIsAudioSettingsOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
+                        if (option === 'تواصل معنا') { mainKeyboard.closeKeyboard(); setIsContactOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'حجم العرض') { mainKeyboard.closeKeyboard(); setIsScaleOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'الخط') { mainKeyboard.closeKeyboard(); setIsMoreMenuOpen(false); setIsFontMenuOpen(true); return; }
                         if (option === 'عجائب قرآنية') { mainKeyboard.closeKeyboard(); setViewMode('quranic-wonders'); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -4267,6 +4275,7 @@ function App() {
         />
       )}
       {/* ─── قسم فقهيات ─── */}
+      {isContactOpen && <ContactUs onClose={() => setIsContactOpen(false)} backRef={contactBackRef} />}
       {isScaleOpen && <AppScaleSheet scale={appScale.scale} onChange={appScale.setScale} onClose={() => setIsScaleOpen(false)} backRef={scaleBackRef} />}
       {isNotebookOpen && isOwner && <UpdatesNotebook onClose={() => setIsNotebookOpen(false)} backRef={notebookBackRef} />}
       {isFiqhOpen && isOwner && (

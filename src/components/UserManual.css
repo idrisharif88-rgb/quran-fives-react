@@ -1,0 +1,24 @@
+/* شرح البرنامج (UserManual): تبويبا «طريقة الاستخدام» و«قصة التطبيق» */
+.manual-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.manual-tab {
+  flex: 1;
+  padding: 10px 8px;
+  border: 1px solid var(--app-accent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-accent-ink);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.manual-tab.active {
+  background: var(--app-accent-deep);
+  border-color: var(--app-accent-deep);
+  color: #fff;
+}

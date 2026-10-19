@@ -427,6 +427,14 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* أثناء سماع المقرئ: التلاوة الجارية من العدد، وكم بقي */
+.hifz-listen-count {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--app-text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
 .hifz-tool-note,
 .hifz-tool-error {
   font-size: 13px;

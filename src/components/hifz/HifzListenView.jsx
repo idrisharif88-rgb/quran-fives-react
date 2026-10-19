@@ -70,6 +70,31 @@ export default function HifzListenView({ recording, loadUrl, onVerdict, onClose 
     else audio.pause();
   };
 
+  // سحب الشريط: لمسة أو سحب في أي مكان منه ينقل التشغيل إلى موضعه، للأمام أو للخلف
+  const durationMs = Math.max(1, recording.durationMs);
+  const seekTo = (ms) => {
+    const next = Math.min(durationMs, Math.max(0, ms));
+    if (audioRef.current) audioRef.current.currentTime = next / 1000;
+    setPosition(next);
+  };
+  const seekAt = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    seekTo(((e.clientX - rect.left) / rect.width) * durationMs);
+  };
+  const onSeekDown = (e) => {
+    if (!url) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    seekAt(e);
+  };
+  const onSeekMove = (e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) seekAt(e); };
+  const onSeekKey = (e) => {
+    if (e.key === 'ArrowRight') seekTo(position + 5000);
+    else if (e.key === 'ArrowLeft') seekTo(position - 5000);
+    else return;
+    e.preventDefault();
+  };
+  const percent = Math.min(100, (position / durationMs) * 100);
+
   const handleEnded = () => {
     setPlaying(false);
     setFinished(true);
@@ -88,7 +113,7 @@ export default function HifzListenView({ recording, loadUrl, onVerdict, onClose 
         <span className="hifz-header-spacer" />
       </div>
 
-      <div className="hifz-listen-page" ref={pageRef}>
+      <div className="hifz-listen-page app-unzoom" ref={pageRef}>
         {size.width > 0 && (
           <MushafPage
             page={pages[pageIndex]}
@@ -115,8 +140,23 @@ export default function HifzListenView({ recording, loadUrl, onVerdict, onClose 
             <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
           )}
         </button>
-        <div className="hifz-listen-track">
-          <div className="hifz-listen-progress" style={{ width: `${Math.min(100, (position / Math.max(1, recording.durationMs)) * 100)}%` }} />
+        <div
+          className="hifz-listen-seek"
+          role="slider"
+          tabIndex={0}
+          aria-label="موضع التشغيل"
+          aria-valuemin={0}
+          aria-valuemax={Math.round(durationMs / 1000)}
+          aria-valuenow={Math.round(position / 1000)}
+          aria-valuetext={clock(position)}
+          onPointerDown={onSeekDown}
+          onPointerMove={onSeekMove}
+          onKeyDown={onSeekKey}
+        >
+          <div className="hifz-listen-track">
+            <div className="hifz-listen-progress" style={{ width: `${percent}%` }} />
+          </div>
+          <i className="hifz-listen-thumb" style={{ left: `${percent}%` }} />
         </div>
         <span className="hifz-listen-time">{clock(position)} / {clock(recording.durationMs)}</span>
         <PlaybackRateButton rate={speed.rate} onCycle={speed.cycle} />
