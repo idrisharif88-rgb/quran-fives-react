@@ -3,76 +3,14 @@ import {
   formatSeconds,
   allTimeAverage,
   previousCardAverage,
+  compareAverage,
+  sameSession,
 } from '../utils/sessions';
 import DuaEditor from './DuaEditor';
+import PageTimesChart from './PageTimesChart';
 import './JuzResults.css';
 
-// خطوات المحور العمودي الممكنة بالثواني (نصف دقيقة ← 10 دقائق)
-const Y_STEPS = [30, 60, 120, 300, 600];
-const MAX_Y_INTERVALS = 5;
-
-// المخطط الشريطي: المحور العمودي = الزمن (م:ث)، الأفقي = أرقام الصفحات
-function BarChart({ pageTimes }) {
-  const W = 340, H = 190;
-  // padL يتّسع لأرقام المحور العمودي العريضة، و axisGap يُبعد الأعمدة عنها
-  const padL = 40, axisGap = 10, padR = 6, padT = 14, padB = 24;
-  const plotL = padL + axisGap;
-  const innerW = W - plotL - padR;
-  const innerH = H - padT - padB;
-  const maxSec = Math.max(...pageTimes.map((p) => p.seconds), 1);
-  // خطوة المحور تكبر مع أطول عمود كي لا تتزاحم الأرقام (6 علامات على الأكثر)
-  const yStep = Y_STEPS.find((s) => maxSec / s <= MAX_Y_INTERVALS) ?? Y_STEPS[Y_STEPS.length - 1];
-  const yMax = Math.max(yStep, Math.ceil(maxSec / yStep) * yStep);
-  const yFor = (s) => padT + innerH * (1 - s / yMax);
-
-  const minPage = pageTimes[0].page;
-  const maxPage = pageTimes[pageTimes.length - 1].page;
-  const slot = innerW / pageTimes.length;
-  const barW = Math.max(5, slot * 0.72);
-  const xFor = (page) =>
-    plotL + ((page - minPage) / Math.max(1, maxPage - minPage)) * (innerW - slot) + (slot - barW) / 2;
-
-  const minuteLabel = (t) => {
-    const m = t / 60;
-    return Number.isInteger(m) ? String(m) : m.toFixed(1);
-  };
-  const yTicks = [];
-  for (let s = 0; s <= yMax; s += yStep) yTicks.push(s);
-  const xTicks = [];
-  // بطاقة العشر (حتى 13 صفحة): رقم تحت كل عمود؛ البطاقات القديمة (جزء كامل): كل خمس صفحات
-  const xStep = maxPage - minPage < 13 ? 1 : 5;
-  for (let p = Math.ceil(minPage / xStep) * xStep; p <= maxPage; p += xStep) xTicks.push(p);
-
-  return (
-    // direction: ltr — داخل بطاقة RTL ينعكس textAnchor="end" فتمتدّ أرقام المحور يميناً تحت الأعمدة
-    <svg className="jz-chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true" style={{ direction: 'ltr' }}>
-      {xTicks.map((p) => (
-        <text key={`x${p}`} x={xFor(p) + barW / 2} y={H - 8} textAnchor="middle" fontSize="9" fill="#6b7280">{p}</text>
-      ))}
-      {pageTimes.map((p) => {
-        const over = p.seconds >= 60;
-        const y = yFor(p.seconds);
-        const h = Math.max(2, padT + innerH - y);
-        return (
-          <rect
-            key={p.page}
-            x={xFor(p.page)}
-            y={y}
-            width={barW}
-            height={h}
-            rx="2"
-            fill={over ? '#b91c1c' : '#0F6E56'}
-          />
-        );
-      })}
-      {yTicks.map((t) => (
-        <text key={`y${t}`} x={padL - 4} y={yFor(t) + 5} textAnchor="end" fontSize="13" fontWeight="800" fill="#374151">{minuteLabel(t)}</text>
-      ))}
-    </svg>
-  );
-}
-
-const JuzResults = ({ session, sessions, onSave, onDelete, onShare, onUpdateDua, onClose, backRef }) => {
+const JuzResults = ({ session, sessions, target, onSave, onDelete, onShare, onUpdateDua, onClose, backRef }) => {
   const [dua, setDua] = useState(session.dua || '');
   const [editing, setEditing] = useState(false);
 
@@ -83,16 +21,12 @@ const JuzResults = ({ session, sessions, onSave, onDelete, onShare, onUpdateDua,
     return () => { backRef.current = null; };
   }, [backRef, editing]);
 
-  const prev = previousCardAverage(sessions, session.startPage);
-  const all = allTimeAverage(sessions);
-
-  const compareParts = [];
-  if (prev != null) {
-    compareParts.push(session.avgSeconds < prev ? 'أسرع من البطاقة السابقة' : 'أبطأ من البطاقة السابقة');
-  }
-  if (all != null) {
-    compareParts.push(session.avgSeconds < all ? 'أسرع من متوسطك العام' : 'أبطأ من متوسطك العام');
-  }
+  // البطاقة نفسها تُحفظ في المحفوظات لحظة اكتمالها، فتُستثنى كي لا تُقارَن بنفسها
+  const others = sessions.filter((s) => !sameSession(s, session));
+  const comparisons = [
+    compareAverage(session.avgSeconds, previousCardAverage(others, session.startPage), 'البطاقة السابقة'),
+    compareAverage(session.avgSeconds, allTimeAverage(others), 'متوسطك العام'),
+  ].filter(Boolean);
 
   const saveDua = (text) => {
     setDua(text);
@@ -115,12 +49,14 @@ const JuzResults = ({ session, sessions, onSave, onDelete, onShare, onUpdateDua,
           <div className="jz-stat"><span>أبطأ صفحة</span><strong>{session.slowestPage.page} · {formatSeconds(session.slowestPage.seconds)}</strong></div>
         </div>
 
-        <div className="jz-chart-wrap">
-          <BarChart pageTimes={session.pageTimes} />
-        </div>
+        <PageTimesChart pageTimes={session.pageTimes} target={target} average={session.avgSeconds} />
 
         <div className="jz-best">
-          {compareParts.length > 0 && <span className="jz-compare">{compareParts.join(' · ')}</span>}
+          {comparisons.map((c) => (
+            <span key={c.text} className={`jz-compare${c.faster === true ? ' is-faster' : c.faster === false ? ' is-slower' : ''}`}>
+              {c.faster === true ? '▼ ' : c.faster === false ? '▲ ' : ''}{c.text}
+            </span>
+          ))}
         </div>
 
         <div className="jz-progress-line">

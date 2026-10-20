@@ -3978,6 +3978,7 @@ function App() {
         <JuzResults
           session={activeResultSession}
           sessions={sessions}
+          target={stopwatchTargetSeconds}
           onSave={handleSaveSession}
           onDelete={handleDeleteSession}
           onShare={handleShareSession}
