@@ -10,7 +10,7 @@ const toArabicDigits = (n) => String(n).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦
  * @param backRef يضع فيه الإغلاق لزرّ الرجوع
  */
 export default function AppScaleSheet({ scale, onChange, onClose, backRef }) {
-  // الدرجات حسب عرض الجهاز: الهاتف حتى 115، واللوح حتى 170
+  // الدرجات حسب عرض الجهاز: الهاتف حتى 110، واللوح حتى 155
   const steps = useMemo(() => scaleSteps(), []);
   const last = steps.length - 1;
   const index = Math.max(0, steps.indexOf(scale));

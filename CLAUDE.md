@@ -80,8 +80,8 @@ Colour is a token system on `.app-container`. Two independent switches — accen
 
 # Display Size Rules
 
-- **«حجم العرض» is CSS `zoom` on `<html>`** (`src/utils/appScale.js`, 80–115%, device setting). `vh`/`vw` grow with the zoom and overflow the screen, so styles write `calc(N * var(--vh))`, `var(--vw)`, `var(--dvh)` — never a bare `50vh`. The variables equal the real units at 100% (`src/styles/appScale.css`).
-- **115% is the ceiling on purpose:** at 120% the verse card and the counter's bottom row clip on a 380px phone. Re-check both screens before raising it.
+- **«حجم العرض» is CSS `zoom` on `<html>`** (`src/utils/appScale.js`, 80% up to a per-device ceiling, device setting). `vh`/`vw` grow with the zoom and overflow the screen, so styles write `calc(N * var(--vh))`, `var(--vw)`, `var(--dvh)` — never a bare `50vh`. The variables equal the real units at 100% (`src/styles/appScale.css`).
+- **The ceilings were measured on the owner's devices:** 110% at a 410px short side (Note 9), 155% at 800px (Tab S6; Tab Active 3 held 160 but the class takes the lower one), straight line between, 155 above (`maxScaleFor`). Re-check the mushaf and the counter on a device before raising either.
 
 # Offline Rules
 
