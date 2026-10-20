@@ -7,17 +7,25 @@ import { loadStoredState, saveStoredState } from './persistence';
 // المصحف وآيات الورد يُعفيان من التكبير (.app-unzoom): يُرسمان بقياس أطرهما، والتكبير فوقه
 // كان يضاعف الحجم فتخرج الصفحة عن إطارها.
 export const SCALE_KEY = 'quran-fives-app-scale-v1';
-export const ALL_SCALE_STEPS = [80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170];
+export const ALL_SCALE_STEPS = [80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155];
 export const DEFAULT_SCALE = 100;
-const MAX_SCALE = 170;
-// أضيق عرض يبقى للتطبيق بعد التكبير: 115 على Note 9 (عرضه 412) يترك 358 ولا يُقصّ شيء،
-// وعند 120 يُقصّ نصّ بطاقة الآية وأزرار العدّاد السفلى.
-const MIN_LAYOUT_WIDTH = 358;
+// السقوف مقيسة على الأجهزة (أقصر ضلع بوحدات CSS): Note 9 (411) سليم حتى 110،
+// Tab S6 وTab Active 3 (800) حتى 155 — Active 3 احتمل 160 وS6 لا، فالأدنى للفئة كلّها.
+// بين النقطتين خطّ مستقيم، وفوق 800 يبقى 155، وتحت 410 يتناسب مع العرض.
+const PHONE = { side: 410, max: 110 };
+const TABLET = { side: 800, max: 155 };
 
-// أكبر تكبير يسمح به عرض الجهاز (أقصر ضلعيه، فلا يتغيّر بالتدوير): 115 للهاتف، وحتى 170 للوح
+const toStep = (value) => Math.floor(value / 5) * 5;
+
+// أكبر تكبير يسمح به عرض الجهاز (أقصر ضلعيه، فلا يتغيّر بالتدوير)
 export function maxScaleFor(shortSide) {
-  const fit = Math.floor((shortSide / MIN_LAYOUT_WIDTH) * 20) * 5;
-  return Math.min(MAX_SCALE, Math.max(DEFAULT_SCALE, fit));
+  let fit;
+  if (shortSide >= TABLET.side) fit = TABLET.max;
+  else if (shortSide >= PHONE.side) {
+    const t = (shortSide - PHONE.side) / (TABLET.side - PHONE.side);
+    fit = PHONE.max + t * (TABLET.max - PHONE.max);
+  } else fit = (shortSide / PHONE.side) * PHONE.max;
+  return Math.max(DEFAULT_SCALE, toStep(fit));
 }
 
 const deviceShortSide = () => Math.min(window.screen?.width || window.innerWidth, window.screen?.height || window.innerHeight);
