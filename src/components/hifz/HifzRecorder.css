@@ -252,6 +252,14 @@
   height: 32px;
   touch-action: none;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+/* إطار التركيز للوحة المفاتيح فقط، لا عند اللمس */
+.hifz-listen-seek:focus-visible {
+  outline: 2px solid var(--app-accent-ink);
+  outline-offset: 2px;
 }
 
 .hifz-listen-thumb {
