@@ -4095,7 +4095,7 @@ function App() {
               <>
                 <p className="account-welcome">مرحباً، {account.name || account.user}</p>
                 {accountStatus && !accountStatus.approved ? (
-                  <AccountPending onRecheck={() => setSyncCheckNonce(n => n + 1)} />
+                  <AccountPending onRecheck={() => setSyncCheckNonce(n => n + 1)} googleOnly={accountStatus.googleBackup} />
                 ) : (
                   <>
                 <p style={{ fontSize: '15px', color: 'var(--app-accent)', fontWeight: 800, margin: '0 0 6px' }}>

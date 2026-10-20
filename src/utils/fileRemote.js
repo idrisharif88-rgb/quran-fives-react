@@ -1,13 +1,15 @@
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { SYNC_URL, SYNC_ENABLED } from './syncConfig';
-import { readAccount, authHeaders } from './syncAccount';
+import { readAccount, readAccountStatus, authHeaders } from './syncAccount';
 
 // ملفات الحساب على السيرفر (server/fileRoutes.js) بأنواعها: ijaza (PDF) و hifz (تسجيلات).
 // بلا حساب لا شيء يُرفع.
 const route = (kind, id = '') => `${SYNC_URL}/api/files/${kind}${id ? '/' + id : ''}`;
 
-export const canReachServer = () => SYNC_ENABLED && Boolean(readAccount());
+// حساب لم يوافَق عليه (أو أوقفه المشرف ليُنسخ في جوجل درايف وحده) لا يُرفع له شيء: السيرفر يردّ 403،
+// والملف كان سيُرسل كاملاً قبل الرفض
+export const canReachServer = () => SYNC_ENABLED && Boolean(readAccount()) && readAccountStatus()?.approved !== false;
 export const currentAccount = () => readAccount()?.user || null;
 
 async function request(url, options = {}) {
