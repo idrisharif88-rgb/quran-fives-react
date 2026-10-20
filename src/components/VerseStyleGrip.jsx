@@ -4,7 +4,7 @@ import './VerseStyleGrip.css';
 const DRAG_PX = 14;   // سحبة أقصر من هذا لمسة
 
 /**
- * سهم عريض منخفض على خطّ البطاقة السفلي يبدّل شكلها: للأعلى ← المصحف المدني، للأسفل ← النصّ.
+ * سهم عريض مصمت تحت خطّ البطاقة السفلي (خارجها) يبدّل شكلها: للأعلى ← المصحف المدني، للأسفل ← النصّ.
  * يتّجه السهم نحو الحركة المتاحة، واللمسة وحدها تبدّل أيضاً.
  */
 export default function VerseStyleGrip({ style, onChange }) {
@@ -37,8 +37,8 @@ export default function VerseStyleGrip({ style, onChange }) {
       onPointerCancel={() => { startY.current = null; }}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChange(next); } }}
     >
-      <svg viewBox="0 0 36 10" width="36" height="10" aria-hidden="true">
-        <path d="M3 8 L18 2 L33 8" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+      <svg viewBox="0 0 44 16" width="44" height="16" aria-hidden="true">
+        <path d="M5 13 L22 3 L39 13 Z" fill="currentColor" stroke="currentColor" strokeWidth="3" strokeLinejoin="round" />
       </svg>
     </button>
   );

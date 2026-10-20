@@ -60,10 +60,9 @@ export default function TextDisplay({ verses, cornerNumber, cornerAction, cardCl
   // علامة التفسير: مصباح على زرّ «i» إن كان لآية من آيات البطاقة تفسير على ظهرها
   const hasNotes = Boolean(notesFlip) && verses.some((verse) => notesFlip.notes?.[noteKey(verse)]?.trim());
   const isMushaf = verseStyle?.style === 'mushaf' && verses.length > 0;
-  const gripClass = verseStyle && !isBack ? 'has-style-grip' : '';
 
-  return (
-    <div className={`verse-card ${cardClassName} ${faceClass} ${gripClass}`.trim()}>
+  const card = (
+    <div className={`verse-card ${cardClassName} ${faceClass}`.trim()}>
       {isBack ? (
         <VerseNotesBack
           verses={verses}
@@ -111,7 +110,14 @@ export default function TextDisplay({ verses, cornerNumber, cornerAction, cardCl
           {!isBack && cornerAction}
         </div>
       )}
-      {verseStyle && !isBack && <VerseStyleGrip style={verseStyle.style} onChange={verseStyle.onChange} />}
+    </div>
+  );
+  if (!verseStyle) return card;
+  // السهم خارج البطاقة تحت خطّها السفلي: البطاقة تقصّ ما يخرج عنها، فيحملهما غلاف يأخذ مكانها
+  return (
+    <div className="verse-card-wrap">
+      {card}
+      {!isBack && <VerseStyleGrip style={verseStyle.style} onChange={verseStyle.onChange} />}
     </div>
   );
 }
