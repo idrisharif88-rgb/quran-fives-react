@@ -122,3 +122,46 @@ export async function saveFile(token, name, text) {
 export async function readFile(token, id) {
   return (await drive(token, `${API}/files/${id}?alt=media`)).text();
 }
+
+// كل ملفّات المجلّد المخفي: [{ id, name }]
+export async function listFiles(token) {
+  const files = [];
+  let page = '';
+  do {
+    const res = await drive(token, `${API}/files?spaces=appDataFolder&pageSize=1000&fields=nextPageToken,files(id,name)${page ? `&pageToken=${page}` : ''}`);
+    const json = await res.json();
+    files.push(...(json.files || []));
+    page = json.nextPageToken || '';
+  } while (page);
+  return files;
+}
+
+// رفع ملف صوت أو PDF (resumable): الطلب الأول يعطي رابط الجلسة، والثاني يحمل المحتوى كما هو.
+// multipart لا يصلح هنا: جوجل يحدّه بخمسة ميغابايت، وملف الإجازة قد يبلغ خمسين.
+export async function uploadBlob(token, name, blob) {
+  const type = blob.type || 'application/octet-stream';
+  const start = await drive(token, `${UPLOAD}/files?uploadType=resumable`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json; charset=UTF-8', 'X-Upload-Content-Type': type },
+    body: JSON.stringify({ name, parents: ['appDataFolder'] }),
+  });
+  // Location هو رابط الجلسة؛ إن حجبه CORS فرقم الجلسة مكشوف دائماً ويُبنى منه الرابط نفسه
+  const uploadId = start.headers.get('X-GUploader-UploadID');
+  const session = start.headers.get('Location')
+    || (uploadId && `${UPLOAD}/files?uploadType=resumable&upload_id=${encodeURIComponent(uploadId)}`);
+  if (!session) throw new Error('drive upload: no session');
+  await drive(token, session, { method: 'PUT', headers: { 'Content-Type': type }, body: blob });
+}
+
+export async function readBlob(token, id) {
+  return (await drive(token, `${API}/files/${id}?alt=media`)).blob();
+}
+
+// ملف حُذف من قبل (404) يُعدّ محذوفاً
+export async function deleteFile(token, id) {
+  try {
+    await drive(token, `${API}/files/${id}`, { method: 'DELETE' });
+  } catch (e) {
+    if (e.status !== 404) throw e;
+  }
+}
