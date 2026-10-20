@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import VerseNotesBack from './VerseNotesBack';
+import HifzMushafVerses from './hifz/HifzMushafVerses';
+import VerseStyleGrip from './VerseStyleGrip';
 import { noteKey } from '../utils/verseNotesFile';
 import './TextDisplay.css';
 
@@ -44,8 +46,10 @@ function Verse({ verse }) {
  *                                   above the surah picker). The back of the card shows
  *                                   the user's note for each verse:
  *                                   { flipped, onFlip, notes, onSave, onImport }.
+ * @param {object} [verseStyle]    – Text or Madani mushaf face, switched by the arrow on the
+ *                                   card's bottom line: { style: 'text' | 'mushaf', onChange }.
  */
-export default function TextDisplay({ verses, cornerNumber, cornerAction, cardClassName = '', notesFlip }) {
+export default function TextDisplay({ verses, cornerNumber, cornerAction, cardClassName = '', notesFlip, verseStyle }) {
   // The turn animation plays only after the user has flipped once, so the
   // card's mount fade-in is not replaced by a flip on first render.
   const [hasFlipped, setHasFlipped] = useState(false);
@@ -55,8 +59,9 @@ export default function TextDisplay({ verses, cornerNumber, cornerAction, cardCl
   const faceClass = hasFlipped ? (isBack ? 'is-back' : 'is-front') : '';
   // علامة التفسير: مصباح على زرّ «i» إن كان لآية من آيات البطاقة تفسير على ظهرها
   const hasNotes = Boolean(notesFlip) && verses.some((verse) => notesFlip.notes?.[noteKey(verse)]?.trim());
+  const isMushaf = verseStyle?.style === 'mushaf' && verses.length > 0;
 
-  return (
+  const card = (
     <div className={`verse-card ${cardClassName} ${faceClass}`.trim()}>
       {isBack ? (
         <VerseNotesBack
@@ -66,10 +71,12 @@ export default function TextDisplay({ verses, cornerNumber, cornerAction, cardCl
           onImport={notesFlip.onImport}
         />
       ) : (
-        <div className="verse-scroll">
-          {verses.map((verse) => (
-            <Verse key={`${verse.s}-${verse.a}`} verse={verse} />
-          ))}
+        <div className={`verse-scroll${isMushaf ? ' is-mushaf' : ''}`}>
+          {isMushaf
+            ? <HifzMushafVerses refs={verses} />
+            : verses.map((verse) => (
+              <Verse key={`${verse.s}-${verse.a}`} verse={verse} />
+            ))}
         </div>
       )}
 
@@ -103,6 +110,14 @@ export default function TextDisplay({ verses, cornerNumber, cornerAction, cardCl
           {!isBack && cornerAction}
         </div>
       )}
+    </div>
+  );
+  if (!verseStyle) return card;
+  // السهم خارج البطاقة تحت خطّها السفلي: البطاقة تقصّ ما يخرج عنها، فيحملهما غلاف يأخذ مكانها
+  return (
+    <div className="verse-card-wrap">
+      {card}
+      {!isBack && <VerseStyleGrip style={verseStyle.style} onChange={verseStyle.onChange} />}
     </div>
   );
 }

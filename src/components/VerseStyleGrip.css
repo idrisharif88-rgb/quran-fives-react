@@ -1,0 +1,74 @@
+/* سهم تبديل شكل البطاقة: تحت خطّها السفلي مباشرة، خارجها، في الوسط — أعرض منه ارتفاعاً.
+   مساحة اللمس أكبر من السهم، والسحب لا يحرّك الصفحة. */
+.verse-style-grip {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 76px;
+  height: 20px;
+  padding: 3px 0 0;
+  border: none;
+  background: transparent;
+  color: var(--app-accent-ink);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  z-index: 2;
+}
+
+.verse-style-grip svg {
+  transition: transform 0.25s ease;
+}
+
+/* في المصحف يتّجه للأسفل: السحبة التالية تعيد النصّ */
+.verse-style-grip.is-mushaf svg {
+  transform: rotate(180deg);
+}
+
+.verse-style-grip:active svg {
+  opacity: 0.7;
+}
+
+.verse-style-grip:focus-visible {
+  outline: 2px solid var(--app-accent-ink);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+/* الغلاف يأخذ مكان البطاقة في عمود المحتوى (flex: 1)، والبطاقة تملؤه إلا شريطاً سفلياً للسهم:
+   .content-layout يقصّ ما يخرج عنه، فالسهم لا يتدلّى تحته بل داخل هذا الشريط */
+.verse-card-wrap {
+  position: relative;
+  padding-bottom: 20px;
+  box-sizing: border-box;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* المصحف: أسطره بعرض البطاقة، في وسطها عمودياً إن قصرت */
+.verse-scroll.is-mushaf {
+  justify-content: center;
+  /* سهما التنقّل يمتدّان إلى 55px داخل البطاقة (50 عرضاً من 15 مع إطارها): هامش فوقهما يُبعد
+     الأسطر عنهما، ومثله أعلى (النجمتان) وأسفل — والسهمان والهامش يكبران معاً في «حجم العرض» */
+  padding: 60px 82px 26px;
+}
+
+@media (max-width: 600px) {
+  /* السهمان هنا 40px من 5: يبلغان 37px داخل البطاقة */
+  .verse-scroll.is-mushaf {
+    padding: 54px 62px 20px;
+  }
+}
+
+.verse-scroll.is-mushaf .hifz-mushaf {
+  margin: auto 0;
+  width: 100%;
+}

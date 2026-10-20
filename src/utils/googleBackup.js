@@ -16,6 +16,7 @@ export const BACKUP_KEYS = [
   ...SESSION_STORAGE_KEYS,
   'quran-fives-khitma-cache-v1',
   'quran-fives-playback-rate-v1',
+  'quran-fives-verse-style-v1',
   'quran-fives-keep-lap-v1',
   'quran-fives-hifz-voice-v1',
   'quran-fives-hifz-reminder-daily-v1',   // تذكير الحفظ اليومي (hifzReminder.js)
