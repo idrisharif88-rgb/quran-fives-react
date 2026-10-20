@@ -56,8 +56,16 @@
 /* المصحف: أسطره بعرض البطاقة، في وسطها عمودياً إن قصرت */
 .verse-scroll.is-mushaf {
   justify-content: center;
-  padding-left: 52px;    /* أضيق من النصّ (70): يكفي لسهمَي التنقّل، وأسطر المصحف أعرض */
-  padding-right: 52px;
+  /* سهما التنقّل يمتدّان إلى 55px داخل البطاقة (50 عرضاً من 15 مع إطارها): هامش فوقهما يُبعد
+     الأسطر عنهما، ومثله أعلى (النجمتان) وأسفل — والسهمان والهامش يكبران معاً في «حجم العرض» */
+  padding: 60px 82px 26px;
+}
+
+@media (max-width: 600px) {
+  /* السهمان هنا 40px من 5: يبلغان 37px داخل البطاقة */
+  .verse-scroll.is-mushaf {
+    padding: 54px 62px 20px;
+  }
 }
 
 .verse-scroll.is-mushaf .hifz-mushaf {
