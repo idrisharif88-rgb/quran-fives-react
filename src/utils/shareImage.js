@@ -7,7 +7,10 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 // «الطباعة» تظهر تلقائياً ضمن برامج ورقة المشاركة عند مشاركة الصورة/المستند.
 export async function shareElementAsImage(element, fileName) {
   if (!element) return;
-  const canvas = await html2canvas(element, { backgroundColor: '#ffffff', scale: 2 });
+  // الصورة بلون العنصر نفسه (بطاقة ليلية تبقى ليلية)؛ عنصر شفّاف يأخذ الأبيض كما كان
+  const bg = getComputedStyle(element).backgroundColor;
+  const backgroundColor = !bg || bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)' ? '#ffffff' : bg;
+  const canvas = await html2canvas(element, { backgroundColor, scale: 2 });
   const dataUrl = canvas.toDataURL('image/png');
   const base64 = dataUrl.split(',')[1];
   const name = `${fileName || 'result'}_${Date.now()}.png`;

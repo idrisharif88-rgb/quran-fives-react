@@ -3,6 +3,8 @@ import {
   formatSeconds,
   allTimeAverage,
   previousCardAverage,
+  compareAverage,
+  sameSession,
 } from '../utils/sessions';
 import DuaEditor from './DuaEditor';
 import PageTimesChart from './PageTimesChart';
@@ -19,16 +21,12 @@ const JuzResults = ({ session, sessions, target, onSave, onDelete, onShare, onUp
     return () => { backRef.current = null; };
   }, [backRef, editing]);
 
-  const prev = previousCardAverage(sessions, session.startPage);
-  const all = allTimeAverage(sessions);
-
-  const compareParts = [];
-  if (prev != null) {
-    compareParts.push(session.avgSeconds < prev ? 'أسرع من البطاقة السابقة' : 'أبطأ من البطاقة السابقة');
-  }
-  if (all != null) {
-    compareParts.push(session.avgSeconds < all ? 'أسرع من متوسطك العام' : 'أبطأ من متوسطك العام');
-  }
+  // البطاقة نفسها تُحفظ في المحفوظات لحظة اكتمالها، فتُستثنى كي لا تُقارَن بنفسها
+  const others = sessions.filter((s) => !sameSession(s, session));
+  const comparisons = [
+    compareAverage(session.avgSeconds, previousCardAverage(others, session.startPage), 'البطاقة السابقة'),
+    compareAverage(session.avgSeconds, allTimeAverage(others), 'متوسطك العام'),
+  ].filter(Boolean);
 
   const saveDua = (text) => {
     setDua(text);
@@ -54,7 +52,11 @@ const JuzResults = ({ session, sessions, target, onSave, onDelete, onShare, onUp
         <PageTimesChart pageTimes={session.pageTimes} target={target} average={session.avgSeconds} />
 
         <div className="jz-best">
-          {compareParts.length > 0 && <span className="jz-compare">{compareParts.join(' · ')}</span>}
+          {comparisons.map((c) => (
+            <span key={c.text} className={`jz-compare${c.faster === true ? ' is-faster' : c.faster === false ? ' is-slower' : ''}`}>
+              {c.faster === true ? '▼ ' : c.faster === false ? '▲ ' : ''}{c.text}
+            </span>
+          ))}
         </div>
 
         <div className="jz-progress-line">

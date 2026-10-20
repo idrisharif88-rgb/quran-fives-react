@@ -35,3 +35,13 @@ describe('axisFor', () => {
     expect(axisFor(400).ticks.length).toBeLessThanOrEqual(5);
   });
 });
+
+describe('compareAverage', () => {
+  it('states the difference per page', async () => {
+    const { compareAverage } = await import('./sessions');
+    expect(compareAverage(50, 54, 'البطاقة السابقة')).toEqual({ faster: true, text: 'أسرع من البطاقة السابقة بـ 0:04 للصفحة' });
+    expect(compareAverage(70, 54, 'متوسطك العام').faster).toBe(false);
+    expect(compareAverage(54.2, 54, 'x').faster).toBeNull();
+    expect(compareAverage(50, null, 'x')).toBeNull();
+  });
+});

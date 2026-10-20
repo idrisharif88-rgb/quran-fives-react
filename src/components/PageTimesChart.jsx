@@ -1,20 +1,25 @@
-import { useState } from 'react';
+import { useState, useRef, useLayoutEffect, useId } from 'react';
 import { formatSeconds } from '../utils/sessions';
 import { chartSlots, axisFor } from '../utils/pageTimesChart';
 import './PageTimesChart.css';
 
-// الألوان خصائص SVG لا CSS: «مشاركة» تصوّر البطاقة بـ html2canvas، وهو يرسم SVG بلا أنماط الصفحة.
-// البطاقة بيضاء في كل الأوضاع، فالألوان ثابتة معها. الأخضر/الأحمر يفترقان لعمى الألوان (ΔE 10.2)،
-// وخطّ الهدف يقول الشيء نفسه بلا لون.
-const C = {
-  bar: '#0F6E56',
-  over: '#b91c1c',
-  empty: '#e5e7eb',
-  grid: '#eef0f2',
-  base: '#cbd5e1',
-  axis: '#6b7280',
-  avg: '#475569',
+// الألوان قيم ثابتة في خصائص SVG لا CSS: «مشاركة» تصوّر البطاقة بـ html2canvas، وهو يرسم SVG بلا أنماط
+// الصفحة ولا يحلّ var(). فتُقرأ ألوان السمة (أخضر/ذهبي × نهار/ليل) من .app-container عند العرض.
+// العمود فوق الهدف مخطّط مائلاً فوق لونه: الأحمر قريب من لون السمة البرتقالية، وليلاً يلتبس بالأخضر
+// على عمى الألوان (ΔE 4) — الخطوط وخطّ الهدف يقولان «فوق الهدف» بلا لون.
+const FALLBACK = {
+  bar: '#0F6E56', over: '#b91c1c', empty: '#e5e7eb', grid: '#eef0f2', base: '#cbd5e1', axis: '#6b7280', avg: '#475569', surface: '#ffffff',
 };
+const TOKENS = {
+  bar: '--app-accent-ink', over: '--app-danger', empty: '--app-border', grid: '--app-border', base: '--app-border-strong', axis: '--app-muted', avg: '--app-text', surface: '--app-surface',
+};
+
+function themeColors(el) {
+  const style = getComputedStyle(el);
+  const out = {};
+  for (const [name, token] of Object.entries(TOKENS)) out[name] = style.getPropertyValue(token).trim() || FALLBACK[name];
+  return out;
+}
 
 const W = 340, H = 196;
 const PAD = { l: 34, r: 8, t: 14, b: 22 };
@@ -33,6 +38,10 @@ function barPath(x, y, w, h) {
  */
 export default function PageTimesChart({ pageTimes, target, average }) {
   const [selected, setSelected] = useState(null);
+  const ref = useRef(null);
+  const hatch = `ptc-over-${useId().replace(/:/g, '')}`;
+  const [C, setColors] = useState(FALLBACK);
+  useLayoutEffect(() => { if (ref.current) setColors(themeColors(ref.current)); }, []);
   const slots = chartSlots(pageTimes);
   if (!slots.length) return null;
 
@@ -54,8 +63,14 @@ export default function PageTimesChart({ pageTimes, target, average }) {
   const pick = slots.find((s) => s.page === selected && s.seconds !== null);
 
   return (
-    <figure className="ptc">
+    <figure className="ptc" ref={ref}>
       <svg viewBox={`0 0 ${W} ${H}`} className="ptc-svg" role="img" aria-label="زمن كل صفحة" style={{ direction: 'ltr' }}>
+        <defs>
+          <pattern id={hatch} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="5" height="5" fill={C.over} />
+            <line x1="0" y1="0" x2="0" y2="5" stroke={C.surface} strokeWidth="1.6" strokeOpacity="0.55" />
+          </pattern>
+        </defs>
         {axis.ticks.map((t) => (
           <g key={t}>
             <line x1={PAD.l} x2={W - PAD.r} y1={yOf(t)} y2={yOf(t)} stroke={t === 0 ? C.base : C.grid} strokeWidth="1" />
@@ -71,7 +86,7 @@ export default function PageTimesChart({ pageTimes, target, average }) {
             <g key={s.page} opacity={dim ? 0.35 : 1}>
               {s.seconds === null
                 ? <rect x={x} y={base - 3} width={barW} height={3} rx="1.5" fill={C.empty} />
-                : <path d={barPath(x, yOf(s.seconds), barW, Math.max(2, base - yOf(s.seconds)))} fill={isOver(s.seconds) ? C.over : C.bar} />}
+                : <path d={barPath(x, yOf(s.seconds), barW, Math.max(2, base - yOf(s.seconds)))} fill={isOver(s.seconds) ? `url(#${hatch})` : C.bar} />}
               {label && (
                 <text x={x + barW / 2} y={H - 7} textAnchor="middle" fontSize="9.5" fontWeight={pick?.page === s.page ? 800 : 500} fill={s.seconds === null ? C.base : C.axis}>{s.page}</text>
               )}
@@ -113,7 +128,7 @@ export default function PageTimesChart({ pageTimes, target, average }) {
         ) : (
           <>
             <span className="ptc-key"><i style={{ background: C.bar }} />ضمن الهدف</span>
-            <span className="ptc-key"><i style={{ background: C.over }} />فوقه</span>
+            <span className="ptc-key"><i style={{ background: `repeating-linear-gradient(45deg, ${C.over} 0 3px, ${C.surface} 3px 4.5px)` }} />فوقه</span>
             {showTarget && <span className="ptc-key"><i className="ptc-line" style={{ borderColor: C.over }} />الهدف {formatSeconds(target)}</span>}
             {average > 0 && <span className="ptc-key"><i className="ptc-line dotted" style={{ borderColor: C.avg }} />المتوسط</span>}
           </>
