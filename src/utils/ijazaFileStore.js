@@ -25,6 +25,8 @@ export function loadIjazaFiles() {
   return index && typeof index === 'object' && !Array.isArray(index) ? index : {};
 }
 
+export const saveIjazaFiles = (index) => saveStoredState(INDEX_KEY, index);
+
 function setEntry(id, entry) {
   const index = { ...loadIjazaFiles() };
   if (entry) index[id] = entry;
@@ -48,7 +50,7 @@ function base64ToBlob(base64) {
 }
 
 // الملف الكبير يُكتب على أجزاء، فلا يتحوّل كله إلى نص في الذاكرة دفعة واحدة
-async function writeLocal(id, blob, { path = pathOf(id), onProgress, signal } = {}) {
+export async function writeLocal(id, blob, { path = pathOf(id), onProgress, signal } = {}) {
   for (let at = 0; at < blob.size; at += CHUNK_BYTES) {
     if (signal?.aborted) throw new DOMException('cancelled', 'AbortError');
     const data = await blobToBase64(blob.slice(at, at + CHUNK_BYTES));
@@ -74,11 +76,18 @@ async function flushDeletes() {
   return still;
 }
 
-const hasLocal = (id) => Filesystem.stat({ path: pathOf(id), directory: Directory.Data }).then(() => true, () => false);
+export const hasLocal = (id) => Filesystem.stat({ path: pathOf(id), directory: Directory.Data }).then(() => true, () => false);
 
-async function readLocalBlob(id) {
+export async function readLocalBlob(id) {
   const { data } = await Filesystem.readFile({ path: pathOf(id), directory: Directory.Data });
   return typeof data === 'string' ? base64ToBlob(data) : data;
+}
+
+// نسخة الجهاز، أو تنزيلها من السيرفر أولاً (للنسخة في جوجل درايف)
+export async function ensureIjazaLocal(id) {
+  if (await hasLocal(id)) return;
+  const blob = await downloadFile('ijaza', id, pathOf(id));
+  if (blob) await writeLocal(id, blob);
 }
 
 /**
