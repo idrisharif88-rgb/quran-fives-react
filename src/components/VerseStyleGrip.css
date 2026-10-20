@@ -1,0 +1,63 @@
+/* سهم تبديل شكل البطاقة: على خطّها السفلي في الوسط، أعرض منه ارتفاعاً.
+   مساحة اللمس أكبر من السهم، والسحب لا يحرّك الصفحة. */
+.verse-style-grip {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 64px;
+  height: 18px;
+  padding: 0 0 4px;
+  border: none;
+  background: transparent;
+  color: var(--app-muted);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  z-index: 2;
+}
+
+.verse-style-grip svg {
+  transition: transform 0.25s ease;
+}
+
+/* في المصحف يتّجه للأسفل: السحبة التالية تعيد النصّ */
+.verse-style-grip.is-mushaf svg {
+  transform: rotate(180deg);
+}
+
+.verse-style-grip:active,
+.verse-style-grip.is-mushaf {
+  color: var(--app-accent-ink);
+}
+
+.verse-style-grip:focus-visible {
+  outline: 2px solid var(--app-accent-ink);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+/* البطاقة تفسح للسهم تحت صفّ الزاوية */
+.verse-card.has-style-grip {
+  position: relative;
+}
+
+.verse-card.has-style-grip .verse-corner-row {
+  padding-bottom: 18px;
+}
+
+/* المصحف: أسطره بعرض البطاقة، في وسطها عمودياً إن قصرت */
+.verse-scroll.is-mushaf {
+  justify-content: center;
+  padding-left: 52px;    /* أضيق من النصّ (70): يكفي لسهمَي التنقّل، وأسطر المصحف أعرض */
+  padding-right: 52px;
+}
+
+.verse-scroll.is-mushaf .hifz-mushaf {
+  margin: auto 0;
+  width: 100%;
+}
