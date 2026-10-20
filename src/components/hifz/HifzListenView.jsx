@@ -70,23 +70,36 @@ export default function HifzListenView({ recording, loadUrl, onVerdict, onClose 
     else audio.pause();
   };
 
-  // سحب الشريط: لمسة أو سحب في أي مكان منه ينقل التشغيل إلى موضعه، للأمام أو للخلف
+  // سحب الشريط: لمسة أو سحب في أي مكان منه ينقل التشغيل إلى موضعه، للأمام أو للخلف.
+  // أثناء السحب يتوقّف الصوت ويتحرّك المقبض وحده، والقفز مرّة واحدة عند رفع الإصبع —
+  // تغيير currentTime مع كل حركة كان يُسمِع تشويشاً من مقاطع قصيرة متتابعة.
   const durationMs = Math.max(1, recording.durationMs);
+  const dragRef = useRef(null);
   const seekTo = (ms) => {
     const next = Math.min(durationMs, Math.max(0, ms));
     if (audioRef.current) audioRef.current.currentTime = next / 1000;
     setPosition(next);
   };
-  const seekAt = (e) => {
+  const msAt = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    seekTo(((e.clientX - rect.left) / rect.width) * durationMs);
+    return Math.min(durationMs, Math.max(0, ((e.clientX - rect.left) / rect.width) * durationMs));
   };
   const onSeekDown = (e) => {
     if (!url) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    seekAt(e);
+    const audio = audioRef.current;
+    dragRef.current = { resume: !!audio && !audio.paused };
+    audio?.pause();
+    setPosition(msAt(e));
   };
-  const onSeekMove = (e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) seekAt(e); };
+  const onSeekMove = (e) => { if (dragRef.current) setPosition(msAt(e)); };
+  const onSeekUp = (e) => {
+    if (!dragRef.current) return;
+    const { resume } = dragRef.current;
+    dragRef.current = null;
+    seekTo(msAt(e));
+    if (resume) audioRef.current?.play().catch(() => setFailed(true));
+  };
   const onSeekKey = (e) => {
     if (e.key === 'ArrowRight') seekTo(position + 5000);
     else if (e.key === 'ArrowLeft') seekTo(position - 5000);
@@ -151,6 +164,8 @@ export default function HifzListenView({ recording, loadUrl, onVerdict, onClose 
           aria-valuetext={clock(position)}
           onPointerDown={onSeekDown}
           onPointerMove={onSeekMove}
+          onPointerUp={onSeekUp}
+          onPointerCancel={onSeekUp}
           onKeyDown={onSeekKey}
         >
           <div className="hifz-listen-track">

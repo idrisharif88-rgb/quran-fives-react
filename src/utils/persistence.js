@@ -5,6 +5,7 @@ export const SURAH_COUNT_QUIZ_STORAGE_KEY = 'quran-fives-surah-count-quiz-v1';
 export const PAGE_STARTS_QUIZ_STORAGE_KEY = 'quran-fives-page-starts-quiz-v1';
 export const SURAH_NAMES_QUIZ_STORAGE_KEY = 'quran_fives_surah_names_quiz_state';
 export const PLAYBACK_RATE_STORAGE_KEY = 'quran-fives-playback-rate-v1';
+export const VERSE_STYLE_STORAGE_KEY = 'quran-fives-verse-style-v1';
 
 // ما يُحفظ خارج حالة التطبيق ويُزامَن معها (localStores في لقطة المزامنة): تقدّم الاختبارات
 // الخمسة وسرعة تشغيل التسجيلات ودفتر التحديثات. حفظ أيّ منها يُطلق LOCAL_SYNC_EVENT فيُرفع.
@@ -15,6 +16,7 @@ export const SYNCED_LOCAL_KEYS = [
   PAGE_STARTS_QUIZ_STORAGE_KEY,
   SURAH_NAMES_QUIZ_STORAGE_KEY,
   PLAYBACK_RATE_STORAGE_KEY,
+  VERSE_STYLE_STORAGE_KEY,   // بطاقة الآيات: نصّ أو مصحف مدني (useVerseStyle)
   'quran-fives-updates-notebook-v1',   // دفتر التحديثات للمالك (updatesNotebook.js)
 ];
 export const LOCAL_SYNC_EVENT = 'quran-fives-local-sync';

@@ -62,6 +62,15 @@ export function previousCardAverage(sessions, startPage) {
   return prev ? prev.avgSeconds : null;
 }
 
+// مقارنة متوسط البطاقة بمتوسط آخر، بالفرق للصفحة: { faster, text } أو null بلا ما يُقارن به.
+// فرق دون نصف ثانية يُعدّ تساوياً (faster: null).
+export function compareAverage(avg, other, what) {
+  if (other == null) return null;
+  const diff = Math.round(avg - other);
+  if (diff === 0) return { faster: null, text: `مثل ${what}` };
+  return { faster: diff < 0, text: `${diff < 0 ? 'أسرع' : 'أبطأ'} من ${what} بـ ${formatSeconds(Math.abs(diff))} للصفحة` };
+}
+
 // أفضل فترة زمنية للقراءة (الأسرع في المتوسط) من الجلسات المحفوظة
 export function bestTimeBucket(sessions, city) {
   const stats = {};

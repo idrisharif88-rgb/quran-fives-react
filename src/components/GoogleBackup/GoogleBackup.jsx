@@ -21,6 +21,8 @@ export default function GoogleBackup() {
   const [message, setMessage] = useState(null);     // { ok, text }
   const [confirmRestore, setConfirmRestore] = useState(null);   // { savedAt }
   const [openedAt] = useState(() => Date.now());   // «مضى أكثر من يوم» يُقاس من فتح اللوحة
+  const [progress, setProgress] = useState(null);   // { done, total } لرفع الملفّات أو تنزيلها
+  const onProgress = (done, total) => setProgress(total ? { done, total } : null);
 
   if (!GOOGLE_ENABLED) return null;
 
@@ -33,13 +35,16 @@ export default function GoogleBackup() {
       setMessage({ ok: false, text: failureText(e) });
     }
     setBusy(null);
+    setProgress(null);
   };
 
   const save = () => run('save', async () => {
-    const savedAt = await backupNow({ interactive: true });
+    const { savedAt, failed } = await backupNow({ interactive: true, onProgress });
     setEmail(linkedEmail());
     setLast(savedAt);
-    setMessage({ ok: true, text: 'حُفظت نسخة في جوجل درايف' });
+    setMessage(failed
+      ? { ok: false, text: `حُفظت النسخة، وتعذّر رفع ${failed} من الملفّات — تُعاد في المرة التالية` }
+      : { ok: true, text: 'حُفظت نسخة في جوجل درايف' });
   });
 
   const askRestore = () => run('restore', async () => {
@@ -51,7 +56,7 @@ export default function GoogleBackup() {
 
   const restore = () => run('restore', async () => {
     setConfirmRestore(null);
-    if (await restoreBackup()) window.location.reload();
+    if (await restoreBackup(onProgress)) window.location.reload();
   });
 
   const unlink = async () => {
@@ -89,11 +94,11 @@ export default function GoogleBackup() {
       ) : (
         <div className="google-backup-actions">
           <button type="button" className="google-backup-btn primary" onClick={save} disabled={busy !== null}>
-            {busy === 'save' ? 'جارٍ الحفظ…' : email ? 'احفظ الآن' : 'اربط حساب جوجل'}
+            {busy === 'save' ? `جارٍ الحفظ…${progress ? ` ${progress.done}/${progress.total}` : ''}` : email ? 'احفظ الآن' : 'اربط حساب جوجل'}
           </button>
           {email && (
             <button type="button" className="google-backup-btn" onClick={askRestore} disabled={busy !== null}>
-              {busy === 'restore' ? 'جارٍ…' : 'استرجع'}
+              {busy === 'restore' ? `جارٍ…${progress ? ` ${progress.done}/${progress.total}` : ''}` : 'استرجع'}
             </button>
           )}
           {email && <button type="button" className="google-backup-link" onClick={unlink} disabled={busy !== null}>فكّ الربط</button>}

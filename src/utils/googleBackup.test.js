@@ -8,6 +8,7 @@ globalThis.localStorage = {
 };
 globalThis.window = { localStorage: globalThis.localStorage };
 
+vi.mock('./googleBackupFiles', () => ({ filesIndex: () => ({ hifz: [], ijaza: {} }), backupFiles: async () => 0, restoreFiles: async () => {} }));
 vi.mock('./googleDrive', () => ({ getAccessToken: async () => null, findFile: async () => null, saveFile: async () => ({}), readFile: async () => '' }));
 
 const { buildBackup, applyBackup, dailyBackupIfDue, BACKUP_KEYS } = await import('./googleBackup');
@@ -20,7 +21,7 @@ describe('Google Drive backup file', () => {
     localStorage.setItem('quran-fives-khitma-creds-v1', JSON.stringify({ user: 'a', code: 'secret' }));
     localStorage.setItem('quran-fives-hifz-recordings-v1', JSON.stringify([{ id: '1' }]));
     const backup = buildBackup(123);
-    expect(backup).toMatchObject({ app: 'khumassiyat', version: 1, savedAt: 123 });
+    expect(backup).toMatchObject({ app: 'khumassiyat', version: 2, savedAt: 123, files: { hifz: [], ijaza: {} } });
     expect(backup.data['quran-fives-app-state-v1']).toEqual({ currentIndex: 7 });
     expect(Object.keys(backup.data)).not.toContain('quran-fives-khitma-creds-v1');
     expect(Object.keys(backup.data)).not.toContain('quran-fives-hifz-recordings-v1');
@@ -35,6 +36,7 @@ describe('Google Drive backup file', () => {
     expect(JSON.parse(localStorage.getItem('quran-fives-app-state-v1'))).toEqual({ currentIndex: 7 });
     expect(localStorage.getItem('quran-fives-khitma-creds-v1')).toBe('keep');
     expect(BACKUP_KEYS).toContain('quran-fives-hifz-trial-v1');
+    expect(BACKUP_KEYS).toContain('quran-fives-hifz-reminder-daily-v1');
   });
 
   it('refuses a file that is not a Khumassiyat backup', () => {

@@ -9,6 +9,7 @@ import {
   totalGroups,
 } from './utils/stepNavigation';
 import TextDisplay from './components/TextDisplay';
+import useVerseStyle from './hooks/useVerseStyle';
 import CornerNav from './components/CornerNav';
 import { QURAN_VERSES } from './data/quranVerses';
 import { SURAH_METADATA } from './data/quranConstants';
@@ -423,6 +424,7 @@ function App() {
     Array.isArray(persistedAppState.quranicWondersNotes) ? persistedAppState.quranicWondersNotes : []
   ));
   // ملاحظات الآيات المكتوبة باليد (ظهر البطاقة) — مفتاحها سورة:آية
+  const verseStyle = useVerseStyle();   // بطاقة الآيات: نصّ أو مصحف مدني
   const { verseNotes, saveNote: saveVerseNote, mergeNotes: mergeVerseNotes, flippedCardKey, setFlippedCardKey } = useVerseNotes(persistedAppState.verseNotes);
   const [activeSurahNamesQuiz, setActiveSurahNamesQuiz] = useState(false);
   const [isUserManualOpen, setIsUserManualOpen] = useState(false);
@@ -3559,7 +3561,7 @@ function App() {
               onSave: saveVerseNoteCounted,
               onImport: mergeVerseNotes,
             } : undefined;
-            return <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} cornerAction={cornerAction} cardClassName={cardClass} notesFlip={notesFlip} />;
+            return <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} cornerAction={cornerAction} cardClassName={cardClass} notesFlip={notesFlip} verseStyle={cardClass ? { style: verseStyle.style, onChange: verseStyle.setStyle } : undefined} />;
           })()}
           {/* The main content area (TextDisplay, shared-verses, surah-fives)
               needs to be scrollable if its content overflows.
@@ -3978,6 +3980,7 @@ function App() {
         <JuzResults
           session={activeResultSession}
           sessions={sessions}
+          target={stopwatchTargetSeconds}
           onSave={handleSaveSession}
           onDelete={handleDeleteSession}
           onShare={handleShareSession}
