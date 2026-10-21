@@ -19,7 +19,7 @@ export default function AgeGate({ status, onPass, onChild, onParent }) {
     return (
       <div className="age-gate">
         <p className="age-gate-child">
-          الحساب لمن أتمّ {MIN_ACCOUNT_AGE} سنة. يُنشئه لك وليّ أمرك ببريده، والتطبيق يعمل كاملاً بدونه.
+          الحساب لمن عمره {MIN_ACCOUNT_AGE} سنة فأكثر. إن كنت أصغر فاطلب الإذن من والديك.
         </p>
         <button type="button" className="account-form-link" onClick={() => setParent(true)}>
           أنا وليّ الأمر
