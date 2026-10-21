@@ -63,7 +63,7 @@ export default function AccountForm({ auth }) {
     return (
       <div className="account-form" dir="rtl">
         {tabs}
-        <AgeGate status={age} onPass={() => setAge('adult')} onChild={() => setAge('child')} />
+        <AgeGate status={age} onPass={() => setAge('adult')} onChild={() => setAge('child')} onParent={() => setAge(null)} />
       </div>
     );
   }

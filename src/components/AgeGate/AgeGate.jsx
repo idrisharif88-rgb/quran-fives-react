@@ -1,19 +1,25 @@
 import { useState } from 'react';
-import { birthYears, isUnderAge, saveAgeGate, MIN_ACCOUNT_AGE } from '../../utils/ageGate';
+import { birthYears, isUnderAge, saveAgeGate, clearAgeGate, MIN_ACCOUNT_AGE } from '../../utils/ageGate';
 import './AgeGate.css';
 
 /**
  * سؤال العمر قبل «حساب جديد». status: 'child' يعرض الاعتذار مباشرة.
- * onPass يُستدعى لمن عمره 13 فأكثر، onChild لمن دونها.
+ * onPass يُستدعى لمن عمره 13 فأكثر، onChild لمن دونها، onParent حين يتولّى وليّ الأمر.
  */
-export default function AgeGate({ status, onPass, onChild }) {
+export default function AgeGate({ status, onPass, onChild, onParent }) {
   const [year, setYear] = useState('');
 
   if (status === 'child') {
     return (
-      <p className="age-gate-child">
-        الحساب لمن هم {MIN_ACCOUNT_AGE} سنة فما فوق. التطبيق يعمل كاملاً بدونه، وبياناتك محفوظة على جهازك.
-      </p>
+      <div className="age-gate">
+        <p className="age-gate-child">
+          الحساب لمن هم {MIN_ACCOUNT_AGE} سنة فما فوق. اطلب من أحد والديك أن يُنشئ لك حساباً ببريده.
+          والتطبيق يعمل كاملاً بدون حساب، وبياناتك محفوظة على جهازك.
+        </p>
+        <button type="button" className="account-form-link" onClick={() => { clearAgeGate(); onParent(); }}>
+          أنا وليّ الأمر — أنشئ الحساب
+        </button>
+      </div>
     );
   }
 

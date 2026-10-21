@@ -29,3 +29,8 @@ export function readAgeGate() {
 export function saveAgeGate(value) {
   try { localStorage.setItem(AGE_GATE_KEY, value); } catch { /* تجاهل */ }
 }
+
+// «أنا وليّ الأمر»: يُعاد السؤال ليجيب عنه الوالد بسنة ميلاده
+export function clearAgeGate() {
+  try { localStorage.removeItem(AGE_GATE_KEY); } catch { /* تجاهل */ }
+}
