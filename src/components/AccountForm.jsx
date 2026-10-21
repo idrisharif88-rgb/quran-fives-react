@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { MIN_CODE_LENGTH } from '../utils/syncAccount';
+import { readAgeGate } from '../utils/ageGate';
 import PasswordInput from './PasswordInput';
+import AgeGate from './AgeGate/AgeGate';
 
 /**
  * دخول أو طلب حساب جديد بالبريد. الحالة والشبكة في useAccount؛ هنا الحقول فقط.
@@ -13,6 +15,7 @@ export default function AccountForm({ auth }) {
   const [code, setCode] = useState('');
   const [confirm, setConfirm] = useState('');
   const [mismatch, setMismatch] = useState(false);
+  const [age, setAge] = useState(readAgeGate);   // سؤال العمر قبل الحساب الجديد
 
   const isRegister = mode === 'register';
 
@@ -39,22 +42,35 @@ export default function AccountForm({ auth }) {
 
   const message = mismatch ? 'كلمتا السر غير متطابقتين' : error;
 
+  const tabs = (
+    <div className="account-form-tabs" role="tablist">
+      {[['login', 'دخول'], ['register', 'حساب جديد']].map(([value, label]) => (
+        <button
+          key={value}
+          type="button"
+          role="tab"
+          aria-selected={mode === value}
+          className={`account-form-tab${mode === value ? ' is-active' : ''}`}
+          onClick={() => switchMode(value)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (isRegister && age !== 'adult') {
+    return (
+      <div className="account-form" dir="rtl">
+        {tabs}
+        <AgeGate status={age} onPass={() => setAge('adult')} onChild={() => setAge('child')} onParent={() => setAge(null)} />
+      </div>
+    );
+  }
+
   return (
     <form className="account-form" dir="rtl" onSubmit={submit} noValidate>
-      <div className="account-form-tabs" role="tablist">
-        {[['login', 'دخول'], ['register', 'حساب جديد']].map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={mode === value}
-            className={`account-form-tab${mode === value ? ' is-active' : ''}`}
-            onClick={() => switchMode(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {tabs}
 
       {isRegister && (
         <input

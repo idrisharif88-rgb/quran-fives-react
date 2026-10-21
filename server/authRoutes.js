@@ -107,4 +107,6 @@ export function registerAuthRoutes(app, { accounts, otps, devices, sendMail, ipM
     await devices.clear(key);
     res.json({ ok: true, device: await devices.issue(key), name: await accounts.nameOf(email) });
   });
+
+  return { mailOtp, fail };
 }

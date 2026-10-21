@@ -20,6 +20,11 @@ const KINDS = {
     title: 'استرجاع كلمة السر',
     lead: `طُلب تغيير كلمة السر لحسابك في ${APP_NAME}. أدخل الرمز التالي لاختيار كلمة سر جديدة:`,
   },
+  delete: {
+    subject: (otp) => `${otp} هو رمز حذف حسابك في ${APP_NAME}`,
+    title: 'حذف الحساب',
+    lead: `طُلب حذف حسابك في ${APP_NAME} وكل بياناته وملفاته من الخادم. الحذف نهائي. أدخل الرمز التالي في صفحة الحذف لتأكيده:`,
+  },
 };
 
 const FONT = "'Segoe UI', Tahoma, Arial, sans-serif";
@@ -72,7 +77,7 @@ function text({ title, lead }, otp, name) {
   ].join('\n');
 }
 
-// kind: 'verify' | 'login' | 'reset'. name اختياري: يُحيّا به المستخدم في أوّل الرسالة.
+// kind: 'verify' | 'login' | 'reset' | 'delete'. name اختياري: يُحيّا به المستخدم في أوّل الرسالة.
 export function otpMail(kind, otp, name = '') {
   const copy = KINDS[kind];
   return { subject: copy.subject(otp), text: text(copy, otp, name), html: html(copy, otp, name) };

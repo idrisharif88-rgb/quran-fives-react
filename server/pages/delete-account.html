@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>حذف الحساب — خماسيات | Delete account — Khumasiyat (Quran Fives)</title>
+<style>
+  :root { --bg: #f2f5f3; --card: #fff; --ink: #16211b; --muted: #55625b; --line: #e1e7e3; --accent: #0b5d2a; --danger: #b3261e; --ok: #1e6b3a; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1512; --card: #18211c; --ink: #e8efe9; --muted: #a3b1a8; --line: #2a362f; --accent: #5fc086; --danger: #ff8a80; --ok: #7ad69c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.8 'Segoe UI', Tahoma, Arial, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 24px; margin: 0 0 4px; color: var(--accent); }
+  h2 { font-size: 18px; margin: 28px 0 8px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-top: 16px; }
+  p, li { color: var(--muted); }
+  label { display: block; margin: 12px 0 4px; font-weight: 600; }
+  input { width: 100%; padding: 10px 12px; font: inherit; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); }
+  input[dir="ltr"] { text-align: left; }
+  button { margin-top: 16px; width: 100%; padding: 12px; font: inherit; font-weight: 700; border: 0; border-radius: 10px; background: var(--danger); color: #fff; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: wait; }
+  #msg { margin-top: 12px; min-height: 1.8em; font-weight: 600; }
+  #msg.error { color: var(--danger); }
+  #msg.ok { color: var(--ok); }
+  [hidden] { display: none !important; }
+  .en { direction: ltr; text-align: left; }
+</style>
+</head>
+<body>
+<main>
+  <h1>حذف حساب «خماسيات»</h1>
+  <p>تطبيق خماسيات لحفظ القرآن ومراجعته. من هذه الصفحة تحذف حسابك وكل بياناته من خادم التطبيق.</p>
+
+  <div class="card">
+    <h2 style="margin-top:0">ما الذي يُحذف</h2>
+    <ul>
+      <li>الحساب: البريد والاسم وبصمة كلمة السر.</li>
+      <li>البيانات المزامنة: التقدّم والملاحظات والتفسير والختمات وجهات المُسمِّعين.</li>
+      <li>الملفات: تسجيلات الحفظ والمراجعة، وملفات الإجازات.</li>
+      <li>الأجهزة الموثوقة ورموز التأكيد المعلّقة.</li>
+    </ul>
+    <p>يُحذف ذلك كله <strong>فوراً ونهائياً</strong>، ولا يمكن استرجاعه.</p>
+    <p>نسخة «جوجل درايف» محفوظة في حسابك أنت على جوجل، لا على خادمنا. لحذفها: جوجل درايف ← الإعدادات ← إدارة التطبيقات ← خماسيات ← «حذف بيانات التطبيق المخفية».</p>
+    <p>ويمكنك الحذف من داخل التطبيق أيضاً: القائمة ← الحساب ← «احذف حسابي».</p>
+  </div>
+
+  <div class="card">
+    <form id="step1">
+      <label for="email">البريد الإلكتروني</label>
+      <input id="email" type="email" dir="ltr" autocomplete="username" required>
+      <label for="password">كلمة السر</label>
+      <input id="password" type="password" dir="ltr" autocomplete="current-password" required>
+      <button type="submit">أرسل رمز التأكيد إلى بريدي</button>
+    </form>
+    <form id="step2" hidden>
+      <p>أرسلنا رمزاً من 6 أرقام إلى بريدك. أدخله لتأكيد الحذف النهائي.</p>
+      <label for="otp">رمز التأكيد</label>
+      <input id="otp" inputmode="numeric" dir="ltr" maxlength="6" autocomplete="one-time-code" required>
+      <button type="submit">احذف حسابي نهائياً</button>
+    </form>
+    <div id="msg" role="status"></div>
+  </div>
+
+  <div class="card en" lang="en">
+    <h2 style="margin-top:0">Delete your Khumasiyat (Quran Fives) account</h2>
+    <p>Khumasiyat is a Quran memorisation and review app. Use the form above to delete your account and all of its data from the app's server: enter your email and password, then the 6-digit code we email you.</p>
+    <p><strong>Deleted immediately and permanently:</strong> your account (email, name, password hash), synced data (progress, notes, tafsir, khatmas, teacher contacts), your files (memorisation and review recordings, ijaza PDFs), trusted devices and pending codes. Nothing is kept.</p>
+    <p>The optional Google Drive backup lives in your own Google account. To remove it: Google Drive → Settings → Manage apps → Khumasiyat → "Delete hidden app data".</p>
+    <p>You can also delete your account inside the app: Menu → Account → «احذف حسابي».</p>
+    <p>Contact: q.fives.app@gmail.com</p>
+  </div>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const msg = $('msg');
+  const say = (text, kind = '') => { msg.textContent = text; msg.className = kind; };
+
+  // Basic بترميز UTF-8: كلمات السر قد تحوي حروفاً عربية
+  const basic = () => {
+    const bytes = new TextEncoder().encode(`${$('email').value.trim()}:${$('password').value}`);
+    return 'Basic ' + btoa(String.fromCharCode(...bytes));
+  };
+
+  async function send(route, body) {
+    const res = await fetch(route, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: basic() },
+      body: JSON.stringify(body || {}),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || 'تعذّر الاتصال — حاول لاحقاً');
+    return json;
+  }
+
+  function busy(form, on) {
+    form.querySelector('button').disabled = on;
+  }
+
+  $('step1').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    busy(e.target, true);
+    say('');
+    try {
+      await send('/api/account/delete/request');
+      $('step1').hidden = true;
+      $('step2').hidden = false;
+      $('otp').focus();
+    } catch (err) {
+      say(err.message, 'error');
+    } finally {
+      busy(e.target, false);
+    }
+  });
+
+  $('step2').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    busy(e.target, true);
+    say('');
+    try {
+      await send('/api/account/delete/confirm', { otp: $('otp').value.trim() });
+      $('step2').hidden = true;
+      say('حُذف حسابك وكل بياناته من الخادم. Your account has been deleted.', 'ok');
+    } catch (err) {
+      say(err.message, 'error');
+    } finally {
+      busy(e.target, false);
+    }
+  });
+</script>
+</body>
+</html>

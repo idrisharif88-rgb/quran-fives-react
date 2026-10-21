@@ -1,0 +1,39 @@
+.account-delete-link {
+  display: block;
+  margin: 4px auto 10px;
+  padding: 6px 10px;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--app-danger);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.account-delete {
+  margin-bottom: 10px;
+}
+
+.account-delete-note {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--app-muted);
+  line-height: 1.6;
+}
+
+.account-delete-error {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-danger);
+}
+
+.account-delete .manual-sync-confirm-actions {
+  margin-top: 10px;
+}
+
+.account-delete-confirm {
+  background: var(--app-danger);
+  color: #fff;
+}
