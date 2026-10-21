@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { birthYears, isUnderAge, saveAgeGate, clearAgeGate, MIN_ACCOUNT_AGE } from '../../utils/ageGate';
+import ParentGate from './ParentGate';
 import './AgeGate.css';
 
 /**
@@ -8,16 +9,20 @@ import './AgeGate.css';
  */
 export default function AgeGate({ status, onPass, onChild, onParent }) {
   const [year, setYear] = useState('');
+  const [parent, setParent] = useState(false);
+
+  if (status === 'child' && parent) {
+    return <ParentGate onPass={() => { clearAgeGate(); setParent(false); onParent(); }} onCancel={() => setParent(false)} />;
+  }
 
   if (status === 'child') {
     return (
       <div className="age-gate">
         <p className="age-gate-child">
-          الحساب لمن هم {MIN_ACCOUNT_AGE} سنة فما فوق. اطلب من أحد والديك أن يُنشئ لك حساباً ببريده.
-          والتطبيق يعمل كاملاً بدون حساب، وبياناتك محفوظة على جهازك.
+          الحساب لمن أتمّ {MIN_ACCOUNT_AGE} سنة. يُنشئه لك وليّ أمرك ببريده، والتطبيق يعمل كاملاً بدونه.
         </p>
-        <button type="button" className="account-form-link" onClick={() => { clearAgeGate(); onParent(); }}>
-          أنا وليّ الأمر — أنشئ الحساب
+        <button type="button" className="account-form-link" onClick={() => setParent(true)}>
+          أنا وليّ الأمر
         </button>
       </div>
     );
@@ -32,9 +37,9 @@ export default function AgeGate({ status, onPass, onChild, onParent }) {
 
   return (
     <div className="age-gate">
-      <label className="account-form-lead" htmlFor="age-gate-year">ما سنة ميلادك؟</label>
+      <label className="account-form-lead" htmlFor="age-gate-year">سنة ميلادك</label>
       <select id="age-gate-year" className="account-form-input" value={year} onChange={(e) => setYear(e.target.value)}>
-        <option value="">اختر السنة</option>
+        <option value="">اختر</option>
         {birthYears().map((y) => <option key={y} value={y}>{y}</option>)}
       </select>
       <button type="button" className="account-form-submit" disabled={!year} onClick={next}>
