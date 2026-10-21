@@ -1,0 +1,12 @@
+.age-gate {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.age-gate-child {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--app-text);
+}
