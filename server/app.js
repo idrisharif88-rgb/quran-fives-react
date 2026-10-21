@@ -8,6 +8,7 @@ import { createDevices } from './devices.js';
 import { registerAuthRoutes } from './authRoutes.js';
 import { registerAdminRoutes } from './adminRoutes.js';
 import { registerFileRoutes } from './fileRoutes.js';
+import { registerAccountDeleteRoutes } from './accountDeleteRoutes.js';
 
 const DEFAULT_LIMITS = {
   ipMail: { windowMs: 60 * 60 * 1000, max: 10 },     // رسائل تأكيد/استرجاع لكل عنوان
@@ -40,7 +41,8 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
   const adminName = normalizeUser(adminUser);
   const store = createStore(dataDir);
   const accounts = createAccounts(store, { maxUsers });
-  const otps = createOtps(createStore(dataDir, 'pending'), otpOptions);
+  const pending = createStore(dataDir, 'pending');
+  const otps = createOtps(pending, otpOptions);
   const devices = createDevices(store);
   const cfg = { ...DEFAULT_LIMITS, ...limits };
   const ipFails = createLimiter(cfg.ipFails);
@@ -111,7 +113,7 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
   registerAdminRoutes(app, { accounts, signedIn, adminName });
 
   // ─── التسجيل بالبريد، الدخول بخطوتين، واسترجاع كلمة السر ───
-  registerAuthRoutes(app, {
+  const { mailOtp, fail } = registerAuthRoutes(app, {
     accounts,
     otps,
     devices,
@@ -159,6 +161,13 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
     v => Array.isArray(v), { updatedAt: 0, list: [] });
 
   registerFileRoutes(app, { store, dataDir, requireAccount, maxFileBytes, maxUserBytes });
+
+  // حذف الحساب: كل ما تحت مجلّد المستخدم (الحساب، الحالة، الختمات، الملفات، الأجهزة) ورموزه المعلّقة
+  const deleteAccount = async (key) => {
+    await store.removeAll(key);
+    await pending.removeAll(key);
+  };
+  registerAccountDeleteRoutes(app, { accounts, otps, signedIn, checkPassword, mailOtp, fail, deleteAccount });
 
   return { app, store, accounts };
 }

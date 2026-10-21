@@ -161,3 +161,7 @@ export const setUserApproval = (user, approved) =>
 // صلاحية لحساب بعينه — hifzCustomStart: بدء الحفظ من آية يختارها
 export const setUserPermission = (user, permission, allowed) =>
   api('/api/admin/users/permission', { method: 'POST', body: JSON.stringify({ user, permission, allowed }) });
+
+// حذف الحساب وكل بياناته وملفاته من الخادم. creds بكلمة السر كما أعاد المستخدم كتابتها،
+// ومعها مفتاح الجهاز. يعمل ولو لم يوافق المشرف على الحساب بعد.
+export const deleteAccount = (creds) => api('/api/account/delete', { method: 'POST', creds });

@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createApp } from '../app.js';
 import { migrateLegacyOwner } from '../accounts.js';
+import { userKey } from '../store.js';
 
 let dataDir, server, base, main;
 
@@ -429,6 +430,53 @@ test('صلاحية نسخ جوجل: يمنحها المشرف لحساب بعي�
     assert.equal((await call('GET', '/api/auth/me', { headers: g }, s.origin)).json.googleBackup, true);
     const users = (await call('GET', '/api/admin/users', { headers: boss }, s.origin)).json.users;
     assert.equal(users.find(u => u.user === 'g@example.com').googleBackup, true);
+  } finally {
+    s.srv.close();
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('حذف الحساب: من التطبيق ومن صفحة الويب، ويمحو البيانات والملفات', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'quran-sync-delete-'));
+  const s = await start({ dataDir: dir, adminUser: 'boss@example.com' });
+  const userDir = (user) => path.join(dir, 'users', userKey(user));
+  try {
+    const page = await fetch(s.origin + '/delete-account');
+    assert.equal(page.status, 200);
+    assert.match(await page.text(), /حذف حساب/);
+
+    // التطبيق: كلمة السر + الجهاز، ولو لم يوافق المشرف بعد
+    await signUp('app@example.com', '123456', s.origin);
+    const noDevice = basic('app@example.com', '123456');
+    assert.equal((await call('POST', '/api/account/delete', { headers: noDevice }, s.origin)).status, 401);
+    const inApp = await call('POST', '/api/account/delete', { headers: basic('app@example.com', '123456', devices['app@example.com']) }, s.origin);
+    assert.equal(inApp.status, 200);
+    assert.equal(await s.accounts.exists('app@example.com'), false);
+
+    // الويب: كلمة السر ← رمز بالبريد ← الحذف. البيانات والملفات تذهب معه.
+    await signUp('web@example.com', '123456', s.origin);
+    await s.accounts.setApproved('web@example.com', true);
+    const full = basic('web@example.com', '123456', devices['web@example.com']);
+    await call('PUT', '/api/state', { headers: full, body: { state: { a: 1 }, baseUpdatedAt: 0 } }, s.origin);
+    await fetch(`${s.origin}/api/files/ijaza/f1`, { method: 'PUT', headers: { ...full, 'Content-Type': 'application/pdf' }, body: Buffer.from('%PDF-1') });
+    await fs.access(path.join(userDir('web@example.com'), 'state.json'));
+    const web = basic('web@example.com', '123456');
+    assert.equal((await call('POST', '/api/account/delete/request', { headers: basic('web@example.com', 'wrong-pass') }, s.origin)).status, 401);
+    assert.equal((await call('POST', '/api/account/delete/request', { headers: web }, s.origin)).status, 202);
+    const otp = outbox.get('web@example.com');
+    const wrong = String((Number(otp) + 1) % 1e6).padStart(6, '0');
+    assert.equal((await call('POST', '/api/account/delete/confirm', { headers: web, body: { otp: wrong } }, s.origin)).status, 400);
+    const done = await call('POST', '/api/account/delete/confirm', { headers: web, body: { otp } }, s.origin);
+    assert.equal(done.status, 200);
+    await assert.rejects(fs.access(userDir('web@example.com')));
+    assert.equal((await call('POST', '/api/auth/login', { headers: web }, s.origin)).status, 401);
+
+    // حساب المشرف لا يُحذف
+    await signUp('boss@example.com', '123456', s.origin);
+    const boss = basic('boss@example.com', '123456', devices['boss@example.com']);
+    assert.equal((await call('POST', '/api/account/delete', { headers: boss }, s.origin)).status, 400);
+    assert.equal((await call('POST', '/api/account/delete/request', { headers: boss }, s.origin)).status, 400);
+    assert.equal(await s.accounts.exists('boss@example.com'), true);
   } finally {
     s.srv.close();
     await fs.rm(dir, { recursive: true, force: true });

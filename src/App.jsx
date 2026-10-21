@@ -82,6 +82,7 @@ import { MUSHAF } from './utils/mushafEdition';
 import AccountPanel from './components/AccountPanel';
 import WelcomeToast from './components/WelcomeToast';
 import AccountBadge from './components/AccountBadge';
+import AccountDelete from './components/AccountDelete/AccountDelete';
 import AccountPending from './components/AccountPending';
 import AdminUsersSheet from './components/AdminUsersSheet';
 import useAccount from './hooks/useAccount';
@@ -4221,6 +4222,7 @@ function App() {
                     <button type="button" className="khmasiyat-quiz-btn" disabled={signOutState === 'busy'} onClick={() => handleSignOut()} style={{ width: '100%', marginBottom: '10px' }}>
                       {signOutState === 'busy' ? 'جارٍ حفظ بياناتك…' : 'تسجيل الخروج'}
                     </button>
+                    {!accountStatus?.admin && <AccountDelete auth={auth} />}
                   </>
                 )}
               </>

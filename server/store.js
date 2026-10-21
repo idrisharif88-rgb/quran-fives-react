@@ -54,6 +54,11 @@ export function createStore(dataDir, subdir = 'users') {
     await fs.rm(fileOf(key, name), { force: true });
   }
 
+  // مجلّد المستخدم كله بما فيه (حذف الحساب)
+  async function removeAll(key) {
+    await fs.rm(path.join(usersDir, key), { recursive: true, force: true });
+  }
+
   async function listKeys() {
     try {
       const entries = await fs.readdir(usersDir, { withFileTypes: true });
@@ -67,5 +72,5 @@ export function createStore(dataDir, subdir = 'users') {
     return (await listKeys()).length;
   }
 
-  return { read, write, createExclusive, remove, listKeys, countUsers };
+  return { read, write, createExclusive, remove, removeAll, listKeys, countUsers };
 }
