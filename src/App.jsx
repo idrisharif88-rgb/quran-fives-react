@@ -58,6 +58,7 @@ import GoogleBackup from './components/GoogleBackup/GoogleBackup';
 import UpdatesNotebook from './components/UpdatesNotebook/UpdatesNotebook';
 import AppScaleSheet from './components/AppScale/AppScaleSheet';
 import ContactUs from './components/ContactUs/ContactUs';
+import WelcomeScreen from './components/Welcome/WelcomeScreen';
 import useAppScale from './hooks/useAppScale';
 import useGoogleDailyBackup from './hooks/useGoogleDailyBackup';
 import useHifzReminder from './hooks/useHifzReminder';
@@ -323,6 +324,7 @@ function App() {
   const scaleBackRef = useRef(null);
   const [isContactOpen, setIsContactOpen] = useState(false);
   const contactBackRef = useRef(null);
+  const welcomeBackRef = useRef(null);
   const [isIjazatOpen, setIsIjazatOpen] = useState(false);
   const ijazatBackRef = useRef(null); // يضعه IjazatScreen ما دام خارج قائمة الإجازات
   const [expandedFiqhId, setExpandedFiqhId] = useState(null);
@@ -1975,6 +1977,11 @@ function App() {
     }
     if (scaleBackRef.current) {
       scaleBackRef.current();
+      return true;
+    }
+    // شاشة الترحيب فوق التطبيق: نموذج الحساب فيها، وإلا «ابدأ بدون حساب»
+    if (welcomeBackRef.current) {
+      welcomeBackRef.current();
       return true;
     }
     if (contactBackRef.current) {
@@ -4281,6 +4288,7 @@ function App() {
       )}
       {/* ─── قسم فقهيات ─── */}
       {isContactOpen && <ContactUs onClose={() => setIsContactOpen(false)} backRef={contactBackRef} />}
+      <WelcomeScreen auth={auth} backRef={welcomeBackRef} />
       {isScaleOpen && <AppScaleSheet scale={appScale.scale} onChange={appScale.setScale} onClose={() => setIsScaleOpen(false)} backRef={scaleBackRef} />}
       {isNotebookOpen && isOwner && <UpdatesNotebook onClose={() => setIsNotebookOpen(false)} backRef={notebookBackRef} />}
       {isFiqhOpen && isOwner && (

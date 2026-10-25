@@ -1,0 +1,115 @@
+/* شاشة الترحيب: فوق التطبيق كلّه، وتحت ModalDialog (13500) الذي يفتح نموذج الحساب.
+   الألوان من رموز .app-container، فتعمل في الأخضر والذهبي نهاراً وليلاً. الرأس بأخضر
+   أيقونة التطبيق في كل الأوضاع، كشاشة الافتتاح، والنصّ عليه أبيض. */
+.welcome-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 13200;
+  overflow-y: auto;
+  background: var(--app-surface-3);
+  color: var(--app-text);
+  text-align: start;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 18px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.welcome-screen > * { width: 100%; max-width: 480px; margin-inline: auto; }
+
+.welcome-hero {
+  background: linear-gradient(160deg, #0e5340 0%, rgba(0, 0, 0, 0.25) 160%), #0e5340;
+  color: #fff;
+  border-radius: 20px;
+  padding: 20px 18px;
+  text-align: center;
+}
+.welcome-logo {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 8px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.12);
+  display: grid;
+  place-items: center;
+}
+.welcome-logo svg { width: 38px; height: 38px; }
+.welcome-hero h1 { margin: 0 0 4px; font-size: 1.5rem; font-weight: 800; }
+.welcome-hero p { margin: 0; font-size: 0.9rem; line-height: 1.5; opacity: 0.92; }
+
+.welcome-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.welcome-tile {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  padding: 14px 6px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.welcome-tile__ic {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--app-accent-deep-soft);
+  color: var(--app-accent-ink);
+  display: grid;
+  place-items: center;
+}
+.welcome-tile__ic svg { width: 24px; height: 24px; fill: currentColor; }
+.welcome-tile b { font-size: 0.85rem; font-weight: 700; line-height: 1.3; color: var(--app-text-strong); }
+
+.welcome-auth { display: flex; flex-direction: column; gap: 10px; }
+.welcome-btn {
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 12px;
+  border-radius: 12px;
+  border: 2px solid var(--app-accent-deep);
+  background: var(--app-accent-deep);
+  color: var(--app-accent-deep-contrast);
+  cursor: pointer;
+}
+.welcome-btn--outline { background: transparent; color: var(--app-accent-ink); border-color: var(--app-accent-ink); }
+.welcome-skip {
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: none;
+  border: 0;
+  padding: 4px;
+  color: var(--app-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.welcome-contact { text-align: center; }
+.welcome-contact__lbl { font-size: 0.84rem; font-weight: 700; color: var(--app-muted); margin-bottom: 10px; }
+.welcome-circles { display: flex; justify-content: center; gap: 22px; }
+.welcome-circ {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--app-muted);
+  text-decoration: none;
+}
+.welcome-circ__ic {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+.welcome-circ__ic svg { width: 26px; height: 26px; fill: currentColor; }
+.welcome-circ__whatsapp { background: #25d366; }
+.welcome-circ__call { background: #0e5340; }
+.welcome-circ__email { background: #c75146; }
+
+.welcome-foot { text-align: center; font-size: 0.76rem; color: var(--app-muted); margin-top: auto; }
