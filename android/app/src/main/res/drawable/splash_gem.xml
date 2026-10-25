@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- المعيّن فوق المصحف: رسم مستقلّ بالشبكة نفسها ليُحرَّك وحده (NativeSplash). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="62dp"
+    android:height="62dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <path
+        android:pathData="M32,4l3.2,6 -3.2,6 -3.2,-6z"
+        android:fillColor="#FBBF24" />
+</vector>

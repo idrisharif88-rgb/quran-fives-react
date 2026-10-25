@@ -12,6 +12,7 @@ window.addEventListener('unhandledrejection', (e) => {
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
+import SplashIntro from './components/SplashIntro/SplashIntro'
 import './styles/appScale.css'
 import { applyScale, loadScale } from './utils/appScale'
 
@@ -21,5 +22,6 @@ applyScale(loadScale())
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
+    <SplashIntro />
   </StrictMode>,
 )

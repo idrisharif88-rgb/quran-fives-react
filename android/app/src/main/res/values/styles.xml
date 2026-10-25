@@ -13,10 +13,18 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">#f4f6f8</item>
+        <!-- يبقى ظاهراً بعد استبدال ثيم الإقلاع بهذا حتى ترسم شاشة الافتتاح: بدونه يمرّ
+             إطار فارغ بين نافذة الإقلاع وشاشة الافتتاح (NativeSplash) -->
+        <item name="android:windowBackground">@drawable/launch_fives</item>
     </style>
 
 
+    <!-- نافذة الإقلاع: أخضر الأيقونة وبلاطة المصحف (launch_fives.xml)، ومنها تبدأ شاشة
+         الافتتاح. على أندرويد 12+ يُستعمل نظام الإقلاع الجديد: الأخضر نفسه بلا أيقونة. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <item name="android:background">@drawable/launch_fives</item>
+        <item name="windowSplashScreenBackground">#0E5340</item>
+        <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

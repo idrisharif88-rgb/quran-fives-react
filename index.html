@@ -9,6 +9,18 @@
     <title>quran-fives-react</title>
   </head>
   <body>
+    <!-- أوّل صورة لشاشة الافتتاح، تُرسم قبل أي سكربت: الأخضر نفسه والأيقونة نفسها في
+         المكان نفسه كما في نافذة أندرويد (launch_fives.xml) وSplashIntro، الذي يزيلها
+         لحظة تركيبه. مضمّنة عمداً: لم يُحمَّل أي ملف تنسيق بعد. -->
+    <div id="boot-splash" style="position:fixed;inset:0;z-index:300000;background:#0e5340">
+      <div style="position:absolute;top:50%;left:50%;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:26px;background:rgba(255,255,255,.1);display:grid;place-items:center">
+        <svg viewBox="0 0 64 64" fill="none" width="62" height="62">
+          <path d="M32 4l3.2 6-3.2 6-3.2-6z" fill="#fbbf24"/>
+          <path d="M8 24c9-3 17-2 24 3 7-5 15-6 24-3v28c-9-3-17-2-24 3-7-5-15-6-24-3z" stroke="#fbbf24" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M32 27v28" stroke="#fbbf24" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
