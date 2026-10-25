@@ -67,7 +67,7 @@ export default function useStopwatch({ onJuzComplete, onBlockComplete } = {}) {
 
   const lapStartRef = useRef(null);           // performance.now() عند بدء الجولة الحالية
   const currentLapAccumRef = useRef(0);       // ما تراكم من الجولة قبل الإيقاف اليدوي
-  const sessionStartRef = useRef(null);       // طابع زمني لبداية بطاقة العشر الجارية (أول تشغيل)
+  const sessionStartRef = useRef(null);       // طابع زمني لبداية بطاقة الجزء الجارية (أول تشغيل)
   const wakeLockRef = useRef(null);
   const onJuzCompleteRef = useRef(onJuzComplete);
   const onBlockCompleteRef = useRef(onBlockComplete);
@@ -233,15 +233,15 @@ export default function useStopwatch({ onJuzComplete, onBlockComplete } = {}) {
         onJuzCompleteRef.current?.(summary);
       }
     }
-    // إنهاء آخر صفحة في العشر (11، 21 … 591، 604) = بدء التالية: تظهر بطاقة هذه العشر وحدها
-    // (مرة واحدة) بما وُقِّت من صفحاتها ولو كانت أقل من عشر.
+    // إنهاء آخر صفحة في الجزء (21، 41 … 581، 604) = بدء التالية: تظهر بطاقة هذا الجزء وحده
+    // (مرة واحدة) بما وُقِّت من صفحاته ولو كانت أقل من عدّتها.
     const block = closingBlock(finishedPage);
     if (block != null && !seenBlockRef.current.has(block)) {
       const blockLaps = lapsOfBlock(lapsRef.current, block);
       if (blockLaps.length) {
         seenBlockRef.current.add(block);
         onBlockCompleteRef.current?.({ laps: blockLaps, startedAt: sessionStartRef.current });
-        // العشر التالية تبدأ الآن — لكل بطاقة وقت بدايتها
+        // الجزء التالي يبدأ الآن — لكل بطاقة وقت بدايتها
         sessionStartRef.current = Date.now();
       }
     }

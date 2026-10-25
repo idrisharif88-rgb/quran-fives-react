@@ -55,6 +55,19 @@
   font-weight: 700;
   color: var(--app-text);
 }
+/* الفرق عن البطاقة السابقة، تحت الزمن الكلّي. الأسرع بلون السمة والأبطأ بلون الخطر، والسهم يقول الاتجاه بلا لون */
+.jz-delta {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-muted);
+}
+.jz-delta.is-faster {
+  color: var(--app-accent-ink);
+}
+.jz-delta.is-slower {
+  color: var(--app-danger);
+}
 .jz-total {
   font-size: 30px;
   font-weight: 900;
@@ -90,83 +103,6 @@
   color: var(--app-accent-ink);
 }
 
-/* أفضل وقت + مقارنة */
-.jz-best {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: center;
-  text-align: center;
-}
-.jz-best-label {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--app-accent-ink);
-}
-.jz-compare {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--app-muted);
-}
-/* الأسرع بلون السمة والأبطأ بلون الخطر، والسهم يقول الاتجاه بلا لون */
-.jz-compare.is-faster {
-  color: var(--app-accent-ink);
-}
-.jz-compare.is-slower {
-  color: var(--app-danger);
-}
-
-/* شريط التقدم */
-.jz-progress-line {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--app-text);
-}
-.jz-progress-bar {
-  height: 10px;
-  border-radius: 6px;
-  background: var(--app-border);
-  overflow: hidden;
-}
-.jz-progress-fill {
-  height: 100%;
-  background: var(--app-accent);
-  border-radius: 6px;
-  transition: width 0.3s ease;
-}
-
-/* الدعاء */
-.jz-dua {
-  background: var(--app-bg);
-  border: 1px solid var(--app-border);
-  border-radius: 14px;
-  padding: 12px;
-}
-.jz-dua-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  font-weight: 800;
-  color: var(--app-accent-ink);
-}
-.jz-dua-edit {
-  border: none;
-  background: transparent;
-  color: var(--app-accent-ink);
-  font-weight: 800;
-  cursor: pointer;
-  font-family: inherit;
-}
-.jz-dua-text {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--app-text);
-}
 /* الأزرار */
 .jz-actions {
   display: flex;

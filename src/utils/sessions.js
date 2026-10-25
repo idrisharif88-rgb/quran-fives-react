@@ -41,34 +41,26 @@ export function buildSessionFromLaps(laps, startedAt, finishedAt) {
     pageTimes: sorted.map((l) => ({ page: l.page, seconds: l.ms / 1000 })),
     startedAt: startedAt ? new Date(startedAt).toISOString() : null,
     finishedAt: finishedAt ? new Date(finishedAt).toISOString() : new Date().toISOString(),
-    dua: '',
     bookmarked: true,
   };
 }
 
-// متوسط كل الأجزاء المحفوظة (للثواني)
-export function allTimeAverage(sessions) {
-  if (!sessions.length) return null;
-  const total = sessions.reduce((s, x) => s + x.avgSeconds, 0);
-  return total / sessions.length;
-}
-
-// متوسط البطاقة السابقة في المصحف (أقرب بطاقة تبدأ قبل هذه). البطاقات كل عشر صفحات، فالمقارنة
-// بالجزء كانت تقارن النصف الثاني بالجزء الذي قبله وتتخطّى النصف الأول
-export function previousCardAverage(sessions, startPage) {
-  const prev = sessions
+// البطاقة السابقة في المصحف: أقرب بطاقة محفوظة تبدأ قبل هذه
+export function previousCard(sessions, startPage) {
+  return sessions
     .filter((s) => s.startPage < startPage)
-    .sort((a, b) => b.startPage - a.startPage)[0];
-  return prev ? prev.avgSeconds : null;
+    .sort((a, b) => b.startPage - a.startPage)[0] ?? null;
 }
 
-// مقارنة متوسط البطاقة بمتوسط آخر، بالفرق للصفحة: { faster, text } أو null بلا ما يُقارن به.
-// فرق دون نصف ثانية يُعدّ تساوياً (faster: null).
-export function compareAverage(avg, other, what) {
-  if (other == null) return null;
-  const diff = Math.round(avg - other);
-  if (diff === 0) return { faster: null, text: `مثل ${what}` };
-  return { faster: diff < 0, text: `${diff < 0 ? 'أسرع' : 'أبطأ'} من ${what} بـ ${formatSeconds(Math.abs(diff))} للصفحة` };
+// الفرق عن البطاقة السابقة بزمن البطاقة كلّها: { faster, text } أو null بلا ما يُقارن به.
+// يُقاس بمتوسط الصفحة ثم يُضرب في صفحات هذه البطاقة، فالجزء الأول (21 صفحة) والأخير (23)
+// يقارَنان بعدل. فرق دون نصف ثانية يُعدّ تساوياً (faster: null).
+export function compareWithPrevious(session, prev) {
+  if (!prev) return null;
+  const name = prev.juzNumber === session.juzNumber ? 'البطاقة السابقة' : `الجزء ${prev.juzNumber}`;
+  const diff = Math.round((session.avgSeconds - prev.avgSeconds) * session.pageTimes.length);
+  if (diff === 0) return { faster: null, text: `مثل ${name}` };
+  return { faster: diff < 0, text: `${diff < 0 ? 'أسرع' : 'أبطأ'} من ${name} بـ ${formatSeconds(Math.abs(diff))}` };
 }
 
 // أفضل فترة زمنية للقراءة (الأسرع في المتوسط) من الجلسات المحفوظة

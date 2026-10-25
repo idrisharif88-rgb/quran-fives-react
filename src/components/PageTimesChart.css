@@ -22,29 +22,6 @@
   color: var(--app-muted);
 }
 
-.ptc-key {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.ptc-key i {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-}
-
-.ptc-key i.ptc-line {
-  width: 14px;
-  height: 0;
-  border-radius: 0;
-  border-top: 2px dashed;
-}
-
-.ptc-key i.ptc-line.dotted {
-  border-top-style: dotted;
-}
-
 .ptc-pick {
   font-size: 13px;
   color: var(--app-text);
@@ -57,9 +34,6 @@
 
 .ptc-pick em {
   font-style: normal;
-  color: var(--app-accent-ink);
-}
-
-.ptc-pick em.is-over {
   color: var(--app-danger);
 }
+

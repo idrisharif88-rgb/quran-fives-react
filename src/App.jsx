@@ -395,8 +395,7 @@ function App() {
   ));
   const [activeResultSession, setActiveResultSession] = useState(null);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
-  const resultsBackRef = useRef(null);   // يضعه JuzResults حين يكون محرّر الدعاء مفتوحاً
-  const liveCardLinkRef = useRef(null);  // بطاقة العشر الجارية في العداد ↔ نسختها في المحفوظات (وقت الانتهاء + أوّل صفحة)
+  const liveCardLinkRef = useRef(null);  // بطاقة الجزء الجارية في العداد ↔ نسختها في المحفوظات (وقت الانتهاء + أوّل صفحة)
   // المصحف: آخر صفحة مقروءة تُحفظ وتُستعاد
   const [isMushafOpen, setIsMushafOpen] = useState(false);
   const [mushafPage, setMushafPage] = useState(() => (
@@ -641,7 +640,7 @@ function App() {
       }
     }, []),
     onBlockComplete: useCallback(({ laps, startedAt }) => {
-      // بطاقة كل عشر صفحات (صفحاتها وحدها): تُحفظ في المحفوظات وتُفتح
+      // بطاقة كل جزء (صفحاته وحدها): تُحفظ في المحفوظات وتُفتح
       const session = buildSessionFromLaps(laps, startedAt, Date.now());
       if (session) {
         liveCardLinkRef.current = session;
@@ -658,16 +657,16 @@ function App() {
     setStopwatchTargetInput(String(clamped));
   }, [stopwatchTargetInput]);
 
-  // فتح شاشة النتائج (من صندوق الوقت) بجلسة حيّة من جولات العشر الجارية وحدها
+  // فتح شاشة النتائج (من صندوق الوقت) بجلسة حيّة من جولات الجزء الجاري وحده
   const handleOpenResults = useCallback(() => {
     const lastLap = stopwatch.laps[stopwatch.laps.length - 1];
     const currentBlockLaps = lastLap ? lapsOfBlock(stopwatch.laps, blockEndOf(lastLap.page)) : [];
     let session = buildSessionFromLaps(currentBlockLaps, null, null);
-    // بطاقة هذه العشر حُفظت من قبل: تأخذ هويّتها ودعاءها من نسختها في المحفوظات
+    // بطاقة هذا الجزء حُفظت من قبل: تأخذ هويّتها من نسختها في المحفوظات
     const link = liveCardLinkRef.current;
     const archived = session && link && blockEndOf(link.startPage) === blockEndOf(session.startPage)
       ? sessions.find(s => sameSession(s, link)) : null;
-    if (archived) session = { ...session, startPage: archived.startPage, finishedAt: archived.finishedAt, dua: archived.dua || '' };
+    if (archived) session = { ...session, startPage: archived.startPage, finishedAt: archived.finishedAt };
     if (session) {
       setActiveResultSession(session);
       setIsResultsOpen(true);
@@ -704,7 +703,7 @@ function App() {
     setSessions(prev => prev.filter(s => s !== session));
   }, []);
 
-  // ─── جلسات الجزء: حفظ/حذف/دعاء/مشاركة/مدينة ───
+  // ─── جلسات الجزء: حفظ/حذف/مشاركة/مدينة ───
   const handleSaveSession = useCallback((session) => {
     liveCardLinkRef.current = session;
     setSessions(prev => {
@@ -719,17 +718,6 @@ function App() {
     setActiveResultSession(null);
     setIsResultsOpen(false);
   }, []);
-
-  // الدعاء يُكتب في نسخة المحفوظات؛ بطاقة لم تُحفظ بعد تُحفظ معه كي لا يضيع عند إغلاقها
-  const handleUpdateSessionDua = useCallback((dua) => {
-    if (!activeResultSession) return;
-    const updated = { ...activeResultSession, dua };
-    liveCardLinkRef.current = updated;
-    setActiveResultSession(updated);
-    setSessions(prev => (prev.some(s => sameSession(s, updated))
-      ? prev.map(s => (sameSession(s, updated) ? { ...s, dua } : s))
-      : [...prev, updated]));
-  }, [activeResultSession]);
 
   const handleShareSession = useCallback((session) => {
     const el = document.querySelector('.jz-card');
@@ -2015,11 +2003,6 @@ function App() {
       return true;
     }
     if (isResultsOpen) {
-      // محرّر الدعاء مفتوح فوق البطاقة: الرجوع يغلقه وحده
-      if (resultsBackRef.current) {
-        resultsBackRef.current();
-        return true;
-      }
       setIsResultsOpen(false);
       setActiveResultSession(null);
       return true;
@@ -3992,8 +3975,6 @@ function App() {
           onSave={handleSaveSession}
           onDelete={handleDeleteSession}
           onShare={handleShareSession}
-          onUpdateDua={handleUpdateSessionDua}
-          backRef={resultsBackRef}
           onClose={() => { setIsResultsOpen(false); setActiveResultSession(null); }}
         />
       )}
