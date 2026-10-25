@@ -18,7 +18,14 @@ export default function HifzMushafVerses({ refs }) {
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
-    return () => observer.disconnect();
+    // بطاقة تُقلب (TextDisplay) تبدأ وجهها على حافّتها (rotateY 90°)، فيُقاس العرض صفراً ولا
+    // يُرسم شيء، ولا يرى ResizeObserver تغيّراً بعد الدوران. يُعاد القياس حين تنتهي حركتها.
+    const card = el.closest('.verse-card');
+    card?.addEventListener('animationend', measure);
+    return () => {
+      observer.disconnect();
+      card?.removeEventListener('animationend', measure);
+    };
   }, []);
 
   const keys = verseKeys(refs);
