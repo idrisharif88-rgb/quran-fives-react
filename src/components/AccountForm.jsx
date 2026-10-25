@@ -6,10 +6,11 @@ import AgeGate from './AgeGate/AgeGate';
 
 /**
  * دخول أو طلب حساب جديد بالبريد. الحالة والشبكة في useAccount؛ هنا الحقول فقط.
+ * @param initialMode 'login' أو 'register' (شاشة الترحيب تفتح على ما اختاره المستخدم)
  */
-export default function AccountForm({ auth }) {
+export default function AccountForm({ auth, initialMode = 'login' }) {
   const { busy, error, knownEmails, login, register, startReset, clearError, forgetKnownEmail } = auth;
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [mode, setMode] = useState(initialMode); // 'login' | 'register'
   const [name, setName] = useState('');
   const [user, setUser] = useState('');
   const [code, setCode] = useState('');

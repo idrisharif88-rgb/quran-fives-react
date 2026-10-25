@@ -36,6 +36,9 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         // يملأ WebView الشاشة كاملة (edge-to-edge) فلا يبقى شريط أسود/أبيض.
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
+        // شاشة الافتتاح تُشغَّل من أندرويد فوق الصفحة (NativeSplash)
+        NativeSplash.show(this, this.bridge, this::applyWindowBackground);
+
         // إنشاء جسر للتواصل مع React لطلب الإذن فقط عند الحاجة
         this.bridge.getWebView().addJavascriptInterface(new Object() {
             @JavascriptInterface
@@ -96,7 +99,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     // مع edge-to-edge تصبح أشرطة النظام شفافة، فلوّن أيقوناتها بما يناسب خلفية الوضع
     // (داكنة فوق فاتح، فاتحة فوق داكن).
     private void applyWindowBackground() {
-        if (windowBackground == null) return;
+        if (windowBackground == null || NativeSplash.isShowing()) return;
         int color = windowBackground;
         getWindow().getDecorView().setBackgroundColor(color);
         boolean dark = isDarkColor(color);

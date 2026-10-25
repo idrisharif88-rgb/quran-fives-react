@@ -1,26 +1,20 @@
-import { LAST_PAGE } from './juzPages';
+import { juzOfPage, juzPageRange } from './juzPages';
 
-// بطاقات العدّاد كل عشر صفحات: تنتهي عند 11، 21، 31 … 591، والأخيرة 592–604 (13 صفحة).
-// الأولى 1–11. الكتلة تُعرَّف بآخر صفحاتها.
-const FIRST_END = 11;
-const LAST_START = 592;
+// بطاقات العدّاد كل جزء (قرابة عشرين صفحة): تنتهي عند 21، 41، 61 … 581، والأخيرة 582–604.
+// الأجزاء ليست 20 صفحة بالضبط (juzPages.js). الكتلة تُعرَّف بآخر صفحاتها.
 
 // آخر صفحة في الكتلة التي تقع فيها الصفحة
 export function blockEndOf(page) {
-  if (page >= LAST_START) return LAST_PAGE;
-  if (page <= FIRST_END) return FIRST_END;
-  return Math.ceil((page - 1) / 10) * 10 + 1;
+  return juzPageRange(juzOfPage(page)).end;
 }
 
 // أول صفحة في الكتلة التي آخرها end
 export function blockStartOf(end) {
-  if (end === LAST_PAGE) return LAST_START;
-  if (end === FIRST_END) return 1;
-  return end - 9;
+  return juzPageRange(juzOfPage(end)).start;
 }
 
 // الكتلة التي يُغلقها إنهاء هذه الصفحة (آخر صفحة فيها)، وإلا null.
-// إنهاء آخر صفحة = بدء التالية، وهي لحظة ظهور البطاقة (تنتهي عند 11 فتظهر مع بدء 12).
+// إنهاء آخر صفحة = بدء التالية، وهي لحظة ظهور البطاقة (تنتهي عند 21 فتظهر مع بدء 22).
 export function closingBlock(finishedPage) {
   if (!Number.isFinite(finishedPage) || finishedPage < 1) return null;
   return blockEndOf(finishedPage) === finishedPage ? finishedPage : null;

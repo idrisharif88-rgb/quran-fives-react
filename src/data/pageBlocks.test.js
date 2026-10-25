@@ -1,25 +1,21 @@
 import { describe, it, expect } from 'vitest';
 import { blockEndOf, blockStartOf, closingBlock, lapsOfBlock } from './pageBlocks';
+import { JUZ_START_PAGES } from './juzPages';
 
-describe('ten-page counter blocks', () => {
-  it('ends at 11, 21, 31 … 591, then 604', () => {
+describe('one counter block per juz', () => {
+  it('ends at 21, 41, 61 … 581, then 604', () => {
     const ends = [];
     for (let p = 1; p <= 604; p++) if (closingBlock(p) != null) ends.push(p);
-    expect(ends[0]).toBe(11);
-    expect(ends.slice(1, 4)).toEqual([21, 31, 41]);
-    expect(ends.slice(-2)).toEqual([591, 604]);
-    expect(ends).toHaveLength(60);
+    expect(ends.slice(0, 3)).toEqual([21, 41, 61]);
+    expect(ends.slice(-2)).toEqual([581, 604]);
+    expect(ends).toHaveLength(30);
   });
 
-  it('first block is 1–11 and the last is the 13 pages 592–604', () => {
-    expect(blockStartOf(11)).toBe(1);
-    expect(blockEndOf(1)).toBe(11);
-    expect(blockEndOf(12)).toBe(21);
-    expect(blockEndOf(21)).toBe(21);
-    expect(blockEndOf(22)).toBe(31);
-    expect(blockStartOf(604)).toBe(592);
-    expect(blockEndOf(592)).toBe(604);
-    expect(blockEndOf(591)).toBe(591);
+  it('blocks start where the juz starts', () => {
+    for (const start of JUZ_START_PAGES) expect(blockStartOf(blockEndOf(start))).toBe(start);
+    expect(blockEndOf(1)).toBe(21);
+    expect(blockEndOf(22)).toBe(41);
+    expect(blockStartOf(604)).toBe(582);
   });
 
   it('every page belongs to exactly the block between its start and end', () => {
@@ -31,7 +27,7 @@ describe('ten-page counter blocks', () => {
   });
 
   it('lapsOfBlock keeps only that block', () => {
-    const laps = [10, 11, 12, 21, 22].map((page) => ({ page, ms: 1 }));
-    expect(lapsOfBlock(laps, 21).map((l) => l.page)).toEqual([12, 21]);
+    const laps = [20, 21, 22, 41, 42].map((page) => ({ page, ms: 1 }));
+    expect(lapsOfBlock(laps, 41).map((l) => l.page)).toEqual([22, 41]);
   });
 });

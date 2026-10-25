@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- نافذة إقلاع أندرويد: أخضر الأيقونة وبلاطة المصحف في المنتصف — أوّل صورة في شاشة
+     الافتتاح (NativeSplash) في المكان نفسه، فلا قفزة عند التسليم. تحلّ محلّ splash.png.
+     لا إزاحة هنا: التطبيق edge-to-edge، فالصفحة والنافذة تملآن الشاشة كلّها. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#0E5340" />
+        </shape>
+    </item>
+    <!-- البلاطة: أبيض بشفافية 10% فوق الأخضر، 96dp، نصف القطر 26dp -->
+    <item android:gravity="center" android:width="96dp" android:height="96dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#1AFFFFFF" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+    <item android:gravity="center" android:width="62dp" android:height="62dp"
+        android:drawable="@drawable/splash_book" />
+    <item android:gravity="center" android:width="62dp" android:height="62dp"
+        android:drawable="@drawable/splash_gem" />
+</layer-list>
