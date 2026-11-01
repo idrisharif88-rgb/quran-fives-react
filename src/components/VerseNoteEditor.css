@@ -1,0 +1,67 @@
+/* نافذة كتابة التفسير: inset:0 تتبع ارتفاع الصفحة فتنتهي فوق لوحة المفاتيح مباشرة */
+.verse-note-window {
+  position: fixed;
+  inset: 0;
+  z-index: 13400;   /* فوق كل واجهة التطبيق وتحت ModalDialog (13500) */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+  padding: max(12px, env(safe-area-inset-top, 0px)) 16px max(12px, env(safe-area-inset-bottom, 0px));
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-family: 'Tajawal', sans-serif;
+}
+
+.verse-note-window-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--app-muted);
+}
+
+.verse-note-window-head strong {
+  flex-shrink: 0;
+  font-size: 15px;
+  color: var(--app-accent-ink);
+}
+
+.verse-note-window-head span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* خلفية صلبة وألوان صريحة: انظر docs/fixes/android-webview-black-input.md */
+.verse-note-window-input {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  -webkit-text-fill-color: var(--app-text);
+  -webkit-appearance: none;
+  font-family: var(--app-font-family, 'Tajawal', sans-serif);
+  font-weight: var(--app-font-weight, bold);
+  font-size: max(17px, calc(var(--app-font-size, 38px) * 0.55));
+  line-height: 1.75;
+  resize: none;
+}
+
+.verse-note-window-actions {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.verse-note-window-actions .verse-note-btn {
+  min-height: 44px;
+  font-size: 15px;
+}

@@ -1,0 +1,164 @@
+/* ورقة الإجراء: خطوات الخروج، وعرض استرجاع نسخة جوجل درايف */
+.action-sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 13600;   /* فوق شريط التذكير ولوحة المزامنة وModalDialog (13500) */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--app-overlay);
+}
+
+.action-sheet {
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(90 * var(--dvh));
+  overflow-y: auto;
+  padding: 22px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+  border-radius: 22px 22px 0 0;
+  background: var(--app-surface);
+  color: var(--app-text);
+  animation: action-sheet-rise 0.2s ease-out;
+}
+
+@keyframes action-sheet-rise {
+  from { transform: translateY(24px); opacity: 0.4; }
+}
+
+.action-sheet h4 {
+  margin: 0 0 8px;
+  font-size: 19px;
+  line-height: 1.35;
+  color: var(--app-text-strong);
+}
+
+.action-sheet p {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--app-muted);
+}
+
+.action-sheet-safe {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--app-accent-glow);
+  color: var(--app-accent-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.action-sheet-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.action-sheet-btn {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* --app-accent-deep لا --app-accent: الأخضر الليلي الفاتح لا يحمل نصاً أبيض */
+.action-sheet-btn.primary {
+  border-color: var(--app-accent-deep);
+  background: var(--app-accent-deep);
+  color: var(--app-accent-deep-contrast);
+}
+
+/* أحمر ثابت كما في ConfirmDialog: درجة --app-danger الليلية لا تحمل نصاً أبيض */
+.action-sheet-btn.danger {
+  border-color: #b91c1c;
+  background: #b91c1c;
+  color: #fff;
+}
+
+.action-sheet-btn:disabled {
+  opacity: 0.6;
+}
+
+.action-sheet-link {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 4px;
+  border: 0;
+  background: none;
+  color: var(--app-danger);
+  font-family: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.action-sheet-steps,
+.action-sheet-losses {
+  display: grid;
+  gap: 12px;
+  margin: 4px 0 14px;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+
+.action-sheet-steps li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--app-muted);
+}
+
+.action-sheet-steps li.now {
+  color: var(--app-text-strong);
+  font-weight: 700;
+}
+
+.action-sheet-steps li.done {
+  color: var(--app-accent-ink);
+  font-weight: 700;
+}
+
+.action-sheet-step-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid var(--app-border);
+  border-radius: 50%;
+}
+
+.action-sheet-steps li.now .action-sheet-step-icon {
+  border-top-color: var(--app-accent-ink);
+  animation: action-sheet-turn 0.8s linear infinite;
+}
+
+.action-sheet-steps li.done .action-sheet-step-icon {
+  border-color: var(--app-accent-ink);
+  background: var(--app-accent-ink);
+}
+
+@keyframes action-sheet-turn {
+  to { transform: rotate(360deg); }
+}
+
+.action-sheet-losses {
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--app-surface-2);
+  color: var(--app-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-sheet { animation: none; }
+  .action-sheet-steps li.now .action-sheet-step-icon { animation: none; }
+}

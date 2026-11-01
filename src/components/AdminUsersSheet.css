@@ -1,5 +1,12 @@
 /* لوحة المشرف: قائمة الحسابات. الهيكل والحاجب في ModalDialog. */
 
+/* القائمة تطول مع الحسابات: تُسحب داخل النافذة، ويبقى العنوان وزرّ الإغلاق ثابتين */
+.admin-users .modal-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
 .admin-users-summary {
   margin: 0 0 10px;
   font-size: 13.5px;

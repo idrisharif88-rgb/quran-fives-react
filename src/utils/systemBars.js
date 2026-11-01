@@ -17,4 +17,5 @@ export async function applySystemBars(pageBg, isNightMode) {
     await SystemBars.setStyle({ style: isNightMode ? SystemBarsStyle.Dark : SystemBarsStyle.Light }).catch(() => {});
   }
   window.AndroidApp?.setWindowBackground?.(pageBg);
+  try { window.sessionStorage.setItem('quran-fives-page-bg', pageBg); } catch { /* غطاء إعادة التحميل وحده يتأثر */ }
 }

@@ -21,6 +21,18 @@
         </svg>
       </div>
     </div>
+    <script>
+      // إعادة تحميل داخل تطبيق مفتوح (تنزيل من السحابة، استرجاع، خروج): لونه هو لا الشعار.
+      // اللون يحفظه systemBars.js، وخلوّه يعني أوّل فتح فتبقى الصورة الأولى.
+      try {
+        var bootBg = sessionStorage.getItem('quran-fives-page-bg');
+        if (bootBg) {
+          var bootCover = document.getElementById('boot-splash');
+          bootCover.style.background = bootBg;
+          bootCover.textContent = '';
+        }
+      } catch (e) { /* التخزين غير متاح: تبقى الصورة الأولى */ }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

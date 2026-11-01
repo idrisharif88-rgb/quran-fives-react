@@ -55,9 +55,12 @@
   border: none;
   background: transparent;
   padding: 0;
-  font-family: inherit;
-  font-size: 17px;
-  line-height: 1.9;
+  /* الخطّ والوزن من إعدادات التطبيق، والحجم 55% من حجم الآيات ولا يقلّ عن 17px.
+     ملف JSON نصّ بلا تنسيق: الشكل كلّه من هنا. */
+  font-family: var(--app-font-family, 'Tajawal', sans-serif);
+  font-weight: var(--app-font-weight, bold);
+  font-size: max(17px, calc(var(--app-font-size, 38px) * 0.55));
+  line-height: 1.75;
   color: var(--app-text);
   text-align: right;
   white-space: pre-wrap;
@@ -65,34 +68,36 @@
 }
 
 .verse-note-text.empty {
+  font-family: inherit;
+  font-weight: normal;
   font-size: 14px;
   color: var(--app-muted);
 }
 
-.verse-note-editor {
+.verse-note-actions {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
-.verse-note-input {
-  width: 100%;
-  min-height: 130px;
-  box-sizing: border-box;
-  border: 1px solid var(--app-border);
-  border-radius: 10px;
-  padding: 10px 12px;
-  background: var(--app-surface);
-  color: var(--app-text);
-  font-family: inherit;
-  font-size: 17px;
-  line-height: 1.8;
-  resize: vertical;
+.verse-note-action {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--app-accent-ink);
+  cursor: pointer;
 }
 
-.verse-note-editor-actions {
-  display: flex;
-  gap: 8px;
+.verse-note-action:active {
+  background: var(--app-accent-glow);
+}
+
+.verse-note-action:focus-visible {
+  outline: 2px solid var(--app-accent-ink);
+  outline-offset: 2px;
 }
 
 .verse-note-btn {

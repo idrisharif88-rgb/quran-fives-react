@@ -69,6 +69,7 @@ export default function TextDisplay({ verses, cornerNumber, cornerAction, cardCl
           notes={notesFlip.notes}
           onSave={notesFlip.onSave}
           onImport={notesFlip.onImport}
+          editorBackRef={notesFlip.editorBackRef}
         />
       ) : (
         <div className={`verse-scroll${isMushaf ? ' is-mushaf' : ''}`}>

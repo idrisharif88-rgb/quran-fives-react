@@ -1,0 +1,79 @@
+/* ما في نسخة جوجل درايف (BackupSummary) */
+.backup-summary {
+  margin-bottom: 10px;
+}
+
+.backup-summary-sentence {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--app-accent-glow);
+  color: var(--app-text-strong);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.75;
+}
+
+.backup-summary-group {
+  padding-block: 8px;
+  border-top: 1px solid var(--app-border);
+}
+
+.backup-summary-group h4 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--app-accent-ink);
+}
+
+.backup-summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 2px;
+  font-size: 14px;
+  color: var(--app-muted);
+}
+
+.backup-summary-row strong {
+  color: var(--app-text-strong);
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+
+.backup-summary-warn {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--app-warn);
+  color: var(--app-text-strong);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.backup-compare {
+  width: 100%;
+  margin-bottom: 10px;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--app-text);
+}
+
+.backup-compare th {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--app-border);
+  color: var(--app-muted);
+  text-align: right;
+}
+
+.backup-compare td {
+  padding: 7px 6px;
+  border-bottom: 1px solid var(--app-border);
+  font-variant-numeric: tabular-nums;
+}
+
+.backup-compare td:last-child {
+  font-weight: 800;
+  color: var(--app-text-strong);
+}

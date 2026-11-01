@@ -67,7 +67,7 @@ function HifzStart({ onStart, canCustomStart, onTrialStart }) {
  * @param trial   وضع التجربة جارٍ (hifz عندها برنامج التجربة): شريطه، و«تخطَّ» في كل خطوة
  * @param onTrialStart / onTrialEnd للمشرف: الدخول إلى وضع التجربة والخروج منه
  */
-export default function HifzScreen({ hifz, reciter, onReciterChange, contacts, onClose, backRef, canTakeExtra = false, canCustomStart = false, trial = false, onTrialStart, onTrialEnd }) {
+export default function HifzScreen({ hifz, reciter, onReciterChange, contacts, onOpenAccount, backRef, canTakeExtra = false, canCustomStart = false, trial = false, onTrialStart, onTrialEnd }) {
   const { program, plan, today, celebrate, inSession, method, actions } = hifz;
   const [confirming, setConfirming] = useState(null);       // سؤال مفتوح أسفل الشاشة: 'reset' | 'cancel'
   const [settingsOpen, setSettingsOpen] = useState(false);   // إعدادات الحفظ: تغيير ورد اليوم بلا إعادة ضبط
@@ -119,8 +119,8 @@ export default function HifzScreen({ hifz, reciter, onReciterChange, contacts, o
   return (
     <div className="hifz-screen" dir="rtl">
       <div className="hifz-header">
-        <button type="button" className="hifz-close" onClick={onClose} aria-label="إغلاق برنامج الحفظ">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        <button type="button" className="hifz-account" onClick={onOpenAccount} aria-label="الحساب والمزامنة">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c.8-4.4 4-6.5 8-6.5s7.2 2.1 8 6.5" /></svg>
         </button>
         <h2>برنامج الحفظ</h2>
         <span className="hifz-header-spacer" />

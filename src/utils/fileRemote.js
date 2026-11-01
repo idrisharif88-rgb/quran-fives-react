@@ -64,16 +64,22 @@ export async function deleteRemoteFile(kind, id) {
   await request(route(kind, id), { method: 'DELETE' });
 }
 
-// على الهاتف يُنزَّل مباشرة إلى path في مساحة التطبيق ويعود null؛ في المتصفح يعود Blob
+// على الهاتف يُنزَّل مباشرة إلى path في مساحة التطبيق ويعود null؛ في المتصفح يعود Blob.
+// تنزيل أندرويد يتجاهل recursive: بلا المجلّد يفشل كل تنزيل على هاتف لم يسجّل فيه شيء بعد.
+// ويكتب الملف أثناء التنزيل: انقطاع الشبكة يترك مقطعاً ناقصاً يبدو موجوداً فلا يُعاد تنزيله، لذا .part ثم إعادة تسمية.
 export async function downloadFile(kind, id, path) {
   if (Capacitor.isNativePlatform()) {
-    await Filesystem.downloadFile({
-      url: route(kind, id),
-      headers: authHeaders(readAccount()),
-      path,
-      directory: Directory.Data,
-      recursive: true,
-    });
+    const directory = Directory.Data;
+    const part = `${path}.part`;
+    const folder = path.split('/').slice(0, -1).join('/');
+    if (folder) await Filesystem.mkdir({ path: folder, directory, recursive: true }).catch(() => {});   // موجود من قبل
+    try {
+      await Filesystem.downloadFile({ url: route(kind, id), headers: authHeaders(readAccount()), path: part, directory });
+      await Filesystem.rename({ from: part, to: path, directory, toDirectory: directory });
+    } catch (e) {
+      await Filesystem.deleteFile({ path: part, directory }).catch(() => {});
+      throw e;
+    }
     return null;
   }
   return (await request(route(kind, id))).blob();
