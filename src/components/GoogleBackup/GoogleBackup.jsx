@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { GOOGLE_ENABLED, linkedEmail, unlinkGoogle } from '../../utils/googleDrive';
-import { backupNow, restoreBackup, remoteBackupInfo, lastBackupAt, DAY_MS } from '../../utils/googleBackup';
+import { backupNow, buildBackup, linkGoogle, restoreBackup, readRemoteBackup, lastBackupAt, DAY_MS } from '../../utils/googleBackup';
+import { summarizeBackup } from '../../utils/backupSummary';
+import useBackupSummary from '../../hooks/useBackupSummary';
+import BackupSummary, { RestoreCompare } from './BackupSummary';
 import './GoogleBackup.css';
 
 const when = (ts) => new Date(ts).toLocaleString('ar', { day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' });
@@ -19,10 +22,13 @@ export default function GoogleBackup() {
   const [last, setLast] = useState(lastBackupAt);
   const [busy, setBusy] = useState(null);           // 'save' | 'restore' | null
   const [message, setMessage] = useState(null);     // { ok, text }
-  const [confirmRestore, setConfirmRestore] = useState(null);   // { savedAt }
+  const [confirmRestore, setConfirmRestore] = useState(false);
+  const [confirmOverwrite, setConfirmOverwrite] = useState(false);
   const [openedAt] = useState(() => Date.now());   // «مضى أكثر من يوم» يُقاس من فتح اللوحة
   const [progress, setProgress] = useState(null);   // { done, total } لرفع الملفّات أو تنزيلها
   const onProgress = (done, total) => setProgress(total ? { done, total } : null);
+  const remote = useBackupSummary(email);
+  const savedAt = Math.max(last, remote.savedAt || 0);
 
   if (!GOOGLE_ENABLED) return null;
 
@@ -38,24 +44,52 @@ export default function GoogleBackup() {
     setProgress(null);
   };
 
-  const save = () => run('save', async () => {
-    const { savedAt, failed } = await backupNow({ interactive: true, onProgress });
+  const writeBackup = async () => {
+    const { savedAt: at, failed } = await backupNow({ interactive: true, onProgress });
     setEmail(linkedEmail());
-    setLast(savedAt);
+    setLast(at);
+    remote.showSaved(buildBackup(at));
     setMessage(failed
       ? { ok: false, text: `حُفظت النسخة، وتعذّر رفع ${failed} من الملفّات — تُعاد في المرة التالية` }
       : { ok: true, text: 'حُفظت نسخة في جوجل درايف' });
+  };
+
+  // الربط لا يحفظ فوق نسخة موجودة. بلا نسخة بعد، وفي الهاتف بيانات: تُحفظ أوّل نسخة
+  const link = () => run('save', async () => {
+    await linkGoogle();
+    setEmail(linkedEmail());
+    const existing = await readRemoteBackup();
+    if (existing.status === 'none' && !summarizeBackup(buildBackup()).isEmpty) await writeBackup();
+  });
+
+  // هاتف فارغ فوق نسخة فيها بيانات: يُسأل أوّلاً
+  const save = () => run('save', async () => {
+    if (summarizeBackup(buildBackup()).isEmpty) {
+      const existing = await readRemoteBackup({ interactive: true });
+      setEmail(linkedEmail());
+      if (existing.backup && !summarizeBackup(existing.backup).isEmpty) {
+        setConfirmOverwrite(true);
+        return;
+      }
+    }
+    await writeBackup();
+  });
+
+  const overwrite = () => run('save', async () => {
+    setConfirmOverwrite(false);
+    await writeBackup();
   });
 
   const askRestore = () => run('restore', async () => {
-    const info = await remoteBackupInfo();
+    const shown = remote.status === 'ready' ? remote : await remote.load({ interactive: true });
     setEmail(linkedEmail());
-    if (!info) { setMessage({ ok: false, text: 'لا نسخة في جوجل درايف بعد' }); return; }
-    setConfirmRestore(info);
+    if (shown.status === 'error') throw shown.error;
+    if (shown.status !== 'ready') { setMessage({ ok: false, text: 'لا نسخة في جوجل درايف بعد' }); return; }
+    setConfirmRestore(true);
   });
 
   const restore = () => run('restore', async () => {
-    setConfirmRestore(null);
+    setConfirmRestore(false);
     if (await restoreBackup(onProgress)) window.location.reload();
   });
 
@@ -65,7 +99,7 @@ export default function GoogleBackup() {
     setMessage(null);
   };
 
-  const stale = email && openedAt - last > DAY_MS;
+  const stale = email && openedAt - savedAt > DAY_MS;
   return (
     <div className="google-backup">
       <div className="google-backup-head">
@@ -76,24 +110,42 @@ export default function GoogleBackup() {
         <p className="google-backup-info">
           <bdi dir="ltr">{email}</bdi>
           <br />
-          {last ? `آخر نسخة: ${when(last)}` : 'لم تُحفظ نسخة بعد'}
+          {savedAt ? `آخر نسخة: ${when(savedAt)}` : remote.status === 'loading' ? 'جارٍ قراءة نسختك…' : 'لم تُحفظ نسخة بعد'}
           {stale && <span className="google-backup-stale"> — مضى أكثر من يوم</span>}
         </p>
       ) : (
         <p className="google-backup-info">تُحفظ نسخة من بياناتك في جوجل درايف الخاص بك كل يوم، وتسترجعها متى شئت.</p>
       )}
 
-      {confirmRestore ? (
+      {remote.status === 'ready' && !confirmRestore && !confirmOverwrite && <BackupSummary summary={remote.summary} />}
+      {remote.status === 'locked' && (
         <div className="google-backup-confirm">
-          <p>نسخة {when(confirmRestore.savedAt)} تحلّ محلّ بيانات هذا الجهاز. متابعة؟</p>
+          <p>لعرض ما في نسختك، يطلب جوجل التأكد من حسابك.</p>
+          <button type="button" className="google-backup-btn primary" onClick={() => remote.load({ interactive: true })}>اعرض ما في نسختي</button>
+        </div>
+      )}
+      {remote.status === 'error' && <p className="google-backup-msg" role="status">تعذّرت قراءة نسختك: {failureText(remote.error)}</p>}
+
+      {confirmOverwrite ? (
+        <div className="google-backup-confirm">
+          <p>هذا الهاتف فارغ، والحفظ يستبدل نسختك في جوجل درايف بنسخة فارغة. متابعة؟</p>
+          <div className="google-backup-actions">
+            <button type="button" className="google-backup-btn" onClick={() => setConfirmOverwrite(false)}>تراجع</button>
+            <button type="button" className="google-backup-btn danger" onClick={overwrite}>استبدل النسخة</button>
+          </div>
+        </div>
+      ) : confirmRestore ? (
+        <div className="google-backup-confirm">
+          <p>نسخة {when(remote.savedAt)} تحلّ محلّ بيانات هذا الهاتف:</p>
+          <RestoreCompare device={summarizeBackup(buildBackup())} backup={remote.summary} />
           <div className="google-backup-actions">
             <button type="button" className="google-backup-btn danger" onClick={restore}>استرجع</button>
-            <button type="button" className="google-backup-btn" onClick={() => setConfirmRestore(null)}>تراجع</button>
+            <button type="button" className="google-backup-btn" onClick={() => setConfirmRestore(false)}>تراجع</button>
           </div>
         </div>
       ) : (
         <div className="google-backup-actions">
-          <button type="button" className="google-backup-btn primary" onClick={save} disabled={busy !== null}>
+          <button type="button" className="google-backup-btn primary" onClick={email ? save : link} disabled={busy !== null}>
             {busy === 'save' ? `جارٍ الحفظ…${progress ? ` ${progress.done}/${progress.total}` : ''}` : email ? 'احفظ الآن' : 'اربط حساب جوجل'}
           </button>
           {email && (

@@ -1,6 +1,9 @@
-import { useState, useRef } from 'react';
+import { useCallback, useState, useRef } from 'react';
 import { SURAH_METADATA } from '../data/quranConstants';
 import { noteKey, readNotesFile, exportNotesFile } from '../utils/verseNotesFile';
+import { noteShareText } from '../utils/verseNoteShare';
+import VerseNoteActions from './VerseNoteActions';
+import VerseNoteEditor from './VerseNoteEditor';
 import './VerseNotesBack.css';
 
 const PREVIEW_WORDS = 5;
@@ -11,24 +14,14 @@ function versePreview(text) {
 }
 
 /**
- * ظهر بطاقة الآيات: ملاحظة لكل آية على البطاقة، تُكتب وتُعدَّل في مكانها،
+ * ظهر بطاقة الآيات: ملاحظة لكل آية على البطاقة، تُكتب في نافذة تغطّي التطبيق،
  * مع تصدير الملاحظات كلها إلى ملف واستيرادها منه.
  */
-export default function VerseNotesBack({ verses, notes, onSave, onImport }) {
-  const [editingKey, setEditingKey] = useState(null);
-  const [draft, setDraft] = useState('');
+export default function VerseNotesBack({ verses, notes, onSave, onImport, editorBackRef }) {
+  const [editing, setEditing] = useState(null);
   const [message, setMessage] = useState('');
   const fileInputRef = useRef(null);
-
-  const startEdit = (key) => {
-    setEditingKey(key);
-    setDraft(notes[key] || '');
-  };
-
-  const commit = () => {
-    onSave(editingKey, draft);
-    setEditingKey(null);
-  };
+  const closeEditor = useCallback(() => setEditing(null), []);
 
   const handleFile = async (event) => {
     const file = event.target.files?.[0];
@@ -56,30 +49,22 @@ export default function VerseNotesBack({ verses, notes, onSave, onImport }) {
         {verses.map((verse) => {
           const key = noteKey(verse);
           const note = notes[key];
+          const surahName = SURAH_METADATA[verse.s - 1]?.name;
           return (
             <div className="verse-note" key={key}>
               <div className="verse-note-ref">
-                <strong>{SURAH_METADATA[verse.s - 1]?.name} {verse.a}</strong>
+                <strong>{surahName} {verse.a}</strong>
                 <span>{versePreview(verse.t)}</span>
               </div>
-              {editingKey === key ? (
-                <div className="verse-note-editor">
-                  <textarea
-                    className="verse-note-input"
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    placeholder="اكتب تفسير الآية أو ملاحظتك…"
-                    autoFocus
-                  />
-                  <div className="verse-note-editor-actions">
-                    <button type="button" className="verse-note-btn primary" onClick={commit}>حفظ</button>
-                    <button type="button" className="verse-note-btn" onClick={() => setEditingKey(null)}>إلغاء</button>
-                  </div>
-                </div>
-              ) : (
-                <button type="button" className={`verse-note-text ${note ? '' : 'empty'}`.trim()} onClick={() => startEdit(key)}>
-                  {note || 'لا توجد ملاحظة — اضغط للكتابة'}
-                </button>
+              <button type="button" className={`verse-note-text ${note ? '' : 'empty'}`.trim()} onClick={() => setEditing({ key, title: `${surahName} ${verse.a}`, preview: versePreview(verse.t) })}>
+                {note || 'لا توجد ملاحظة — اضغط للكتابة'}
+              </button>
+              {note && (
+                <VerseNoteActions
+                  text={noteShareText(surahName, verse.a, note)}
+                  title={`${surahName} ${verse.a}`}
+                  onMessage={setMessage}
+                />
               )}
             </div>
           );
@@ -120,6 +105,17 @@ export default function VerseNotesBack({ verses, notes, onSave, onImport }) {
         </button>
         <input ref={fileInputRef} type="file" accept=".json,application/json,text/plain" onChange={handleFile} hidden />
       </div>
+
+      {editing && (
+        <VerseNoteEditor
+          title={editing.title}
+          verse={editing.preview}
+          initialText={notes[editing.key] || ''}
+          onSave={(text) => { onSave(editing.key, text); closeEditor(); }}
+          onCancel={closeEditor}
+          backRef={editorBackRef}
+        />
+      )}
     </div>
   );
 }

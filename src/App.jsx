@@ -61,14 +61,16 @@ import ContactUs from './components/ContactUs/ContactUs';
 import WelcomeScreen from './components/Welcome/WelcomeScreen';
 import useAppScale from './hooks/useAppScale';
 import useGoogleDailyBackup from './hooks/useGoogleDailyBackup';
+import useSignOut, { REOPEN_SYNC_PANEL_KEY } from './hooks/useSignOut';
+import SignOutSheet from './components/SignOut/SignOutSheet';
+import DriveRestoreOffer from './components/GoogleBackup/DriveRestoreOffer';
 import useHifzReminder from './hooks/useHifzReminder';
 import { pushLocal, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, fetchMe } from './utils/cloudSync';
 import { SYNC_ENABLED } from './utils/syncConfig';
 import { getSyncMeta, deviceDataIsForeign, clearSyncMeta } from './utils/syncMeta';
 import { readAccountStatus, saveAccountStatus } from './utils/syncAccount';
-import { SESSION_STORAGE_KEYS, wipeDeviceData, isPristineState } from './utils/deviceData';
+import { SESSION_STORAGE_KEYS, isPristineState } from './utils/deviceData';
 
-const REOPEN_SYNC_PANEL_KEY = 'quran-fives-reopen-sync-panel';
 import SyncStatusIndicator from './components/SyncStatusIndicator';
 import StartupSyncPrompt from './components/StartupSyncPrompt';
 import CelebrationDialog from './components/CelebrationDialog';
@@ -100,7 +102,8 @@ import useVerseNotes, { cardKeyOf } from './hooks/useVerseNotes';
 import useHifz from './hooks/useHifz';
 import useHifzTrial from './hooks/useHifzTrial';
 import useHifzContacts from './hooks/useHifzContacts';
-import HifzIconButton from './components/hifz/HifzIconButton';
+import SectionChoice from './components/SectionChoice/SectionChoice';
+import useAppSection from './hooks/useAppSection';
 
 // قارئ المصحف يُحمَّل عند أول فتح فقط — بياناته وخطوطه خارج الحزمة الرئيسية
 const MushafReader = lazy(() => import('./components/mushaf/MushafReader'));
@@ -413,8 +416,6 @@ function App() {
   }, []);
   const hifzTrial = useHifzTrial();   // وضع التجربة للمشرف: برنامج منفصل على الجهاز، لا يُزامَن
   const hifzContacts = useHifzContacts(persistedAppState.hifzContacts);
-  const [isHifzOpen, setIsHifzOpen] = useState(false);
-  useHifzReminder({ hasProgram: Boolean(hifz.program), todayDone: Boolean(hifz.plan?.complete), onOpen: () => setIsHifzOpen(true) });
   const celebrationBackRef = useRef(null); // نافذة تهنئة مفتوحة (نتيجة اختبار، ختمة) — تضع هنا دالّة إغلاقها
   const hifzBackRef = useRef(null);      // يضعه HifzScreen حين يكون فوقه شيء مفتوح
   const cornerNavBackRef = useRef(null); // يضعه CornerNav حين تكون قائمة السور أو الخطوة مفتوحة
@@ -444,6 +445,9 @@ function App() {
   // حساب واحد يفتح المزامنة وسجلّ الختمات معاً؛ المزامنة تعمل ما دام المستخدم داخلاً
   const auth = useAccount();
   const { account, signOut } = auth;
+  const appSection = useAppSection(account);
+  const isHifzOpen = appSection.isHifz;   // قسم الحفظ: شاشته هي التطبيق
+  useHifzReminder({ enabled: isHifzOpen, hasProgram: Boolean(hifz.program), todayDone: Boolean(hifz.plan?.complete) });
   // حالة الحساب على الخادم: { approved, admin }. الحساب الجديد لا يزامن قبل موافقة المشرف.
   const [accountStatus, setAccountStatus] = useState(readAccountStatus);   // آخر حالة معروفة، تعمل بلا شبكة
   useGoogleDailyBackup(Boolean(accountStatus?.googleBackup));
@@ -468,8 +472,6 @@ function App() {
       return reopen;
     } catch { return false; }
   });
-  // تسجيل الخروج: null | 'busy' (يرفع آخر التغييرات) | 'unsynced' (تعذّر الرفع — تأكيد)
-  const [signOutState, setSignOutState] = useState(null);
   // المزامنة اليدوية بخطوتين: تأكيد قبل التنفيذ، ونتيجة صريحة بعده
   const [manualSyncBusy, setManualSyncBusy] = useState(null);      // 'push' | 'pull' | null
   const [manualSyncConfirm, setManualSyncConfirm] = useState(null); // 'push' | 'pull' | null
@@ -506,8 +508,15 @@ function App() {
   const cloudSyncReadyRef = useRef(false);
   const cloudPushSeqRef = useRef(0);
   const cloudPushBusyRef = useRef(false);   // رفعة جارية — لا نطلق ثانية بالتوازي
+  const signOutBackRef = useRef(null);      // يضعه useSignOut ما دامت خطوات الخروج مفتوحة
+  const driveOfferBackRef = useRef(null);   // يضعه DriveRestoreOffer ما دام معروضاً
+  const noteEditorBackRef = useRef(null);   // يضعه VerseNoteEditor ما دامت نافذة التفسير مفتوحة
   const cloudPushPendingRef = useRef(null); // آخر لقطة وصلت أثناء الانشغال، تُرفع بعده
   const lastSnapshotRef = useRef(null);
+  const accountSignOut = useSignOut({
+    account, signOut, status: accountStatus, snapshotRef: lastSnapshotRef,
+    serverReadyRef: cloudSyncReadyRef, pushBusyRef: cloudPushBusyRef, backRef: signOutBackRef,
+  });
 
   // ─── الخطوة الحالية: العدد الكلّي للمجموعات ومثبّتات هذه الخطوة ───
   const TOTAL_GROUPS = totalGroups(stepSize);
@@ -946,41 +955,10 @@ function App() {
     wasSignedInRef.current = Boolean(account);
   }, [account]);
 
-  // ─── تسجيل الخروج: لا يبقى من بيانات الحساب شيء على الجهاز ───
-  // نرفع آخر التغييرات أوّلاً ثم نمسح؛ البيانات تعود من السحابة عند الدخول التالي.
-  // إن تعذّر الرفع (لا اتصال، أو الحساب لم يوافَق عليه بعد) لا نمسح بلا تأكيد صريح.
-  const uploadBeforeSignOut = async () => {
-    const snapshot = lastSnapshotRef.current;
-    if (!snapshot || isPristineState(snapshot)) return true;   // لا شيء يضيع
-    if (!SYNC_ENABLED || !cloudSyncReadyRef.current) return false;
-    // رفعة واحدة في كل لحظة: ننتظر الجارية كي لا تتصادما بـ409
-    for (let i = 0; i < 40 && cloudPushBusyRef.current; i++) await new Promise(r => setTimeout(r, 150));
-    try {
-      await pushLocal(snapshot);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  // reopenPanel: «الدخول بحساب آخر» — تُفتح اللوحة على نموذج الدخول بعد إعادة التحميل
-  const handleSignOut = async ({ force = false, reopenPanel = false } = {}) => {
-    if (signOutState === 'busy') return;
-    if (!force) {
-      setSignOutState('busy');
-      if (!await uploadBeforeSignOut()) { setSignOutState(reopenPanel ? 'unsynced-switch' : 'unsynced'); return; }
-    }
-    wipeDeviceData();
-    signOut();
-    try { if (reopenPanel) sessionStorage.setItem(REOPEN_SYNC_PANEL_KEY, '1'); } catch { /* تجاهل */ }
-    window.location.reload();
-  };
-
   const closeSyncPanel = () => {
     mainKeyboard.closeKeyboard();
     setIsSyncPanelOpen(false);
     auth.cancelPending();
-    setSignOutState(prev => (prev === 'busy' ? prev : null));
     setManualSyncConfirm(null);
     setManualSyncResult(null);
   };
@@ -1958,6 +1936,21 @@ function App() {
     // النوافذ الحاجبة (ModalDialog) فوق كل شيء، فهي أوّل ما يغلقه الرجوع.
     // قرار المزامنة لا يُغلق بالرجوع: يُختار منه صراحةً، والزرّ لا يفعل شيئاً تحته.
     if (startupSyncChoice) return true;
+    // خطوات الخروج وعرض الاسترجاع فوق لوحة المزامنة وكل ما تحتها
+    if (signOutBackRef.current) {
+      signOutBackRef.current();
+      return true;
+    }
+    if (driveOfferBackRef.current) {
+      driveOfferBackRef.current();
+      return true;
+    }
+    // اختيار القسم يُجاب ولا يُغلق، كقرار المزامنة
+    if (appSection.needsChoice) return true;
+    if (noteEditorBackRef.current) {
+      noteEditorBackRef.current();
+      return true;
+    }
     // نافذة التهنئة (نتيجة اختبار، محطّة، ختمة)
     if (celebrationBackRef.current) {
       celebrationBackRef.current();
@@ -2011,10 +2004,10 @@ function App() {
       setIsLapSheetOpen(false);
       return true;
     }
-    if (isHifzOpen) {
-      // ما فُتح فوق شاشة الحفظ (استماع، نموذج، تنبيه) يُغلق وحده أولاً
+    if (isHifzOpen && !isSyncPanelOpen && !isExitConfirmOpen) {
+      // ما فُتح فوق شاشة الحفظ (استماع، نموذج، تنبيه) يُغلق وحده أولاً، ولا شيء تحتها يُرجع إليه
       if (hifzBackRef.current) hifzBackRef.current();
-      else setIsHifzOpen(false);
+      else setIsExitConfirmOpen(true);
       return true;
     }
     if (isMushafOpen) {
@@ -2708,7 +2701,7 @@ function App() {
           backRef={celebrationBackRef}
         />
       )}
-      {!hijriReminder.open && tafsirReminder.open && (
+      {!hijriReminder.open && tafsirReminder.open && !isHifzOpen && !appSection.needsChoice && (
         <HijriMonthsReminder
           message={tafsirReminder.message}
           closeLabel="افتح الخماسيات"
@@ -2739,7 +2732,7 @@ function App() {
         />
       )}
       {isExitConfirmOpen && (
-        <div className="session-overlay" dir="rtl" style={{ zIndex: 10002, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
+        <div className="session-overlay" dir="rtl" style={{ zIndex: isHifzOpen ? 11700 : 10002, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
           <div style={{
             background: 'var(--app-surface)',
             border: '1px solid var(--app-border)',
@@ -3551,6 +3544,7 @@ function App() {
               notes: verseNotes,
               onSave: saveVerseNoteCounted,
               onImport: mergeVerseNotes,
+              editorBackRef: noteEditorBackRef,
             } : undefined;
             return <TextDisplay verses={currentVersesText} cornerNumber={cornerNumber} cornerAction={cornerAction} cardClassName={cardClass} notesFlip={notesFlip} verseStyle={cardClass ? { style: verseStyle.style, onChange: verseStyle.setStyle } : undefined} />;
           })()}
@@ -3596,7 +3590,6 @@ function App() {
 
       {!isPageStartsMode && !isPageEndsMode && !isNightCounterMode && viewMode !== 'starred' && viewMode !== 'surah-fives' && viewMode !== 'quranic-wonders' && ( // إخفاء الأزرار السفلية
       <div className="action-buttons-container" ref={actionButtonsRef}>
-        <HifzIconButton onClick={() => { mainKeyboard.closeKeyboard(); setIsHifzOpen(true); }} complete={Boolean(hifz.plan?.complete)} />
         {viewMode !== 'shared-verses' && viewMode !== 'surah-pages' && (
           <>
             <div className="icon-wrapper">
@@ -3943,9 +3936,10 @@ function App() {
           onSharePdf={handleShareCounterPdf}
         />
       )}
-      {isHifzOpen && (
-        <Suspense fallback={null}>
-          <HifzScreen hifz={isOwner && hifzTrial.on ? hifzTrial.hifz : hifz} trial={isOwner && hifzTrial.on} onTrialStart={hifzTrial.start} onTrialEnd={hifzTrial.end} reciter={activeReciter} onReciterChange={setActiveReciter} contacts={hifzContacts} onClose={() => setIsHifzOpen(false)} backRef={hifzBackRef} canTakeExtra={isOwner} canCustomStart={Boolean(account && accountStatus?.hifzCustomStart)} />
+      {/* تحت اختيار القسم أيضاً: تكون جاهزة لحظة الضغط، فلا يظهر ما تحتها */}
+      {(isHifzOpen || appSection.needsChoice) && (
+        <Suspense fallback={<div className="section-cover" />}>
+          <HifzScreen hifz={isOwner && hifzTrial.on ? hifzTrial.hifz : hifz} trial={isOwner && hifzTrial.on} onTrialStart={hifzTrial.start} onTrialEnd={hifzTrial.end} reciter={activeReciter} onReciterChange={setActiveReciter} contacts={hifzContacts} onOpenAccount={() => setIsSyncPanelOpen(true)} backRef={hifzBackRef} canTakeExtra={isOwner} canCustomStart={Boolean(account && accountStatus?.hifzCustomStart)} />
         </Suspense>
       )}
       {isMushafOpen && (
@@ -4077,7 +4071,7 @@ function App() {
         />
       )}
       {isSyncPanelOpen && (
-        <div className="audio-settings-overlay" dir="rtl" style={{ zIndex: 10000 }} onClick={closeSyncPanel}>
+        <div className="audio-settings-overlay" dir="rtl" style={{ zIndex: isHifzOpen ? 11600 : 10000 }} onClick={closeSyncPanel}>
           <div className="audio-settings-card" style={{ maxWidth: '380px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
             <h2 className="audio-settings-title">المزامنة السحابية</h2>
             {syncUnlocked ? (
@@ -4183,36 +4177,13 @@ function App() {
                     إدارة المستخدمين
                   </button>
                 )}
-                {signOutState?.startsWith('unsynced') ? (
-                  <div className="manual-sync-confirm" style={{ marginBottom: '10px' }}>
-                    <p className="manual-sync-confirm-text">
-                      تعذّر رفع بياناتك إلى السحابة. الخروج الآن يمسحها من هذا الجهاز نهائياً.
-                    </p>
-                    <div className="manual-sync-confirm-actions">
-                      <button
-                        type="button"
-                        className="khmasiyat-quiz-btn"
-                        style={{ background: 'var(--app-danger)', color: '#fff' }}
-                        onClick={() => handleSignOut({ force: true, reopenPanel: signOutState === 'unsynced-switch' })}
-                      >
-                        اخرج وامسح
-                      </button>
-                      <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => setSignOutState(null)}>
-                        تراجع
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <button type="button" className="khmasiyat-quiz-btn secondary" disabled={signOutState === 'busy'} onClick={() => handleSignOut({ reopenPanel: true })} style={{ width: '100%', marginBottom: '10px' }}>
-                      الدخول بحساب آخر
-                    </button>
-                    <button type="button" className="khmasiyat-quiz-btn" disabled={signOutState === 'busy'} onClick={() => handleSignOut()} style={{ width: '100%', marginBottom: '10px' }}>
-                      {signOutState === 'busy' ? 'جارٍ حفظ بياناتك…' : 'تسجيل الخروج'}
-                    </button>
-                    {!accountStatus?.admin && <AccountDelete auth={auth} />}
-                  </>
-                )}
+                <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => accountSignOut.open(true)} style={{ width: '100%', marginBottom: '10px' }}>
+                  تبديل الحساب
+                </button>
+                <button type="button" className="khmasiyat-quiz-btn" onClick={() => accountSignOut.open(false)} style={{ width: '100%', marginBottom: '10px' }}>
+                  تسجيل الخروج
+                </button>
+                {!accountStatus?.admin && <AccountDelete auth={auth} />}
               </>
             ) : (
               <>
@@ -4239,6 +4210,8 @@ function App() {
         </div>
       )}
       <SyncStatusIndicator failed={syncFailed} syncing={isSyncing} onRetry={handleSyncRetry} />
+      <SignOutSheet signOut={accountSignOut} status={accountStatus} />
+      <DriveRestoreOffer status={accountStatus} user={account?.user} backRef={driveOfferBackRef} />
       <WelcomeToast account={account} />
       {isAdminUsersOpen && (
         <AdminUsersSheet onClose={() => setIsAdminUsersOpen(false)} formatTime={formatHijriTimestamp} />
@@ -4270,6 +4243,7 @@ function App() {
       {/* ─── قسم فقهيات ─── */}
       {isContactOpen && <ContactUs onClose={() => setIsContactOpen(false)} backRef={contactBackRef} />}
       <WelcomeScreen auth={auth} backRef={welcomeBackRef} />
+      {appSection.needsChoice && <SectionChoice onChoose={appSection.choose} />}
       {isScaleOpen && <AppScaleSheet scale={appScale.scale} onChange={appScale.setScale} onClose={() => setIsScaleOpen(false)} backRef={scaleBackRef} />}
       {isNotebookOpen && isOwner && <UpdatesNotebook onClose={() => setIsNotebookOpen(false)} backRef={notebookBackRef} />}
       {isFiqhOpen && isOwner && (

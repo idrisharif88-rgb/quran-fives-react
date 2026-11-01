@@ -1,0 +1,150 @@
+/* اختيار القسم: فوق شاشة الحفظ (11500) وتحت قرار المزامنة وعرض الاسترجاع (13500 فأعلى) */
+.section-choice {
+  --section-fives-from: #0b8a3a;
+  --section-fives-to: #005a1e;
+  --section-hifz-from: #ffe14d;
+  --section-hifz-to: #f7b500;
+  --section-hifz-ink: #1a1a1a;
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  background: var(--app-bg);
+  color: var(--app-text);
+  font-family: 'Tajawal', sans-serif;
+}
+
+/* مكان شاشة الحفظ ريثما يُحمَّل ملفها: لا يظهر التطبيق تحتها */
+.section-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 11500;
+  background: var(--app-bg);
+}
+
+.section-choice-inner {
+  width: min(460px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.section-choice h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--app-text-strong);
+  text-align: center;
+}
+
+.section-choice-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.section-tile {
+  aspect-ratio: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  border: 0;
+  border-radius: 24px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 120ms ease-out;
+}
+
+.section-tile:active {
+  transform: scale(0.96);
+}
+
+.section-tile:focus-visible {
+  outline: 3px solid var(--app-accent-ink);
+  outline-offset: 3px;
+}
+
+.section-tile svg {
+  width: 56px;
+  height: 56px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.section-tile b {
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.section-tile span {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.section-tile--fives {
+  background: linear-gradient(145deg, var(--section-fives-from), var(--section-fives-to));
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(0, 100, 0, 0.3);
+}
+
+.section-tile--hifz {
+  background: linear-gradient(145deg, var(--section-hifz-from), var(--section-hifz-to));
+  color: var(--section-hifz-ink);
+  box-shadow: 0 10px 22px rgba(247, 181, 0, 0.35);
+}
+
+.section-choice-note {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.section-choice-note svg {
+  width: 26px;
+  height: 26px;
+}
+
+.section-choice-warn {
+  fill: var(--section-hifz-to);
+  stroke: var(--section-hifz-to);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.section-choice-mark {
+  fill: none;
+  stroke: var(--section-hifz-ink);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-tile {
+    transition: none;
+  }
+
+  .section-tile:active {
+    transform: none;
+  }
+}

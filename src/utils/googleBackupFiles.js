@@ -1,5 +1,5 @@
 import { loadStoredState, saveStoredState } from './persistence';
-import { listFiles, uploadBlob, readBlob, deleteFile, linkedEmail } from './googleDrive';
+import { listFiles, uploadBlob, readBlob, deleteFile, linkedEmail, getAccessToken } from './googleDrive';
 import { currentAccount } from './fileRemote';
 import { loadRecordingIndex, saveRecordingIndex, recordingExists, readRecordingBlob, writeRecordingBlob } from './hifzRecordingStore';
 import { belongsHere, ensureLocal } from './hifzRecordingSync';
@@ -69,6 +69,21 @@ export async function backupFiles(token, onProgress) {
   }
   saveTracked(tracked);
   return failed;
+}
+
+/**
+ * تسجيل لا ملف له هنا ولا على السيرفر (حساب جوجل درايف وحده، أو تنزيل فشل وقت الاسترجاع):
+ * يُنزَّل من درايف بلا نافذة جوجل. يعيد true إن وصل الملف.
+ */
+export async function fetchRecordingFromDrive(recording) {
+  if (!linkedEmail()) return false;
+  const token = await getAccessToken({ interactive: false });
+  if (!token) return false;
+  const name = recordingName(recording);
+  const file = (await listFiles(token)).find((f) => f.name === name);
+  if (!file) return false;
+  await writeRecordingBlob(recording, await readBlob(token, file.id));
+  return true;
 }
 
 /**

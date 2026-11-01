@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import {
@@ -10,10 +10,10 @@ import {
 export const ensureReminderChannel = () => LocalNotifications.createChannel(REMINDER_CHANNEL).catch(() => {});
 const ids = Array.from({ length: DAYS_AHEAD }, (_, i) => ({ id: BASE_ID + i }));
 
-async function reschedule(todayDone) {
+async function reschedule(enabled, todayDone) {
   await LocalNotifications.cancel({ notifications: ids }).catch(() => {});
   const { on, minutes } = loadReminderSettings();
-  if (!on) return;
+  if (!enabled || !on) return;
   if ((await LocalNotifications.checkPermissions()).display !== 'granted') return;
   await ensureReminderChannel();
   await LocalNotifications.schedule({
@@ -23,32 +23,20 @@ async function reschedule(todayDone) {
       body: REMINDER_TEXT.body,
       channelId: REMINDER_CHANNEL.id,
       schedule: { at, allowWhileIdle: true },
-      extra: { open: 'hifz' },
     })),
   });
 }
 
 /**
  * يجدول تذكير الحفظ ويعيد جدولته: عند الفتح، وتغيير الإعداد، وإتمام وِرد اليوم.
- * الضغط على الإشعار يفتح شاشة الحفظ (onOpen). على الهاتف فقط.
+ * enabled: قسم الحفظ وحده؛ لغيره تُلغى المواعيد. الضغط على الإشعار يفتح التطبيق، وشاشته الحفظ. على الهاتف فقط.
  */
-export default function useHifzReminder({ hasProgram, todayDone, onOpen }) {
-  const openRef = useRef(onOpen);
-  useEffect(() => { openRef.current = onOpen; }, [onOpen]);
-
+export default function useHifzReminder({ enabled, hasProgram, todayDone }) {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return undefined;
-    const run = () => { reschedule(hasProgram && todayDone).catch(() => {}); };
+    const run = () => { reschedule(enabled, hasProgram && todayDone).catch(() => {}); };
     run();
     window.addEventListener(REMINDER_CHANGE_EVENT, run);
     return () => window.removeEventListener(REMINDER_CHANGE_EVENT, run);
-  }, [hasProgram, todayDone]);
-
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return undefined;
-    const handle = LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
-      if (action?.notification?.extra?.open === 'hifz') openRef.current?.();
-    });
-    return () => { handle.then((h) => h.remove()).catch(() => {}); };
-  }, []);
+  }, [enabled, hasProgram, todayDone]);
 }

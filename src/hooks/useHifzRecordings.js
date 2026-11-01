@@ -4,6 +4,7 @@ import {
 } from '../utils/hifzRecordingStore';
 import { belongsHere, syncRecordings, uploadRecording, forgetRemote, ensureLocal } from '../utils/hifzRecordingSync';
 import { canReachServer, currentAccount } from '../utils/fileRemote';
+import { fetchRecordingFromDrive } from '../utils/googleBackupFiles';
 
 const typeOf = (r) => r.type || 'hifz';
 
@@ -53,7 +54,11 @@ export default function useHifzRecordings(type = 'hifz') {
   }, [update]);
 
   const loadUrl = useCallback(async (recording) => {
-    await ensureLocal(recording);
+    try {
+      await ensureLocal(recording);
+    } catch (e) {
+      if (!await fetchRecordingFromDrive(recording).catch(() => false)) throw e;
+    }
     return readRecordingUrl(recording);
   }, []);
 

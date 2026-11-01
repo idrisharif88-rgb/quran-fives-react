@@ -9,6 +9,7 @@ import {
 } from './persistence';
 import { clearSyncMeta } from './syncMeta';
 import { saveAccountStatus } from './syncAccount';
+import { clearSectionChoice } from './appSection';
 
 // كل ما يحفظه التطبيق عن المستخدم على هذا الجهاز (عدا بيانات الدخول نفسها)
 export const SESSION_STORAGE_KEYS = [
@@ -30,6 +31,7 @@ export function wipeDeviceData() {
   removeStoredState(KHITMA_CACHE_KEY);
   clearSyncMeta();
   saveAccountStatus(null);
+  clearSectionChoice();
 }
 
 const isEmpty = (v) => v == null || (Array.isArray(v) ? v.length === 0 : Object.keys(v).length === 0);
