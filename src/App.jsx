@@ -73,7 +73,7 @@ import { SESSION_STORAGE_KEYS, isPristineState } from './utils/deviceData';
 
 import SyncStatusIndicator from './components/SyncStatusIndicator';
 import StartupSyncPrompt from './components/StartupSyncPrompt';
-import useBrowserBack from './hooks/useBrowserBack';
+import useBrowserBack, { leaveSite } from './hooks/useBrowserBack';
 import CelebrationDialog from './components/CelebrationDialog';
 import KhatmaProgressDialog from './components/KhatmaProgressDialog';
 import { dayKey } from './utils/hifzSchedule';
@@ -1933,13 +1933,6 @@ function App() {
     },
   });
 
-  // في المتصفح لا تأكيد خروج: الرجوع من الشاشة الرئيسية يغادر الموقع (useBrowserBack)
-  const promptExit = () => {
-    if (!Capacitor.isNativePlatform()) return false;
-    setIsExitConfirmOpen(true);
-    return true;
-  };
-
   const handleHardwareBack = () => {
     // النوافذ الحاجبة (ModalDialog) فوق كل شيء، فهي أوّل ما يغلقه الرجوع.
     // قرار المزامنة لا يُغلق بالرجوع: يُختار منه صراحةً، والزرّ لا يفعل شيئاً تحته.
@@ -2015,7 +2008,7 @@ function App() {
     if (isHifzOpen && !isSyncPanelOpen && !isExitConfirmOpen) {
       // ما فُتح فوق شاشة الحفظ (استماع، نموذج، تنبيه) يُغلق وحده أولاً، ولا شيء تحتها يُرجع إليه
       if (hifzBackRef.current) hifzBackRef.current();
-      else return promptExit();
+      else setIsExitConfirmOpen(true);
       return true;
     }
     if (isMushafOpen) {
@@ -2167,7 +2160,8 @@ function App() {
     }
 
     // على الشاشة الرئيسية: عرض تأكيد خروج احترافي بدل التوست الأصلي
-    return promptExit();
+    setIsExitConfirmOpen(true);
+    return true;
   };
 
   backHandlerRef.current = handleHardwareBack;
@@ -2758,7 +2752,7 @@ function App() {
                 type="button"
                 className="night-counter-chip active"
                 style={{ flex: 1, margin: 0, background: 'var(--app-danger)', color: '#fff', border: 'none' }}
-                onClick={() => { if (window.AndroidApp && window.AndroidApp.finishApp) window.AndroidApp.finishApp(); }}
+                onClick={() => { if (window.AndroidApp && window.AndroidApp.finishApp) window.AndroidApp.finishApp(); else leaveSite(); }}
               >
                 خروج
               </button>
