@@ -8,8 +8,11 @@ const LEAVE_WAIT_MS = 500;
 
 const depth = () => Number(window.history.state?.[GUARD]) || 0;
 
-// مداخل حارسة فوق الصفحة في سجلّ المتصفح. تُملأ مع لمسة المستخدم دفعة واحدة، فكل رجوع ينزل مدخلاً
-// ولا يحتاج إلى إضافة جديد: Chrome يتخطّى ما أُضيف بلا تفاعل، فكانت الرجعة الثانية تغادر الموقع.
+// مداخل حارسة فوق الصفحة في سجلّ المتصفح. تُملأ مع تفاعل المستخدم دفعة واحدة، فكل رجوع ينزل مدخلاً
+// ولا يحتاج إلى إضافة جديد: Chrome يتخطّى كل ما أُضيف بلا تفاعل فيغادر الموقع. لذا لا تُملأ عند التحميل،
+// ولا مع pointerdown: اللمس لا يُحتسب تفاعلاً إلا عند رفع الإصبع (pointerup وtouchend).
+const INPUT_EVENTS = ['pointerup', 'touchend', 'click', 'keydown'];
+
 function fill() {
   try {
     for (let i = depth() + 1; i <= FULL; i++) window.history.pushState({ [GUARD]: i }, '');
@@ -33,14 +36,10 @@ export default function useBrowserBack(backHandlerRef) {
       backHandlerRef.current?.();
       if (now === 0) { fill(); last = depth(); }
     };
-    fill();
-    last = depth();
-    window.addEventListener('pointerdown', onInput, true);
-    window.addEventListener('keydown', onInput, true);
+    INPUT_EVENTS.forEach((type) => window.addEventListener(type, onInput, true));
     window.addEventListener('popstate', onPop);
     return () => {
-      window.removeEventListener('pointerdown', onInput, true);
-      window.removeEventListener('keydown', onInput, true);
+      INPUT_EVENTS.forEach((type) => window.removeEventListener(type, onInput, true));
       window.removeEventListener('popstate', onPop);
     };
   }, [backHandlerRef]);
