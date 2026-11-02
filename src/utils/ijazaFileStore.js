@@ -9,7 +9,7 @@ import { canReachServer, fetchRemoteIndex, uploadFile, deleteRemoteFile, downloa
 // الفهرس المحلي { [معرّف الإجازة]: { name, size, addedAt, uploaded } }؛ uploaded=false
 // ملف لم يصل السيرفر بعد (بلا شبكة أو بلا حساب) فيُرفع عند فتح الإجازة لاحقاً.
 const INDEX_KEY = 'quran-fives-ijaza-files-v1';
-const FOLDER = 'ijaza-files';
+export const FOLDER = 'ijaza-files';
 export const MAX_FILE_BYTES = 50 * 1024 * 1024;
 // أجزاء الكتابة على الجهاز: مضاعف 3 كي يُرمَّز كل جزء base64 وحده بلا حشو في وسطه
 const CHUNK_BYTES = 3 * 1024 * 1024;

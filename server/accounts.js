@@ -140,7 +140,14 @@ export function createAccounts(store, { maxUsers }) {
     return { key, approved: account.approved === true };
   }
 
-  return { exists, isFull, hashNew, createFromHash, create, setCode, setApproved, setPermission, permissionsOf, list, verify, nameOf };
+  // حالة حساب أُثبتت ملكيته بغير كلمة السر (مفتاح جلسة الموقع)
+  async function lookup(user) {
+    const key = userKey(user);
+    const account = await store.read(key, ACCOUNT_FILE, null);
+    return account ? { key, approved: account.approved === true } : null;
+  }
+
+  return { exists, isFull, hashNew, createFromHash, create, setCode, setApproved, setPermission, permissionsOf, list, verify, lookup, nameOf };
 }
 
 // نقل بيانات المالك لمرّة واحدة: الخادم القديم كان يخزّن حالة واحدة مشتركة

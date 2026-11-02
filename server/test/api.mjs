@@ -482,3 +482,67 @@ test('حذف الحساب: من التطبيق ومن صفحة الويب، وي
     await fs.rm(dir, { recursive: true, force: true });
   }
 });
+
+test('جلسة الموقع: مفتاح بدل كلمة السر، ولا يصلح لما يتطلّب الكلمة نفسها', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'quran-sync-session-'));
+  const s = await start({ dataDir: dir, maxUsers: 5 });
+  try {
+    const user = 'session@example.com';
+    await signUp(user, 'secret12', s.origin);
+    await s.accounts.setApproved(user, true);
+    const device = devices[user];
+    const password = basic(user, 'secret12', device);
+
+    // إنشاء الجلسة يتطلّب كلمة السر ومفتاح الجهاز معاً
+    assert.equal((await call('POST', '/api/auth/session', { headers: basic(user, 'secret12') }, s.origin)).status, 401);
+    assert.equal((await call('POST', '/api/auth/session', { headers: basic(user, 'wrong-pass', device) }, s.origin)).status, 401);
+    const created = await call('POST', '/api/auth/session', { headers: password }, s.origin);
+    assert.equal(created.status, 201);
+    const { token } = created.json;
+    assert.ok(token.startsWith('ses.'));
+    const session = basic(user, token, device);
+
+    // يفتح البيانات، ولا يفتحها بلا مفتاح الجهاز، ولا لحساب آخر
+    assert.equal((await call('GET', '/api/state', { headers: session }, s.origin)).status, 200);
+    assert.equal((await call('GET', '/api/auth/me', { headers: session }, s.origin)).status, 200);
+    assert.equal((await call('GET', '/api/state', { headers: basic(user, token) }, s.origin)).status, 401);
+    await signUp('other@example.com', 'secret12', s.origin);
+    assert.equal((await call('GET', '/api/state', { headers: basic('other@example.com', token, devices['other@example.com']) }, s.origin)).status, 401);
+
+    // لا يدخل ولا يولّد جلسة ولا يحذف الحساب؛ وكلمة السر تبقى صالحة
+    assert.equal((await call('POST', '/api/auth/login', { headers: session }, s.origin)).status, 401);
+    assert.equal((await call('POST', '/api/auth/session', { headers: session }, s.origin)).status, 401);
+    assert.equal((await call('POST', '/api/account/delete', { headers: session }, s.origin)).status, 401);
+    assert.equal(await s.accounts.exists(user), true);
+    assert.equal((await call('GET', '/api/state', { headers: password }, s.origin)).status, 200);
+
+    // بصمته وحدها على الخادم
+    const saved = await fs.readFile(path.join(dir, 'users', userKey(user), 'sessions.json'), 'utf8');
+    assert.ok(!saved.includes(token.slice(4)));
+
+    // تسجيل الخروج يبطله
+    assert.equal((await call('DELETE', '/api/auth/session', { headers: session }, s.origin)).status, 200);
+    assert.equal((await call('GET', '/api/state', { headers: session }, s.origin)).status, 401);
+
+    // انتهاء العمر يبطله
+    const old = (await call('POST', '/api/auth/session', { headers: password }, s.origin)).json.token;
+    const file = path.join(dir, 'users', userKey(user), 'sessions.json');
+    const record = JSON.parse(await fs.readFile(file, 'utf8'));
+    record.list.forEach((x) => { x.createdAt = Date.now() - 91 * 24 * 60 * 60 * 1000; });
+    await fs.writeFile(file, JSON.stringify(record));
+    assert.equal((await call('GET', '/api/state', { headers: basic(user, old, device) }, s.origin)).status, 401);
+
+    // تغيير كلمة السر يبطل كل الجلسات
+    const beforeReset = (await call('POST', '/api/auth/session', { headers: password }, s.origin)).json.token;
+    await call('POST', '/api/auth/reset/request', { body: { user } }, s.origin);
+    const reset = await call('POST', '/api/auth/reset/confirm', { body: { user, otp: outbox.get(user), code: 'newsecret1' } }, s.origin);
+    assert.equal(reset.status, 200);
+    assert.equal((await call('GET', '/api/state', { headers: basic(user, beforeReset, reset.json.device) }, s.origin)).status, 401);
+
+    // الحذف بكلمة السر ما زال يعمل
+    assert.equal((await call('POST', '/api/account/delete', { headers: basic(user, 'newsecret1', reset.json.device) }, s.origin)).status, 200);
+  } finally {
+    s.srv.close();
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});

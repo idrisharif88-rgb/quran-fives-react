@@ -5,6 +5,7 @@ import {
   readKnownEmails, rememberEmail, forgetEmail, markWelcome, latinDigits,
 } from '../utils/syncAccount';
 import { registerAccount, verifyAccount, loginAccount, confirmLogin, requestReset, confirmReset } from '../utils/cloudSync';
+import { storableCreds } from '../utils/webSession';
 
 // رسالة لكل ردّ من الخادم؛ ما عداها عطل شبكة
 const ERROR_BY_STATUS = {
@@ -45,14 +46,16 @@ export default function useAccount() {
     }
   }, []);
 
-  const enter = useCallback((creds) => {
-    saveAccount(creds);
+  const enter = useCallback(async (creds) => {
+    const stored = await run(() => storableCreds(creds));
+    if (!stored) return;
+    saveAccount(stored);
     // الحسابات الأقدم (اسم لا بريد) لا تُحفظ في قائمة البُرُد
-    if (validateEmail(creds.user) === null) setKnownEmails(rememberEmail(creds.user));
-    markWelcome(creds.user);
-    setAccount(creds);
+    if (validateEmail(stored.user) === null) setKnownEmails(rememberEmail(stored.user));
+    markWelcome(stored.user);
+    setAccount(stored);
     setPending(null);
-  }, []);
+  }, [run]);
 
   const forgetKnownEmail = useCallback((email) => setKnownEmails(forgetEmail(email)), []);
 
@@ -74,7 +77,7 @@ export default function useAccount() {
     if (!outcome) return;
     const { used, result } = outcome;
     if (result.pending) setPending({ kind: 'login', ...used });   // رمز أُرسل إلى البريد
-    else enter({ ...used, name: result.name });
+    else await enter({ ...used, name: result.name });
   }, [run, enter]);
 
   // حساب جديد، الخطوة 1: يُرسل رمز التأكيد إلى البريد
@@ -110,7 +113,7 @@ export default function useAccount() {
       reset: () => confirmReset(user, digits, code),
     }[kind];
     const result = await run(request, true);
-    if (result) enter({ user, code, device: result.device, name: result.name });
+    if (result) await enter({ user, code, device: result.device, name: result.name });
   }, [pending, run, enter]);
 
   const cancelPending = useCallback(() => { setPending(null); setError(''); }, []);

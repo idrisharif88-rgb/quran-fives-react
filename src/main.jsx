@@ -15,9 +15,11 @@ import App from './App.jsx'
 import SplashIntro from './components/SplashIntro/SplashIntro'
 import './styles/appScale.css'
 import { applyScale, loadScale } from './utils/appScale'
+import { startWebShell } from './utils/webShell'
 
 // حجم العرض قبل أوّل رسم، فلا يقفز التطبيق من حجم إلى آخر عند الفتح
 applyScale(loadScale())
+startWebShell()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

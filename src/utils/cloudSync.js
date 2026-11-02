@@ -126,6 +126,10 @@ export const loginAccount = (creds) => api('/api/auth/login', { method: 'POST', 
 export const confirmLogin = (creds, otp) =>
   api('/api/auth/login/confirm', { method: 'POST', creds, body: JSON.stringify({ otp }) });
 
+// جلسة الموقع: كلمة السر ومفتاح الجهاز ← مفتاح جلسة يُحفظ بدل الكلمة (webSession.js)
+export const createSession = (creds) => api('/api/auth/session', { method: 'POST', creds });
+export const revokeSession = () => api('/api/auth/session', { method: 'DELETE' }, 5000);
+
 // استرجاع كلمة السر: رمز إلى البريد، ثم الرمز مع الكلمة الجديدة
 export const requestReset = (user) => post('/api/auth/reset/request', { user });
 export const confirmReset = (user, otp, code) => post('/api/auth/reset/confirm', { user, otp, code });

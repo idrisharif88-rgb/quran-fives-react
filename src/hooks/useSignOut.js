@@ -4,6 +4,8 @@ import { saveBeforeSignOut, linkDriveAndSave } from '../utils/signOutSave';
 import { forcePushLocal } from '../utils/cloudSync';
 import { wipeDeviceData } from '../utils/deviceData';
 import { forgetGoogleLink } from '../utils/googleBackup';
+import { clearWebAccountFiles } from '../utils/webFileWipe';
+import { endWebSession } from '../utils/webSession';
 
 // «تبديل الحساب» يعيد التحميل بعد مسح الجهاز، ثم تُفتح اللوحة على نموذج الدخول
 export const REOPEN_SYNC_PANEL_KEY = 'quran-fives-reopen-sync-panel';
@@ -18,6 +20,8 @@ export default function useSignOut({ account, signOut, status, snapshotRef, serv
 
   const leave = useCallback(async ({ wipe, switching }) => {
     await forgetGoogleLink();
+    if (wipe) await clearWebAccountFiles();
+    await endWebSession();
     // من هنا إلى إعادة التحميل بلا انتظار: أيّ حفظ من App بعد المسح يعيد البيانات إلى الجهاز
     if (wipe) wipeDeviceData();
     signOut();

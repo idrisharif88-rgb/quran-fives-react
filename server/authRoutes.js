@@ -9,7 +9,7 @@ const BAD_OTP = { error: 'رمز التأكيد غير صحيح أو منتهي 
 // الحساب لا يُنشأ ولا يُحتسب من السقف قبل تأكيد البريد.
 // والدخول من جهاز جديد بخطوتين: كلمة السر ثم رمز بالبريد، وبعده يأخذ الجهاز مفتاحاً
 // (device) يُغنيه عن الرمز لاحقاً. كل مسار يثبت ملكية البريد يمنح المفتاح.
-export function registerAuthRoutes(app, { accounts, otps, devices, sendMail, ipMail, emailMail, clientIp, checkPassword }) {
+export function registerAuthRoutes(app, { accounts, otps, devices, sessions, sendMail, ipMail, emailMail, clientIp, checkPassword }) {
   // يرسل رمزاً بالبريد. الحدّان (لكل عنوان ولكل بريد) يحميان رصيد خدمة الإرسال.
   // يعيد حالة HTTP للفشل، أو 0 عند النجاح.
   async function mailOtp(req, kind, email, name, payload) {
@@ -105,6 +105,7 @@ export function registerAuthRoutes(app, { accounts, otps, devices, sendMail, ipM
     // كلمة سر جديدة تُخرج كل الأجهزة السابقة؛ هذا الجهاز أثبت ملكية البريد للتو
     const key = userKey(email);
     await devices.clear(key);
+    await sessions.clear(key);
     res.json({ ok: true, device: await devices.issue(key), name: await accounts.nameOf(email) });
   });
 
