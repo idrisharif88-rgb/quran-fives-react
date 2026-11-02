@@ -5,7 +5,7 @@ import { loadStoredState, saveStoredState } from './persistence';
 // الملف الصوتي في مساحة التطبيق على الجهاز (Filesystem)، وفهرس التسجيلات في التخزين المحلي.
 // لا تدخل حالة التطبيق المُزامَنة: تُرفع ملفاتها إلى حساب صاحبها (hifzRecordingSync.js).
 const INDEX_KEY = 'quran-fives-hifz-recordings-v1';
-const FOLDER = 'hifz-recordings';
+export const FOLDER = 'hifz-recordings';
 
 const EXTENSIONS = { 'audio/webm': 'webm', 'audio/mp4': 'm4a', 'audio/ogg': 'ogg', 'audio/aac': 'aac' };
 const extensionOf = (mime) => EXTENSIONS[(mime || '').split(';')[0]] || 'webm';

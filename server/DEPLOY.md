@@ -183,6 +183,28 @@ state sync gets 401 until they are updated. Their khatma record keeps working.
 ⚠️ Before copying files to the server, diff `index.js` against what is actually running —
 the deployed file may contain endpoints that were never committed here.
 
+## Website
+Same code as the APK. Deploy the server first: the site signs in through `/api/auth/session`.
+
+On your PC (not the server, it has 1 GB of RAM):
+```bash
+npm run build
+scp -r dist/. root@YOUR_SERVER_IP:/var/www/fives/
+```
+nginx site:
+```nginx
+server {
+    server_name YOUR_WEB_DOMAIN;
+    root /var/www/fives;
+    index index.html;
+    location = /sw.js { add_header Cache-Control "no-cache"; }
+    location = /index.html { add_header Cache-Control "no-cache"; }
+    location /assets/ { add_header Cache-Control "public, max-age=31536000, immutable"; }
+    location / { try_files $uri $uri/ /index.html; }
+}
+```
+Then run `certbot --nginx -d YOUR_WEB_DOMAIN`, and add `https://YOUR_WEB_DOMAIN` to the Web OAuth client in Google Cloud, under both JavaScript origins and redirect URIs (`https://YOUR_WEB_DOMAIN/`).
+
 ## Notes
 - Data lives in `data/users/<key>/` inside the server folder: `account.json` (salted
   scrypt hash, never the code itself), `state.json`, `khitma.json`. `<key>` is a hash of

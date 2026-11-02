@@ -9,10 +9,11 @@ const ADMIN_REFUSED = { error: 'حساب المشرف لا يُحذف' };
 // التطبيق: كلمة السر + مفتاح الجهاز (signedIn) تكفيان، ولو لم يوافق المشرف على الحساب بعد.
 // صفحة الويب: لا مفتاح جهاز فيها، فتثبت الملكية بكلمة السر ثم رمز بالبريد.
 // حساب المشرف لا يُحذف من هنا، فلا تضيع لوحة الإدارة بضغطة.
-export function registerAccountDeleteRoutes(app, { accounts, otps, signedIn, checkPassword, mailOtp, fail, deleteAccount }) {
+export function registerAccountDeleteRoutes(app, { accounts, otps, passwordAndDevice, checkPassword, mailOtp, fail, deleteAccount }) {
   app.get('/delete-account', (req, res) => res.sendFile(PAGE));
 
-  app.post('/api/account/delete', signedIn, async (req, res) => {
+  // كلمة السر نفسها: مفتاح جلسة الموقع وحده لا يحذف حساباً
+  app.post('/api/account/delete', passwordAndDevice, async (req, res) => {
     if (req.isAdmin) return res.status(400).json(ADMIN_REFUSED);
     await deleteAccount(req.userKey);
     res.json({ ok: true });

@@ -3,6 +3,8 @@ import { deleteAccount } from '../utils/cloudSync';
 import { forgetEmail, latinDigits } from '../utils/syncAccount';
 import { wipeDeviceData } from '../utils/deviceData';
 import { removeStoredState } from '../utils/persistence';
+import { holdsPassword } from '../utils/webSession';
+import { clearWebAccountFiles } from '../utils/webFileWipe';
 
 // حذوف ملفات معلّقة تخصّ الحساب المحذوف: لا معنى لإعادة محاولتها تحت حساب آخر
 const PENDING_DELETE_KEYS = ['quran-fives-ijaza-deletes-v1', 'quran-fives-hifz-deletes-v1'];
@@ -27,12 +29,18 @@ export default function useAccountDelete(auth) {
     if (!account || busy) return;
     const clean = typed.trim();
     if (!clean) { setError('أدخل كلمة السر'); return; }
-    // الكلمة كما حُفظت عند الدخول: قد تُكتب بأرقام عربية
-    const code = clean === account.code ? clean : latinDigits(clean);
+    // الكلمة كما حُفظت عند الدخول: قد تُكتب بأرقام عربية.
+    // المتصفح لا يحفظ الكلمة ليقارن بها: تُجرَّب كما كُتبت ثم بأرقام لاتينية
+    const latin = latinDigits(clean);
+    const code = !holdsPassword() || clean === account.code ? clean : latin;
     setBusy(true);
     setError('');
     try {
-      await deleteAccount({ ...account, code });
+      await deleteAccount({ ...account, code }).catch((e) => {
+        if (holdsPassword() || e?.status !== 401 || latin === code) throw e;
+        return deleteAccount({ ...account, code: latin });
+      });
+      await clearWebAccountFiles({ everything: true });
     } catch (e) {
       setError(ERROR_BY_STATUS[e?.status] || 'تعذّر الاتصال بالخادم — الحذف يحتاج إنترنت');
       setBusy(false);

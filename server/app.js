@@ -5,6 +5,7 @@ import { createAccounts, validateEmail } from './accounts.js';
 import { createLimiter } from './rateLimit.js';
 import { createOtps } from './otp.js';
 import { createDevices } from './devices.js';
+import { createSessions } from './sessions.js';
 import { registerAuthRoutes } from './authRoutes.js';
 import { registerAdminRoutes } from './adminRoutes.js';
 import { registerFileRoutes } from './fileRoutes.js';
@@ -44,6 +45,7 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
   const pending = createStore(dataDir, 'pending');
   const otps = createOtps(pending, otpOptions);
   const devices = createDevices(store);
+  const sessions = createSessions(store);
   const cfg = { ...DEFAULT_LIMITS, ...limits };
   const ipFails = createLimiter(cfg.ipFails);
   const userFails = createLimiter(cfg.userFails);
@@ -55,9 +57,9 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
 
   app.get('/api/health', (req, res) => res.json({ ok: true }));
 
-  // كلمة السر. طلب بلا بيانات دخول يُرفض دون احتسابه محاولة فاشلة: الإصدارات
+  // بيانات الدخول. طلب بلا بيانات يُرفض دون احتسابه محاولة فاشلة: الإصدارات
   // القديمة ترسل /api/state بلا مستخدم، ولا يجوز أن تحظر عنوانها.
-  async function checkPassword(req, res, next) {
+  const authenticate = (verify) => async (req, res, next) => {
     const creds = readCreds(req);
     if (!creds) return res.status(401).json({ error: 'يتطلّب تسجيل الدخول' });
     const ip = clientIp(req);
@@ -65,7 +67,7 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
     if (ipFails.blocked(ip) || userFails.blocked(key)) {
       return res.status(429).json({ error: 'محاولات كثيرة — حاول لاحقاً' });
     }
-    const verified = await accounts.verify(creds.user, creds.code);
+    const verified = await verify(creds);
     if (!verified) {
       ipFails.hit(ip);
       userFails.hit(key);
@@ -75,20 +77,37 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
     req.email = normalizeUser(creds.user);
     req.isAdmin = Boolean(adminName) && req.email === adminName;
     req.approved = verified.approved || req.isAdmin;
+    req.credential = creds.code;
     // التحقّق بخطوتين لكل حساب بريدي. حساب المالك المنقول اسمٌ بلا بريد، فلا رمز
     // يُرسل إليه — يبقى بكلمة السر وحدها.
     req.needsDevice = validateEmail(creds.user) === null;
     next();
-  }
+  };
+  // كلمة السر نفسها: الدخول، إنشاء جلسة، حذف الحساب
+  const checkPassword = authenticate(({ user, code }) => accounts.verify(user, code));
+  // كلمة السر أو مفتاح جلسة الموقع: كل ما عدا ذلك. كلمة سر تبدأ ببادئة الجلسة تبقى صالحة.
+  const checkCredential = authenticate(async ({ user, code }) => (
+    await sessions.has(userKey(user), code) ? accounts.lookup(user) : accounts.verify(user, code)
+  ));
 
-  // البيانات تتطلّب كلمة السر ومفتاح جهاز موثوق معاً
+  // البيانات تتطلّب بيانات الدخول ومفتاح جهاز موثوق معاً
   async function checkDevice(req, res, next) {
     if (req.needsDevice && !await devices.has(req.userKey, req.get('X-Device'))) {
       return res.status(401).json({ error: 'جهاز غير موثوق — ادخل من جديد' });
     }
     next();
   }
-  const signedIn = [checkPassword, checkDevice];
+  const signedIn = [checkCredential, checkDevice];
+  const passwordAndDevice = [checkPassword, checkDevice];
+
+  // الموقع يبدّل كلمة السر بمفتاح جلسة بعد الدخول، فلا تبقى الكلمة في المتصفح
+  app.post('/api/auth/session', passwordAndDevice, async (req, res) => {
+    res.status(201).json({ token: await sessions.issue(req.userKey) });
+  });
+  app.delete('/api/auth/session', signedIn, async (req, res) => {
+    await sessions.revoke(req.userKey, req.credential);
+    res.json({ ok: true });
+  });
 
   // البيانات تتطلّب فوق ذلك موافقة المشرف على الحساب
   function checkApproved(req, res, next) {
@@ -117,6 +136,7 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
     accounts,
     otps,
     devices,
+    sessions,
     sendMail,
     ipMail: createLimiter(cfg.ipMail),
     emailMail: createLimiter(cfg.emailMail),
@@ -167,7 +187,7 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
     await store.removeAll(key);
     await pending.removeAll(key);
   };
-  registerAccountDeleteRoutes(app, { accounts, otps, signedIn, checkPassword, mailOtp, fail, deleteAccount });
+  registerAccountDeleteRoutes(app, { accounts, otps, passwordAndDevice, checkPassword, mailOtp, fail, deleteAccount });
 
   return { app, store, accounts };
 }
