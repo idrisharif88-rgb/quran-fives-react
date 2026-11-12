@@ -120,6 +120,8 @@ import './App.css';
 import './styles/themes.css';
 // مقاس واحد لأزرار الصفّ العلوي (بعد App.css كي يعلو عليه)
 import './styles/upperActions.css';
+// الشاشات القصيرة (لوحيّ أفقي): بطاقة الآيات لا تنضغط إلى لا شيء
+import './styles/shortScreen.css';
 
 // كلمة مرور حذف الختمات (قفل بسيط لمنع الحذف العَرَضي، وليست حماية أمنية)
 const KHATMA_DELETE_PASSWORD = '27956';
@@ -2804,7 +2806,7 @@ function App() {
       )}
       {/* الأزرار العلوية */}
       {!isQuizMode && viewMode !== 'starred' && viewMode !== 'page-starred' && viewMode !== 'page-ends-starred' && viewMode !== 'night-counter' && viewMode !== 'quranic-wonders' && viewMode !== 'surah-pages' && (
-      <div className={`action-buttons-container upper-actions${canSwitchSection ? ' has-section-switch' : ''}`}>
+      <div className={`action-buttons-container upper-actions${canSwitchSection ? ' has-section-switch' : ''}${!isPageStartsMode && !isPageEndsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' ? ' with-calendar' : ''}`}>
         {(isPageStartsMode || isPageEndsMode || isNightCounterMode || isSurahFivesMode) && (
           <>
             {!isNightCounterMode && (
@@ -3001,11 +3003,9 @@ function App() {
           style={{ cursor: 'default' }}
         >
           {hijriData.length > 0 ? (
-            <span style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>
-              {hijriData[hijriIndex]}
-            </span>
+            <span className="calendar-icon-text">{hijriData[hijriIndex]}</span>
           ) : (
-            <span style={{ fontSize: '14px' }}>...</span>
+            <span className="calendar-icon-text">...</span>
           )}
         </div>}
         {/* بإذن المشرف: الانتقال إلى قسم الحفظ بلا تسجيل خروج */}
