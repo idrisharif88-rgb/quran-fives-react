@@ -8,17 +8,24 @@ const ICONS = {
 const LABEL = { fives: 'الخماسيات', hifz: 'الحفظ' };
 
 /**
- * زرّ الانتقال إلى القسم الآخر — لمن أذن له المشرف (sectionSwitch).
- * @param to 'fives' (في رئيسية الحفظ: كبيرة في الوسط مع اسمها) | 'hifz' (في صفّ أزرار الخماسيات: صغيرة)
+ * الانتقال إلى القسم الآخر — لمن أذن له المشرف (sectionSwitch).
+ * to='fives': في رئيسية الحفظ، كبيرة في الوسط مع اسمها.
+ * to='hifz': في صفّ أزرار الخماسيات، دائرة .action-icon كأخواتها فتأخذ مقاسها نفسه
+ * (styles/upperActions.css)، بلون بلاطة الحفظ.
  */
 export default function SectionSwitchIcon({ to, onClick }) {
-  const big = to === 'fives';
+  const icon = <svg viewBox="0 0 24 24" aria-hidden="true">{ICONS[to]}</svg>;
+  if (to === 'hifz') {
+    return (
+      <button type="button" className="action-icon section-switch-action" onClick={onClick} aria-label={`انتقل إلى ${LABEL[to]}`} title={LABEL[to]}>
+        {icon}
+      </button>
+    );
+  }
   return (
-    <button type="button" className={`section-switch section-switch--${to}${big ? ' is-big' : ''}`} onClick={onClick} aria-label={`انتقل إلى ${LABEL[to]}`} title={LABEL[to]}>
-      <span className="section-switch-icon">
-        <svg viewBox="0 0 24 24" aria-hidden="true">{ICONS[to]}</svg>
-      </span>
-      {big && <b>{LABEL[to]}</b>}
+    <button type="button" className="section-switch" onClick={onClick} aria-label={`انتقل إلى ${LABEL[to]}`} title={LABEL[to]}>
+      <span className="section-switch-icon">{icon}</span>
+      <b>{LABEL[to]}</b>
     </button>
   );
 }

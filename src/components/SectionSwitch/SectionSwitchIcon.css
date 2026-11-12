@@ -1,41 +1,39 @@
-/* الانتقال بين القسمين: ألوان بلاطتي SectionChoice، أصغر منهما */
-.section-switch {
+/* الانتقال بين القسمين: ألوان بلاطتي SectionChoice */
+.section-switch,
+.section-switch-action {
   --switch-fives-from: #0b8a3a;
   --switch-fives-to: #005a1e;
   --switch-hifz-from: #ffe14d;
   --switch-hifz-to: #f7b500;
   --switch-hifz-ink: #1a1a1a;
+}
+
+/* في رئيسية الحفظ: أيقونة الخماسيات كبيرة في الوسط مع اسمها */
+.section-switch {
+  align-self: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 0;
+  padding: 4px;
   border: 0;
   background: none;
   font-family: inherit;
   cursor: pointer;
 }
 
-.section-switch.is-big {
-  align-self: center;
-  padding: 4px;
-}
-
 .section-switch-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 120ms ease-out;
-}
-
-.section-switch.is-big .section-switch-icon {
   width: 76px;
   height: 76px;
   border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, var(--switch-fives-from), var(--switch-fives-to));
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(0, 100, 0, 0.3);
   animation: section-switch-breathe 2.6s ease-in-out infinite;
+  transition: transform 120ms ease-out;
 }
 
 .section-switch:active .section-switch-icon {
@@ -48,32 +46,18 @@
   border-radius: 16px;
 }
 
-.section-switch svg {
-  width: 27px;
-  height: 27px;
+.section-switch svg,
+.section-switch-action svg {
   fill: none;
   stroke: currentColor;
-  stroke-width: 2.8;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.section-switch.is-big svg {
+.section-switch svg {
   width: 44px;
   height: 44px;
   stroke-width: 2.6;
-}
-
-.section-switch--fives .section-switch-icon {
-  background: linear-gradient(145deg, var(--switch-fives-from), var(--switch-fives-to));
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(0, 100, 0, 0.3);
-}
-
-.section-switch--hifz .section-switch-icon {
-  background: linear-gradient(145deg, var(--switch-hifz-from), var(--switch-hifz-to));
-  color: var(--switch-hifz-ink);
-  box-shadow: 0 6px 14px rgba(247, 181, 0, 0.35);
 }
 
 .section-switch b {
@@ -82,11 +66,16 @@
   color: var(--app-text-strong);
 }
 
-/* صفّ أزرار الخماسيات على الهاتف: أيقونة خامسة تحتاج فراغاً أضيق بينها */
-@media (max-width: 600px) {
-  .action-buttons-container.upper-actions.has-section-switch {
-    gap: 16px;
-  }
+/* في صفّ الخماسيات: .action-icon يعطيها المقاس والإطار والظلّ؛ هنا اللون وحده */
+.action-icon.section-switch-action {
+  background: linear-gradient(145deg, var(--switch-hifz-from), var(--switch-hifz-to));
+  color: var(--switch-hifz-ink);
+}
+
+.action-icon.section-switch-action svg {
+  width: 50%;
+  height: 50%;
+  stroke-width: 2.6;
 }
 
 @keyframes section-switch-breathe {
@@ -95,5 +84,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .section-switch.is-big .section-switch-icon { animation: none; }
+  .section-switch-icon { animation: none; }
 }

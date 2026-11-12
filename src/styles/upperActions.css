@@ -1,0 +1,29 @@
+/* صفّ أزرار الخماسيات العلوي: مقاس واحد لكل أزراره من مكان واحد.
+   كانت المقاسات متفرّقة (70/56 للأزرار، 65 للتقويم مكتوباً في JSX، 46 لأيقونة الحفظ)
+   فاختلفت الأيقونات حجماً. الآن: متغيّران على الصفّ، وكلّ .action-icon فيه يقرأهما. */
+.action-buttons-container.upper-actions {
+  --upper-gap: 50px;
+  --upper-size: 70px;
+  gap: var(--upper-gap);
+}
+
+.action-buttons-container.upper-actions .action-icon {
+  flex: none;
+  width: var(--upper-size);
+  height: var(--upper-size);
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .action-buttons-container.upper-actions {
+    --upper-gap: 35px;
+    --upper-size: 56px;
+  }
+
+  /* خمسة أزرار (أيقونة الحفظ بإذن المشرف): فراغ أضيق، والمقاس يصغر معاً إن ضاقت الشاشة.
+     100 * --vw عرض الشاشة مصحَّحاً لحجم العرض (appScale.css)؛ 32px حاشيتا الصفّ */
+  .action-buttons-container.upper-actions.has-section-switch {
+    --upper-gap: 14px;
+    --upper-size: min(56px, calc((100 * var(--vw) - 32px - 4 * var(--upper-gap)) / 5));
+  }
+}

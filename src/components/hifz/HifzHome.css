@@ -365,10 +365,31 @@
   padding-right: 12px;
   border-right: 3px solid var(--app-accent-ink);
   font-size: 16px;
-  line-height: 1.9;
+  font-weight: 700;
+  line-height: 1.95;
   color: var(--app-text-strong);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.hifz-tafseer-note.clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  line-clamp: 6;
+  overflow: hidden;
+}
+
+.hifz-tafseer-more {
+  align-self: flex-start;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
 }
 
 @media (prefers-reduced-motion: reduce) {
