@@ -96,6 +96,54 @@ const SOURCES = {
     ablibrary: [5380],
     shift: [13],
   },
+  '0290IbnHasanSaffar.BasairDarajat': {
+    section: 'hadith', order: 7, by: 'الصفار',
+    title: 'بصائر الدرجات',
+    publisher: 'منشورات الأعلمي - طهران',
+    ablibrary: [1944],
+  },
+  '0274AhmadBarqi.Mahasin': {
+    section: 'hadith', order: 8, by: 'البرقي',
+    title: 'المحاسن',
+    publisher: 'دار الكتب الإسلامية - طهران',
+    ablibrary: [3720, 3721],
+    shift: [60, -294], // ج2 يكمل ترقيم ج1: صفحته المطبوعة 295 أول صفحة فيه
+  },
+  '0400IbnCaliHarrani.TuhafCuqul': {
+    section: 'hadith', order: 9, by: 'ابن شعبة الحراني',
+    title: 'تحف العقول',
+    publisher: 'مؤسسة النشر الإسلامي - قم',
+    ablibrary: [6129],
+    shift: [11],
+  },
+  '0381IbnBabawayhSaduq.KamalDin': {
+    section: 'ghayba', order: 1, by: 'الصدوق',
+    title: 'كمال الدين وتمام النعمة',
+    publisher: 'مؤسسة النشر الإسلامي - قم',
+    ablibrary: [3404],
+    shift: [30],
+  },
+  '0460ShaykhTusi.Ghayba': {
+    section: 'ghayba', order: 2, name: 'الغيبة للطوسي', by: 'الطوسي',
+    title: 'الغيبة',
+    publisher: 'مؤسسة المعارف الإسلامية - قم',
+    ablibrary: [5083],
+    shift: [28],
+  },
+  '0401IbnAyyashJawhari.MuqtadabAthar': {
+    section: 'ghayba', order: 3, by: 'ابن عياش الجوهري',
+    title: 'مقتضب الأثر',
+    publisher: 'مكتبة الطباطبائي - قم',
+    ablibrary: [4265],
+    shift: [18],
+  },
+  '0803BahaDinNiliNajafi.MuntakhabAnwar': {
+    section: 'ghayba', order: 4, name: 'منتخب الأنوار المضيئة', by: 'النيلي النجفي',
+    title: 'منتخب الأنوار المضيئة',
+    publisher: 'مؤسسة الإمام الهادي (ع)',
+    ablibrary: [4627],
+    shift: [65],
+  },
   // كتب ليست في OpenITI: تُحوَّل من Word بـ scripts/docx-to-openiti.py وتوضع في data/library/local على السيرفر
   'Local.MasharicMawt': {
     section: 'mine', order: 1, by: 'إدريس أحمد شريف',
@@ -109,6 +157,7 @@ const SOURCES = {
 export const SECTIONS = [
   { id: 'hadith', name: 'الحديث' },
   { id: 'tafsir', name: 'التفسير' },
+  { id: 'ghayba', name: 'الغيبة والمهدوية' },
   { id: 'dua', name: 'الأدعية والخطب' },
   { id: 'mine', name: 'مؤلفات' },
 ];

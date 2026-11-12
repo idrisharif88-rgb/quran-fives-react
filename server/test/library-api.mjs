@@ -55,7 +55,7 @@ test('المكتبة تتطلّب حساباً', async () => {
 test('كتب + بحث + مقطع، والمصدر مذكور', async () => {
   const books = await get('/api/library/books');
   assert.equal(books.json.books.length, 1);
-  assert.equal(books.json.sections.length, 4);
+  assert.equal(books.json.sections.length, 5);
   assert.equal(books.json.books[0].name, 'كتاب تجريبي');
 
   const grouped = await get('/api/library/grouped?q=' + encodeURIComponent('الصلاة'));

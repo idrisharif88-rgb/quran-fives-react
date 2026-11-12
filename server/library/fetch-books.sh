@@ -22,6 +22,13 @@ BOOKS="
 0550AH/0548IbnHasanTabarsi/0548IbnHasanTabarsi.TafsirMajmacBayan/0548IbnHasanTabarsi.TafsirMajmacBayan.Shia002359Vols-ara1
 1125AH/1112IbnJumcaHuwayzi/1112IbnJumcaHuwayzi.TafsirNurThaqalayn/1112IbnJumcaHuwayzi.TafsirNurThaqalayn.Shia002389Vols-ara1
 0800AH/0786ShahidAwwal/0786ShahidAwwal.SahifaSajjadiyya/0786ShahidAwwal.SahifaSajjadiyya.Shia001112-ara1.completed
+0300AH/0290IbnHasanSaffar/0290IbnHasanSaffar.BasairDarajat/0290IbnHasanSaffar.BasairDarajat.Shia001117-ara1
+0275AH/0274AhmadBarqi/0274AhmadBarqi.Mahasin/0274AhmadBarqi.Mahasin.Shia001115Vols-ara1
+0400AH/0400IbnCaliHarrani/0400IbnCaliHarrani.TuhafCuqul/0400IbnCaliHarrani.TuhafCuqul.Shia001153-ara1
+0400AH/0381IbnBabawayhSaduq/0381IbnBabawayhSaduq.KamalDin/0381IbnBabawayhSaduq.KamalDin.Shia001146-ara1.completed
+0475AH/0460ShaykhTusi/0460ShaykhTusi.Ghayba/0460ShaykhTusi.Ghayba.Shia001335-ara1
+0425AH/0401IbnAyyashJawhari/0401IbnAyyashJawhari.MuqtadabAthar/0401IbnAyyashJawhari.MuqtadabAthar.Shia001289-ara1
+0825AH/0803BahaDinNiliNajafi/0803BahaDinNiliNajafi.MuntakhabAnwar/0803BahaDinNiliNajafi.MuntakhabAnwar.Shia004022-ara1
 "
 
 FILES=""
