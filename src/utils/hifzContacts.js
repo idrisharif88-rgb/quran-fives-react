@@ -27,6 +27,19 @@ export function contactUrl(contact, message = '') {
   return `https://wa.me/${contact.handle}${text}`;
 }
 
+// رابط intent لمتصفّح أندرويد: يفتح التطبيق مباشرة والصفحة باقية مكانها. window.open لرابط
+// wa.me كان يفتح لسانَ تبويب جديداً يسلّمه للتطبيق ويبقى أبيض فارغاً عند العودة.
+// إن لم يكن التطبيق مثبّتاً يفتح المتصفّح رابط https المعتاد (browser_fallback_url).
+export function contactIntentUrl(contact, message = '') {
+  const fallback = `S.browser_fallback_url=${encodeURIComponent(contactUrl(contact, message))}`;
+  const text = message ? `&text=${encodeURIComponent(message)}` : '';
+  if (contact.app === APPS.TELEGRAM) {
+    const who = contact.handle.startsWith('+') ? `phone=${contact.handle.slice(1)}` : `domain=${contact.handle}`;
+    return `intent://resolve?${who}${text}#Intent;scheme=tg;${fallback};end`;
+  }
+  return `intent://send?phone=${contact.handle}${text}#Intent;scheme=whatsapp;${fallback};end`;
+}
+
 // قائمة مخزّنة ← قائمة صالحة فقط
 export function sanitizeContacts(raw) {
   if (!Array.isArray(raw)) return [];
