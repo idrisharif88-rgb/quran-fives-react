@@ -37,6 +37,9 @@ for b in $BOOKS; do
   FILES="$FILES $OUT/src/$name.mARkdown"
 done
 
+# كتب محلية ليست في OpenITI (محوّلة من Word، لا تُحفظ في git)
+for f in "$OUT"/local/*.mARkdown; do [ -e "$f" ] && FILES="$FILES $f"; done
+
 rm -f "$OUT/library.new.db"
 node --no-warnings library/build.js "$OUT/library.new.db" $FILES
 mv "$OUT/library.new.db" "$OUT/library.db"

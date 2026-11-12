@@ -24,7 +24,7 @@ export default function LibraryHome({ books, sections, recent, onSearch, onPickB
                 <button key={b.id} type="button" className="library-card" onClick={() => onPickBook(b.id)}>
                   <b>{b.name}</b>
                   {b.by && <small>{b.by}</small>}
-                  <small>{counted(b.vols, COUNTED.volumes)}</small>
+                  {b.vols > 0 && <small>{counted(b.vols, COUNTED.volumes)}</small>}
                 </button>
               ))}
             </div>

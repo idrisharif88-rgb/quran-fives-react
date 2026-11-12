@@ -96,6 +96,13 @@ const SOURCES = {
     ablibrary: [5380],
     shift: [13],
   },
+  // كتب ليست في OpenITI: تُحوَّل من Word بـ scripts/docx-to-openiti.py وتوضع في data/library/local على السيرفر
+  'Local.MasharicMawt': {
+    section: 'mine', order: 1, by: 'إدريس أحمد شريف',
+    title: 'مشاريع الموت',
+    publisher: 'نسخة المؤلف',
+    ablibrary: [],
+  },
 };
 
 // أقسام المكتبة بترتيب العرض
@@ -103,6 +110,7 @@ export const SECTIONS = [
   { id: 'hadith', name: 'الحديث' },
   { id: 'tafsir', name: 'التفسير' },
   { id: 'dua', name: 'الأدعية والخطب' },
+  { id: 'mine', name: 'مؤلفات' },
 ];
 
 const entryOf = (uri) => {
