@@ -76,6 +76,8 @@ export function createAccounts(store, { maxUsers }) {
   // صلاحيات يمنحها المشرف لحساب بعينه. المعروف منها:
   //   hifzCustomStart  بدء الحفظ من آية يختارها (لا من أول المصحف أو آخره فقط)
   //   googleBackup     نسخة البيانات في جوجل درايف المستخدم
+  //   hifzExtraPortion فتح ورد الغد في اليوم نفسه بعد إتمام ورد اليوم ومراجعته
+  //   sectionSwitch    التنقّل بين قسم الحفظ وقسم الخماسيات بلا تسجيل خروج
   async function setPermission(user, name, allowed) {
     const key = userKey(user);
     const account = await store.read(key, ACCOUNT_FILE, null);
@@ -89,6 +91,8 @@ export function createAccounts(store, { maxUsers }) {
     return {
       hifzCustomStart: account?.permissions?.hifzCustomStart === true,
       googleBackup: account?.permissions?.googleBackup === true,
+      hifzExtraPortion: account?.permissions?.hifzExtraPortion === true,
+      sectionSwitch: account?.permissions?.sectionSwitch === true,
     };
   }
 
@@ -104,6 +108,8 @@ export function createAccounts(store, { maxUsers }) {
         approved: a.approved === true,
         hifzCustomStart: a.permissions?.hifzCustomStart === true,
         googleBackup: a.permissions?.googleBackup === true,
+        hifzExtraPortion: a.permissions?.hifzExtraPortion === true,
+        sectionSwitch: a.permissions?.sectionSwitch === true,
       }))
       .sort((a, b) => b.createdAt - a.createdAt);
   }

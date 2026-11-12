@@ -5,8 +5,15 @@ import './AdminUsersSheet.css';
 /**
  * لوحة المشرف: الحسابات المسجّلة، والموافقة على الجديد منها ليبدأ المزامنة.
  * إيقاف حساب يوقف مزامنته فقط؛ بياناته على الخادم وعلى جهازه تبقى.
- * ولكل حساب صلاحية «حفظ من آية محدّدة»: يبدأ برنامج الحفظ من آية يختارها هو.
+ * ولكل حساب صلاحيات يمنحها المشرف (PERMISSIONS): كلّ واحدة خانة تحت اسمه.
  */
+const PERMISSIONS = [
+  { key: 'hifzCustomStart', label: 'حفظ من آية محدّدة' },
+  { key: 'hifzExtraPortion', label: 'فتح ورد الغد في اليوم نفسه' },
+  { key: 'sectionSwitch', label: 'التنقّل بين الحفظ والخماسيات' },
+  { key: 'googleBackup', label: 'نسخ جوجل درايف' },
+];
+
 export default function AdminUsersSheet({ onClose, formatTime }) {
   const { users, error, busyUser, setApproval, setPermission } = useAdminUsers();
   const waiting = users ? users.filter(u => !u.approved).length : 0;
@@ -30,28 +37,17 @@ export default function AdminUsersSheet({ onClose, formatTime }) {
               <span className="admin-users-name">{u.name}{u.admin ? ' (أنت — المشرف)' : ''}</span>
               <span className="admin-users-email" dir="ltr">{u.user}</span>
               <span className="admin-users-date">سجّل: {formatTime(u.createdAt)}</span>
-              {!u.admin && (
-                <label className="admin-users-permission">
+              {!u.admin && PERMISSIONS.map(({ key, label }) => (
+                <label key={key} className="admin-users-permission">
                   <input
                     type="checkbox"
-                    checked={u.hifzCustomStart}
+                    checked={Boolean(u[key])}
                     disabled={busyUser === u.user}
-                    onChange={(e) => setPermission(u.user, 'hifzCustomStart', e.target.checked)}
+                    onChange={(e) => setPermission(u.user, key, e.target.checked)}
                   />
-                  حفظ من آية محدّدة
+                  {label}
                 </label>
-              )}
-              {!u.admin && (
-                <label className="admin-users-permission">
-                  <input
-                    type="checkbox"
-                    checked={u.googleBackup}
-                    disabled={busyUser === u.user}
-                    onChange={(e) => setPermission(u.user, 'googleBackup', e.target.checked)}
-                  />
-                  نسخ جوجل درايف
-                </label>
-              )}
+              ))}
             </div>
             {!u.admin && (
               <button

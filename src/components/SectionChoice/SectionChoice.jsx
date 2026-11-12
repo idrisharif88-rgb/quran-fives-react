@@ -1,8 +1,11 @@
 import { SECTION } from '../../utils/appSection';
 import './SectionChoice.css';
 
-/** بعد الدخول: الخماسيات أو الحفظ. يبقى الاختيار حتى تسجيل الخروج. */
-export default function SectionChoice({ onChoose }) {
+/**
+ * بعد الدخول: الخماسيات أو الحفظ. يبقى الاختيار حتى تسجيل الخروج،
+ * إلا لمن أذن له المشرف بالتنقّل (canSwitch): لا تحذير، وزرّ التنقّل في كل قسم.
+ */
+export default function SectionChoice({ onChoose, canSwitch = false }) {
   return (
     <div className="section-choice" dir="rtl" role="dialog" aria-modal="true" aria-label="اختر القسم">
       <div className="section-choice-inner">
@@ -24,13 +27,13 @@ export default function SectionChoice({ onChoose }) {
             <span>احفظ وسمّع</span>
           </button>
         </div>
-        <p className="section-choice-note">
+        {!canSwitch && <p className="section-choice-note">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path className="section-choice-warn" d="M12 3 22.5 21h-21z" />
             <path className="section-choice-mark" d="M12 10v5.5M12 18v.2" />
           </svg>
           <span>يتوجب تسجيل خروج للتبديل بين "حفظ" و "خماسيات"</span>
-        </p>
+        </p>}
       </div>
     </div>
   );

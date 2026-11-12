@@ -6,6 +6,7 @@ import {
   effectiveDay, tapMethod, answerMethod, methodTaps, methodChecked, changeListenTarget, changeRepeatTarget,
 } from '../utils/hifzState';
 import { skipStep, nextTrialDay, jumpTrialDays } from '../utils/hifzTrial';
+import { redoStep } from '../utils/hifzStepNav';
 
 // اليوم الحالي، يتجدّد عند منتصف الليل وعند عودة التطبيق من الخلفية
 function useToday() {
@@ -51,6 +52,7 @@ export default function useHifz(persisted) {
     confirm: (id) => apply((p, day) => confirmStep(p, day, id)),
     tick: (id) => apply((p, day) => tickStep(p, day, id)),
     record: (id, part) => apply((p, day) => recordStep(p, day, id, part)),
+    redo: (id) => apply((p, day) => redoStep(p, day, id)),
     checkBox: (box, done) => apply((p, day) => checkBox(p, day, box, done)),
     celebrated: () => apply((p, day) => markCelebrated(p, day)),
     extraPortion: () => apply((p, day) => openExtraPortion(p, day)),
