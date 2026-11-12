@@ -1,0 +1,182 @@
+/* خطوات ورد اليوم: شريط دوائر بين سهمين، ثم الخطوة المعروضة */
+.hifz-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hifz-steps-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hifz-steps-arrow {
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid var(--app-border);
+  border-radius: 50%;
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.hifz-steps-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.hifz-steps-dots {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hifz-steps-dots::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  left: 16px;
+  height: 2px;
+  background: var(--app-border);
+}
+
+.hifz-steps-dot {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 2px solid var(--app-border-strong);
+  border-radius: 50%;
+  background: var(--app-surface);
+  color: var(--app-muted);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.hifz-steps-dot.done {
+  border-color: var(--hifz-gold);
+  background: var(--hifz-gold);
+  color: var(--hifz-gold-ink);
+}
+
+.hifz-steps-dot.open {
+  border-color: var(--app-accent-deep);
+  background: var(--app-accent-deep);
+  color: var(--app-accent-deep-contrast, #ffffff);
+}
+
+.hifz-steps-dot.view {
+  transform: scale(1.16);
+  box-shadow: 0 0 0 4px var(--app-accent-glow);
+}
+
+.hifz-steps-dot:disabled {
+  cursor: default;
+}
+
+.hifz-steps-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hifz-steps-head strong {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--app-text-strong);
+}
+
+.hifz-steps-state {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: var(--app-surface-2);
+  border: 1px solid var(--app-border);
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.hifz-steps-state.open {
+  border-color: var(--app-accent-ink);
+  color: var(--app-accent-ink);
+}
+
+.hifz-steps-state.done {
+  border-color: var(--hifz-gold);
+  background: var(--hifz-gold-soft);
+  color: var(--app-text-strong);
+}
+
+.hifz-steps-hint,
+.hifz-steps-locked {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--app-text);
+}
+
+.hifz-steps-locked {
+  color: var(--app-muted);
+}
+
+.hifz-steps-redo {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 18px;
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.hifz-steps-ask {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--hifz-gold-soft);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--app-text-strong);
+}
+
+.hifz-steps-ask div {
+  display: flex;
+  gap: 8px;
+}
+
+.hifz-steps-back {
+  align-self: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hifz-steps-dot { transition: none; }
+}

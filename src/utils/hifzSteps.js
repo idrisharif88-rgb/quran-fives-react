@@ -22,6 +22,9 @@ const initialValue = (def) => {
   return false;
 };
 
+// قيمة خطوة لم تبدأ — لإعادة خطوة واحدة (hifzStepNav.redoStep)
+export const freshStepValue = (id) => initialValue(STEP_DEFS[id]);
+
 // تقدّم فارغ لكل الخطوات المفعَّلة
 export function freshProgress(rules) {
   return Object.fromEntries(rules.steps.map((id) => [id, initialValue(STEP_DEFS[id])]));
@@ -56,3 +59,10 @@ export function isStepDone(id, value, rules) {
 export const currentStep = (progress, rules) => (
   rules.steps.find((id) => !isStepDone(id, progress[id], rules)) ?? null
 );
+
+// حالة خطوة للعرض: منجزة، أو هي المفتوحة الآن، أو مقفلة تنتظر ما قبلها
+export const STEP_STATE = { DONE: 'done', OPEN: 'open', LOCKED: 'locked' };
+export function stepState(id, progress, rules) {
+  if (isStepDone(id, progress[id], rules)) return STEP_STATE.DONE;
+  return currentStep(progress, rules) === id ? STEP_STATE.OPEN : STEP_STATE.LOCKED;
+}

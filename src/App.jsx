@@ -104,7 +104,9 @@ import useHifz from './hooks/useHifz';
 import useHifzTrial from './hooks/useHifzTrial';
 import useHifzContacts from './hooks/useHifzContacts';
 import SectionChoice from './components/SectionChoice/SectionChoice';
+import useHifzHome from './hooks/useHifzHome';
 import useAppSection from './hooks/useAppSection';
+import { SECTION } from './utils/appSection';
 
 // قارئ المصحف يُحمَّل عند أول فتح فقط — بياناته وخطوطه خارج الحزمة الرئيسية
 const MushafReader = lazy(() => import('./components/mushaf/MushafReader'));
@@ -454,6 +456,8 @@ function App() {
   useGoogleDailyBackup(Boolean(accountStatus?.googleBackup));
   // «فقهيات» محتوى خاص بالمالك: لا يظهر لغير حسابه
   const isOwner = Boolean(account && accountStatus?.admin);
+  const canSwitchSection = Boolean(account && accountStatus?.sectionSwitch);   // بإذن المشرف: حفظ ⇄ خماسيات بلا خروج
+  const hifzHome = useHifzHome();
   const hijriReminder = useHijriReminder(isOwner);   // المشرف: إضافة بدايات الأشهر الهجرية كل شهر
   const ijazatStore = useIjazat(persistedAppState.ijazat);   // إجازاتي: تُزامَن مع الحساب
   const tafsirReminder = useTafsirReminder();         // كل يوم: تفسير خمس آيات على ظهر البطاقات
@@ -2846,13 +2850,14 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'حجم العرض', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'تواصل معنا', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
+                  {[...(canSwitchSection ? ['قسم الحفظ'] : []), 'المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'حجم العرض', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'تواصل معنا', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
                       className={`ayah-menu-item ${(option === 'الوضع الليلي' && isNightMode) || (option === 'السور المتشابهة في العدد' && viewMode === 'shared-verses') ? 'active' : ''}`}
                       onClick={() => {
                         if (option === 'المصحف') { mainKeyboard.closeKeyboard(); setIsMushafOpen(true); setIsMoreMenuOpen(false); return; }
+                        if (option === 'قسم الحفظ') { mainKeyboard.closeKeyboard(); appSection.choose(SECTION.HIFZ); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'العداد') { setViewMode('night-counter'); setIsMoreMenuOpen(false); return; }
                         if (option === 'ختماتي') { mainKeyboard.closeKeyboard(); setIsKhatmaListOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'إجازاتي') { mainKeyboard.closeKeyboard(); setIsIjazatOpen(true); setIsMoreMenuOpen(false); return; }
@@ -3941,7 +3946,7 @@ function App() {
       {/* تحت اختيار القسم أيضاً: تكون جاهزة لحظة الضغط، فلا يظهر ما تحتها */}
       {(isHifzOpen || appSection.needsChoice) && (
         <Suspense fallback={<div className="section-cover" />}>
-          <HifzScreen hifz={isOwner && hifzTrial.on ? hifzTrial.hifz : hifz} trial={isOwner && hifzTrial.on} onTrialStart={hifzTrial.start} onTrialEnd={hifzTrial.end} reciter={activeReciter} onReciterChange={setActiveReciter} contacts={hifzContacts} onOpenAccount={() => setIsSyncPanelOpen(true)} backRef={hifzBackRef} canTakeExtra={isOwner} canCustomStart={Boolean(account && accountStatus?.hifzCustomStart)} />
+          <HifzScreen hifz={isOwner && hifzTrial.on ? hifzTrial.hifz : hifz} trial={isOwner && hifzTrial.on} onTrialStart={isOwner ? hifzTrial.start : undefined} onTrialEnd={hifzTrial.end} reciter={activeReciter} onReciterChange={setActiveReciter} contacts={hifzContacts} onOpenAccount={() => setIsSyncPanelOpen(true)} onSwitchSection={canSwitchSection ? () => appSection.choose(SECTION.FIVES) : undefined} homeData={hifzHome} notes={verseNotes} onSaveNote={saveVerseNoteCounted} noteBackRef={noteEditorBackRef} backRef={hifzBackRef} canTakeExtra={isOwner || Boolean(account && accountStatus?.hifzExtraPortion)} canCustomStart={Boolean(account && accountStatus?.hifzCustomStart)} />
         </Suspense>
       )}
       {isMushafOpen && (
@@ -4245,7 +4250,7 @@ function App() {
       {/* ─── قسم فقهيات ─── */}
       {isContactOpen && <ContactUs onClose={() => setIsContactOpen(false)} backRef={contactBackRef} />}
       <WelcomeScreen auth={auth} backRef={welcomeBackRef} />
-      {appSection.needsChoice && <SectionChoice onChoose={appSection.choose} />}
+      {appSection.needsChoice && <SectionChoice onChoose={appSection.choose} canSwitch={canSwitchSection} />}
       {isScaleOpen && <AppScaleSheet scale={appScale.scale} onChange={appScale.setScale} onClose={() => setIsScaleOpen(false)} backRef={scaleBackRef} />}
       {isNotebookOpen && isOwner && <UpdatesNotebook onClose={() => setIsNotebookOpen(false)} backRef={notebookBackRef} />}
       {isFiqhOpen && isOwner && (
