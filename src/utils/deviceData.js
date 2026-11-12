@@ -22,6 +22,7 @@ export const SESSION_STORAGE_KEYS = [
   'quran-fives-hifz-trial-v1',   // وضع التجربة للمشرف (useHifzTrial)
   'quran-fives-updates-notebook-v1',   // دفتر التحديثات للمالك
   'quran-fives-hifz-home-v1',          // رئيسية الحفظ: مسبحتي وآية التفسير وكتابه
+  'quran-fives-library-recent-v1',     // عمليات البحث السابقة في المكتبة
 ];
 const KHITMA_CACHE_KEY = 'quran-fives-khitma-cache-v1';
 

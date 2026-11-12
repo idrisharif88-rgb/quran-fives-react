@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeArabic, highlightParts, placeLabel } from './libraryText';
+import { normalizeArabic, highlightParts, placeLabel, counted, COUNTED } from './libraryText';
 
 describe('libraryText', () => {
   it('normalizes like the server', () => {
@@ -20,6 +20,14 @@ describe('libraryText', () => {
   it('keeps the text intact', () => {
     const t = 'قال: من كانت له  حاجة';
     expect(highlightParts(t, 'حاجه').map((p) => p.text).join('')).toBe(t);
+  });
+  it('agrees numbers with their noun', () => {
+    expect(counted(1, COUNTED.results)).toBe('نتيجة واحدة');
+    expect(counted(2, COUNTED.books)).toBe('كتابان');
+    expect(counted(10, COUNTED.results)).toBe('١٠ نتائج');
+    expect(counted(13, COUNTED.books)).toBe('١٣ كتاباً');
+    expect(counted(4236, COUNTED.results)).toBe('٤٢٣٦ نتيجة');
+    expect(counted(105, COUNTED.results)).toBe('١٠٥ نتائج');
   });
   it('drops volume 0', () => {
     expect(placeLabel({ vol: 2, page: 493 })).toBe('ج ٢، ص ٤٩٣');

@@ -41,3 +41,16 @@ export function placeLabel({ vol, page }, long = false) {
   const p = `${long ? 'الصفحة' : 'ص'} ${arabicNumber(page)}`;
   return vol ? `${long ? 'الجزء' : 'ج'} ${arabicNumber(vol)}، ${p}` : p;
 }
+
+// العدد مع معدوده: 1 «نتيجة واحدة»، 2 «نتيجتان»، 3–10 «٥ نتائج»، 11+ «٤٢٣٦ نتيجة»
+export const COUNTED = {
+  results: ['نتيجة واحدة', 'نتيجتان', 'نتائج', 'نتيجة'],
+  books: ['كتاب واحد', 'كتابان', 'كتب', 'كتاباً'],
+  volumes: ['مجلد واحد', 'مجلدان', 'مجلدات', 'مجلداً'],
+};
+export function counted(n, [one, two, few, many]) {
+  if (n === 1) return one;
+  if (n === 2) return two;
+  const tail = n % 100;
+  return `${arabicNumber(n)} ${tail >= 3 && tail <= 10 ? few : many}`;
+}

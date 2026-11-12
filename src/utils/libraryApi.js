@@ -19,12 +19,24 @@ async function get(path, signal) {
   return res.json();
 }
 
-export const fetchLibraryBooks = (signal) => get('books', signal).then((r) => r.books);
-
-export const searchLibrary = (q, { bookId, offset = 0, limit = 20 } = {}, signal) => {
-  const params = new URLSearchParams({ q, offset: String(offset), limit: String(limit) });
-  if (bookId) params.set('book', String(bookId));
-  return get(`search?${params}`, signal).then((r) => r.results);
+// كلمة البحث والكتب المختارة وطريقة البحث → معاملات الطلب
+const queryOf = (q, { bookIds = [], exact = false, order = 'rank' } = {}, extra = {}) => {
+  const params = new URLSearchParams({ q, ...extra });
+  if (bookIds.length) params.set('books', bookIds.join(','));
+  if (exact) params.set('exact', '1');
+  if (order === 'book') params.set('order', 'book');
+  return params;
 };
+
+// { books: [{ id, name, by, section, vols, passages }], sections: [{ id, name }] }
+export const fetchLibraryBooks = (signal) => get('books', signal);
+
+export const searchLibrary = (q, opts = {}, signal) => {
+  const { offset = 0, limit = 20 } = opts;
+  return get(`search?${queryOf(q, opts, { offset: String(offset), limit: String(limit) })}`, signal).then((r) => r.results);
+};
+
+// { groups: [{ bookId, book, count, hits }], counts: { [bookId]: n } }
+export const fetchLibraryGrouped = (q, opts = {}, signal) => get(`grouped?${queryOf(q, opts)}`, signal);
 
 export const fetchLibraryPassage = (id, signal) => get(`passage/${id}`, signal);
