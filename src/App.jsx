@@ -118,6 +118,8 @@ import './styles/fonts.css';
 import './App.css';
 // بعد App.css كي تعلو تشكيلة الذهبي على تعريفات الأخضر الافتراضية
 import './styles/themes.css';
+// مقاس واحد لأزرار الصفّ العلوي (بعد App.css كي يعلو عليه)
+import './styles/upperActions.css';
 
 // كلمة مرور حذف الختمات (قفل بسيط لمنع الحذف العَرَضي، وليست حماية أمنية)
 const KHATMA_DELETE_PASSWORD = '27956';
@@ -2996,7 +2998,7 @@ function App() {
 
         {!isPageStartsMode && !isPageEndsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' && <div
           className="action-icon calendar-icon"
-          style={{ width: '65px', height: '65px', cursor: 'default' }}
+          style={{ cursor: 'default' }}
         >
           {hijriData.length > 0 ? (
             <span style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>

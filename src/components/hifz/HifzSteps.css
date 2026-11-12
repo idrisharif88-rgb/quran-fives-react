@@ -1,19 +1,200 @@
-/* خطوات ورد اليوم: شريط دوائر بين سهمين، ثم الخطوة المعروضة */
+/* خطوات ورد اليوم: شريط خطوات بأسمائها، ثم عنوان الخطوة بين سهمين، ثم الخطوة */
 .hifz-steps {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.hifz-steps-strip {
-  display: flex;
-  align-items: center;
+/* ── الشريط: خمسة أعمدة متساوية، دائرة واسم في كلّ عمود ── */
+.hifz-stepper {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 2px;
 }
 
-/* السهمان: خطّ عريض مدوّر بلا إطار ولا دائرة، ومساحة لمس 44px */
+.hifz-stepper-item {
+  --node: 40px;
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* الخطّ إلى الخطوة التالية (على يسارها في العربية)، يمتلئ بالأخضر بعد الخطوة المنجزة */
+.hifz-stepper-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--node) / 2 - 1.5px);
+  right: calc(50% + var(--node) / 2 + 4px);
+  left: calc(-50% + var(--node) / 2 + 4px);
+  height: 3px;
+  border-radius: 2px;
+  background: var(--app-border-strong);
+}
+
+.hifz-stepper-item.done:not(:last-child)::after {
+  background: var(--app-accent);
+}
+
+.hifz-stepper-node {
+  width: var(--node);
+  height: var(--node);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--app-surface-2);
+  box-shadow: inset 0 0 0 2px var(--app-border-strong);
+  color: var(--app-muted);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+
+.hifz-stepper-node svg {
+  width: 20px;
+  height: 20px;
+}
+
+.hifz-stepper-item.done .hifz-stepper-node {
+  background: var(--app-accent-deep);
+  box-shadow: none;
+  color: var(--app-accent-deep-contrast, #ffffff);
+}
+
+.hifz-stepper-item.open .hifz-stepper-node {
+  background: var(--app-surface);
+  box-shadow: inset 0 0 0 3px var(--app-accent);
+  color: var(--app-accent-ink);
+}
+
+/* الخطوة المعروضة: هالة خضراء حولها */
+.hifz-stepper-item.view .hifz-stepper-node {
+  box-shadow: inset 0 0 0 3px var(--app-accent), 0 0 0 5px var(--app-accent-glow);
+}
+
+.hifz-stepper-item.done.view .hifz-stepper-node {
+  box-shadow: 0 0 0 5px var(--app-accent-glow);
+}
+
+.hifz-stepper-node:disabled {
+  cursor: default;
+}
+
+.hifz-stepper-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--app-muted);
+}
+
+.hifz-stepper-item.done .hifz-stepper-label,
+.hifz-stepper-item.open .hifz-stepper-label,
+.hifz-stepper-item.view .hifz-stepper-label {
+  color: var(--app-text-strong);
+}
+
+/* ── عنوان الخطوة بين سهمين: خطّ عريض مدوّر بلا إطار، ومساحة لمس 44px ── */
+.hifz-steps-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hifz-steps-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.hifz-steps-name strong {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--app-text-strong);
+}
+
+.hifz-steps-name span {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--app-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .hifz-steps-arrow {
-  flex: 0 0 34px;
+  flex: 0 0 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--app-accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.hifz-steps-arrow svg {
+  width: 28px;
+  height: 28px;
+}
+
+.hifz-steps-arrow:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+/* ── حالة الخطوة، وأيقونة الإعادة بجانبها ── */
+.hifz-steps-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   min-height: 44px;
+}
+
+.hifz-steps-state {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-2);
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.hifz-steps-state.open {
+  border-color: var(--app-accent-ink);
+  background: var(--app-accent-glow);
+  color: var(--app-text-strong);
+}
+
+.hifz-steps-state.done {
+  border-color: var(--app-accent-ink);
+  color: var(--app-accent-ink);
+}
+
+.hifz-steps-redo {
+  flex: none;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 0;
   background: none;
@@ -24,126 +205,9 @@
   cursor: pointer;
 }
 
-.hifz-steps-arrow svg {
-  width: 30px;
-  height: 30px;
-}
-
-.hifz-steps-arrow:disabled {
-  opacity: 0.25;
-  cursor: default;
-}
-
-/* خمسة أعمدة متساوية: كل دائرة تملأ عمودها حتى 51px فلا تتلامس على أيّ عرض */
-.hifz-steps-dots {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  list-style: none;
-  margin: 0;
-  padding: 0 2px;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  column-gap: 6px;
-  justify-items: center;
-  align-items: center;
-}
-
-.hifz-steps-dots li {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-
-.hifz-steps-dots::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: 10%;
-  left: 10%;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--app-border-strong);
-}
-
-/* منجزة: أخضر ممتلئ بعلامة؛ الجارية: حلقة خضراء برقمها؛ المقفلة: رمادي */
-.hifz-steps-dot {
-  position: relative;
-  width: 100%;
-  max-width: 51px;
-  aspect-ratio: 1;
-  padding: 0;
-  border: 3px solid var(--app-border-strong);
-  border-radius: 50%;
-  background: var(--app-surface);
-  color: var(--app-muted);
-  font-family: inherit;
-  font-size: 20px;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.hifz-steps-dot svg {
-  width: 46%;
-  height: 46%;
-}
-
-.hifz-steps-dot.done {
-  border-color: var(--app-accent-deep);
-  background: var(--app-accent-deep);
-  color: var(--app-accent-deep-contrast, #ffffff);
-}
-
-.hifz-steps-dot.open {
-  border: 4px solid var(--app-accent);
-  color: var(--app-accent-ink);
-}
-
-.hifz-steps-dot.view {
-  box-shadow: 0 0 0 4px var(--app-accent-glow);
-}
-
-.hifz-steps-dot:disabled {
-  cursor: default;
-}
-
-.hifz-steps-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.hifz-steps-head strong {
-  font-size: 17px;
-  font-weight: 900;
-  color: var(--app-text-strong);
-}
-
-.hifz-steps-state {
-  flex: none;
-  padding: 2px 10px;
-  border-radius: 10px;
-  background: var(--app-surface-2);
-  border: 1px solid var(--app-border);
-  color: var(--app-muted);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.hifz-steps-state.open {
-  border-color: var(--app-accent-ink);
-  color: var(--app-accent-ink);
-}
-
-.hifz-steps-state.done {
-  border-color: var(--app-accent-ink);
-  background: var(--app-accent-glow);
-  color: var(--app-text-strong);
+.hifz-steps-redo svg {
+  width: 28px;
+  height: 28px;
 }
 
 .hifz-steps-hint,
@@ -156,32 +220,6 @@
 
 .hifz-steps-locked {
   color: var(--app-muted);
-}
-
-/* الإعادة: أيقونة وحدها بجانب حالة الخطوة، بلا إطار */
-.hifz-steps-side {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.hifz-steps-redo {
-  flex: none;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--app-accent-ink);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.hifz-steps-redo svg {
-  width: 34px;
-  height: 34px;
 }
 
 .hifz-steps-ask {
@@ -205,3 +243,6 @@
   align-self: center;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .hifz-stepper-node { transition: none; }
+}

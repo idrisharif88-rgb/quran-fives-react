@@ -5,13 +5,14 @@ import { recordingRefs } from '../../utils/hifzRecordingRefs';
 export const isMulti = (rules) => rules.versesPerDay > 1;
 const unit = (rules) => (isMulti(rules) ? 'الآيات' : 'الآية');
 
-// نصوص برنامج الحفظ في مكان واحد — إضافة خطوة جديدة تحتاج عنواناً هنا
+// نصوص برنامج الحفظ في مكان واحد — إضافة خطوة جديدة تحتاج عنواناً هنا،
+// واسماً قصيراً (short) يظهر تحت دائرتها في شريط الخطوات
 export const STEP_TEXT = {
-  listen: { title: 'سماع المقرئ', hint: (rules) => `استمع إلى ${unit(rules)} ${rules.listenTarget} مرات قبل الحفظ` },
-  hafiz: { title: 'تأكيد الحافظ', hint: (rules) => `تواصل مع شيخك واقرأ عليه ${unit(rules)}، ثم انتظر تأكيده لصحة قراءتك` },
-  memorize: { title: 'الحفظ', hint: (rules) => `احفظ ${unit(rules)} غيباً` },
-  record: { title: 'التسجيل', hint: (rules) => `سجّل ${unit(rules)} ثلاث مرات متتالية بلا خطأ، ثم اسمعها وعينك على المصحف` },
-  repeat: { title: 'التكرار', hint: (rules) => `كرّر ${unit(rules)} ${rules.repeatTarget} مرة` },
+  listen: { short: 'سماع', title: 'سماع المقرئ', hint: (rules) => `استمع إلى ${unit(rules)} ${rules.listenTarget} مرات قبل الحفظ` },
+  hafiz: { short: 'تأكيد', title: 'تأكيد الحافظ', hint: (rules) => `تواصل مع شيخك واقرأ عليه ${unit(rules)}، ثم انتظر تأكيده لصحة قراءتك` },
+  memorize: { short: 'حفظ', title: 'الحفظ', hint: (rules) => `احفظ ${unit(rules)} غيباً` },
+  record: { short: 'تسجيل', title: 'التسجيل', hint: (rules) => `سجّل ${unit(rules)} ثلاث مرات متتالية بلا خطأ، ثم اسمعها وعينك على المصحف` },
+  repeat: { short: 'تكرار', title: 'التكرار', hint: (rules) => `كرّر ${unit(rules)} ${rules.repeatTarget} مرة` },
 };
 
 export const BOX_TEXT = {

@@ -29,6 +29,24 @@ function VersePicker({ current, onPick, onToday }) {
   );
 }
 
+// التفاسير الطويلة (ابن كثير، الطبري…) تُعرض أوّل أسطرها، و«اقرأ المزيد» يفتح الباقي
+const LONG_TEXT = 400;
+
+function TafseerText({ text }) {
+  const [open, setOpen] = useState(false);
+  const long = text.length > LONG_TEXT;
+  return (
+    <>
+      <p className={`hifz-tafseer-note${long && !open ? ' clamped' : ''}`}>{text}</p>
+      {long && (
+        <button type="button" className="hifz-tafseer-more" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+          {open ? 'أخفِ' : 'اقرأ المزيد'}
+        </button>
+      )}
+    </>
+  );
+}
+
 /**
  * تفسير آية: آية اليوم (أو آية يختارها) بأسطر المصحف، وتحتها تفسيرها من كتاب يختاره،
  * يُجلب من الإنترنت حين تُفتح الصفحة (tafseerApi). بلا شبكة: رسالة وزرّ «أعد المحاولة».
@@ -73,7 +91,7 @@ export default function HifzTafseer({ home, todayRef, actions }) {
           <button type="button" className="hifz-btn" onClick={tafseer.retry}>أعد المحاولة</button>
         </div>
       )}
-      {tafseer.status === 'ok' && <p className="hifz-tafseer-note">{tafseer.text}</p>}
+      {tafseer.status === 'ok' && <TafseerText key={`${home.tafseerBook}:${verseKey}`} text={tafseer.text} />}
     </section>
   );
 }
