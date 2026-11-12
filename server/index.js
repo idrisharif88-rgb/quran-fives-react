@@ -41,7 +41,7 @@ if (OWNER_EMAIL && validateEmail(OWNER_EMAIL)) {
 const owner = OWNER_EMAIL || process.env.KHITMA_USER || '';
 if (!owner) console.warn('تنبيه: لا OWNER_EMAIL ولا KHITMA_USER — لا مشرف يوافق على الحسابات الجديدة.');
 
-const { app, store, accounts } = createApp({ dataDir: DATA_DIR, maxUsers: MAX_USERS, sendMail, adminUser: owner, maxFileBytes: MAX_FILE_MB * 1024 * 1024, maxUserBytes: MAX_USER_MB * 1024 * 1024 });
+const { app, store, accounts } = createApp({ dataDir: DATA_DIR, maxUsers: MAX_USERS, sendMail, adminUser: owner, maxFileBytes: MAX_FILE_MB * 1024 * 1024, maxUserBytes: MAX_USER_MB * 1024 * 1024, libraryFile: process.env.LIBRARY_DB || undefined });
 
 const migrated = await migrateLegacyOwner({
   store,

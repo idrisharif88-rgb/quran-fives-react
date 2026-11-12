@@ -10,6 +10,7 @@ import { registerAuthRoutes } from './authRoutes.js';
 import { registerAdminRoutes } from './adminRoutes.js';
 import { registerFileRoutes } from './fileRoutes.js';
 import { registerAccountDeleteRoutes } from './accountDeleteRoutes.js';
+import { registerLibraryRoutes } from './libraryRoutes.js';
 
 const DEFAULT_LIMITS = {
   ipMail: { windowMs: 60 * 60 * 1000, max: 10 },     // رسائل تأكيد/استرجاع لكل عنوان
@@ -38,7 +39,7 @@ function readCreds(req) {
 }
 
 // adminUser: حساب المشرف (المالك) — يوافق على الحسابات الجديدة ولا يحتاج موافقة
-export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpOptions, adminUser = '', maxFileBytes = 50 * 1024 * 1024, maxUserBytes = 200 * 1024 * 1024 }) {
+export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpOptions, adminUser = '', maxFileBytes = 50 * 1024 * 1024, maxUserBytes = 200 * 1024 * 1024, libraryFile }) {
   const adminName = normalizeUser(adminUser);
   const store = createStore(dataDir);
   const accounts = createAccounts(store, { maxUsers });
@@ -183,6 +184,7 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
     v => Array.isArray(v), { updatedAt: 0, list: [] });
 
   registerFileRoutes(app, { store, dataDir, requireAccount, maxFileBytes, maxUserBytes });
+  registerLibraryRoutes(app, { requireAccount, dataDir, libraryFile });
 
   // حذف الحساب: كل ما تحت مجلّد المستخدم (الحساب، الحالة، الختمات، الملفات، الأجهزة) ورموزه المعلّقة
   const deleteAccount = async (key) => {
