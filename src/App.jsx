@@ -106,6 +106,7 @@ import useHifzContacts from './hooks/useHifzContacts';
 import SectionChoice from './components/SectionChoice/SectionChoice';
 import useHifzHome from './hooks/useHifzHome';
 import SectionSwitchIcon from './components/SectionSwitch/SectionSwitchIcon';
+import FitText from './components/FitText/FitText';
 import useAppSection from './hooks/useAppSection';
 import { SECTION } from './utils/appSection';
 
@@ -3003,7 +3004,7 @@ function App() {
           style={{ cursor: 'default' }}
         >
           {hijriData.length > 0 ? (
-            <span className="calendar-icon-text">{hijriData[hijriIndex]}</span>
+            <FitText className="calendar-icon-text" padding={9}>{hijriData[hijriIndex]}</FitText>
           ) : (
             <span className="calendar-icon-text">...</span>
           )}
