@@ -71,6 +71,11 @@ test('Kafi vol 2 links to its Ahlulbayt Library volume; Askari vol 0 to its sing
   assert.equal(sourceOf('X.Y', 1).edition, null);
 });
 
+test('leftover HTML links keep their visible text', () => {
+  const r = parseOpenITI(SAMPLE.replace('~~وهي من أفضل', '~~وهي <a\n~~href="/x?p=7#top">البرهان ج ١: ٧</a> من أفضل'));
+  assert.ok(r.passages[0].text.includes('وهي البرهان ج ١: ٧ من أفضل'), r.passages[0].text);
+});
+
 test('ms markers are hidden from the reader', () => {
   const r = parseOpenITI(SAMPLE);
   assert.ok(!r.passages.some((p) => /ms\d/.test(p.text)));

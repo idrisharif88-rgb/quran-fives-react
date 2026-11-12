@@ -34,7 +34,10 @@ export function parseOpenITI(raw) {
 
   // معالم ms0001 علامات ترقيم داخلية في OpenITI، لا تُعرض للقارئ
   const flush = () => {
-    const text = cur ? cur.text.replace(/\s*\bms\d+\b/g, '').replace(/\s{2,}/g, ' ').trim() : '';
+    // روابط HTML بقيت في بعض الكتب (العياشي): يبقى نصها الظاهر وتُحذف الوسوم
+    const text = cur ? cur.text
+      .replace(/<a\b[^>]*>/g, '').replace(/\bhref="[^"]*"[^>]*>/g, '').replace(/<\/a>/g, '').replace(/<a\b\s*/g, '')
+      .replace(/\s*\bms\d+\b/g, '').replace(/\s{2,}/g, ' ').trim() : '';
     if (text) passages.push({ chapter: cur.chapter, page: cur.page, text });
     cur = null;
   };

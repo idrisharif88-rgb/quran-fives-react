@@ -16,6 +16,21 @@ const SOURCES = {
     publisher: 'مدرسة الإمام المهدي (ع) - قم',
     ablibrary: [12394],
   },
+  '0085SulaymIbnQaysHilali.KitabSulaym': {
+    title: 'كتاب سليم بن قيس الهلالي',
+    publisher: 'دليل ما',
+    ablibrary: [5576],
+  },
+  '0381IbnBabawayhSaduq.CuyunAkhbarRida': {
+    title: 'عيون أخبار الرضا (ع)',
+    publisher: 'مؤسسة الأعلمي للمطبوعات - بيروت',
+    ablibrary: [5048, 5047],
+  },
+  '0320IbnMascudCayyashi.Tafsir': {
+    title: 'تفسير العياشي',
+    publisher: 'المكتبة العلمية الإسلامية - طهران',
+    ablibrary: [1655, 1656],
+  },
   '0406SharifRadi.NahjBalagha': {
     title: 'نهج البلاغة',
     author: 'خطب الإمام علي (ع)',

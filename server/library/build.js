@@ -17,7 +17,8 @@ export function openLibrary(file) {
 
 export function addBook(db, raw, { source = DEFAULT_SOURCE, uri: givenUri } = {}) {
   const { meta, chapters, pages, passages } = parseOpenITI(raw);
-  const uri = givenUri || (meta['000.BookURI'] || '').replace(/^#/, '') || meta['030.LibURI'];
+  const headerUri = (meta['000.BookURI'] || '').replace(/^#/, '');
+  const uri = givenUri || (headerUri && headerUri !== 'NOCODE' ? headerUri : '') || meta['030.LibURI'];
   if (!uri) throw new Error('الكتاب بلا معرّف (BookURI)');
   const old = db.prepare('SELECT id FROM book WHERE uri=?').get(uri);
   db.exec('BEGIN');
@@ -61,9 +62,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const db = openLibrary(dbFile);
   for (const f of files) {
     // المعرّف الرسمي في ملف .yml المجاور (VERS#URI)؛ وإلا من رأس الملف
-    const yml = f.replace(/\.mARkdown$/, '') + '.yml';
+    // المعرّف من ملف .yml المجاور (VERS#URI)، وإلا من اسم الملف — بعض الرؤوس تقول NOCODE فتتصادم الكتب
+    const base = f.replace(/\.mARkdown$/, '').replace(/\.completed$/, '');
+    const yml = base + '.yml';
     const m = fs.existsSync(yml) && fs.readFileSync(yml, 'utf8').match(/VERS#URI#+:\s*(\S+)/);
-    console.log(addBook(db, fs.readFileSync(f, 'utf8'), { uri: m ? m[1] : undefined }));
+    const fromName = base.split('/').pop();
+    console.log(addBook(db, fs.readFileSync(f, 'utf8'), { uri: m ? m[1] : (/^\d{4}\w+\.\w+\./.test(fromName) ? fromName : undefined) }));
   }
   db.exec('VACUUM');
 }
