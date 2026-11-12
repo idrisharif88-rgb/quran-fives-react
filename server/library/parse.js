@@ -1,7 +1,7 @@
 // قارئ mARkdown الخاص بـ OpenITI. لا يعيد التقسيم: ينقل علاماته كما هي.
 //   ### |  عنوان      ← باب (عدد | = المستوى)
 //   # نص / ~~ تكملة   ← بداية فقرة / سطر مكمل لها
-//   PageV01P030 أو # PageV01P030 ← المجلد والصفحة
+//   PageV01P030 أو # PageV01P030 ← نهاية الصفحة 30 من المجلد 1 (العلامة بعد نص الصفحة لا قبله)
 //   #META# حقل :: قيمة ← بيانات الكتاب
 const PAGE = /^(?:#\s*)?PageV(\d+)P(\d+)\s*$/;
 const HEADING = /^###\s*(\|+)\s*(.*)$/;
@@ -28,7 +28,7 @@ export function parseOpenITI(raw) {
   const pages = [];
   const passages = [];
   const stack = []; // أبواب مفتوحة بحسب المستوى
-  let page = null;
+  let seen = 0; // علامات الصفحات قبل الموضع الحالي: النص يقع في الصفحة التي تُغلقها العلامة التالية
   let cur = null; // الفقرة الجارية
 
   // معالم ms0001 علامات ترقيم داخلية في OpenITI، لا تُعرض للقارئ
@@ -45,8 +45,8 @@ export function parseOpenITI(raw) {
     const pm = line.match(PAGE);
     if (pm) {
       // علامة الصفحة لا تقطع الفقرة: تبدأ فقرة جديدة بعدها فقط إذا بدأ سطر «#»
-      page = pages.length + 1;
-      pages.push({ id: page, vol: +pm[1], page: +pm[2] });
+      pages.push({ id: pages.length + 1, vol: +pm[1], page: +pm[2] });
+      seen = pages.length;
       continue;
     }
 
@@ -69,13 +69,15 @@ export function parseOpenITI(raw) {
     const chapter = stack.length ? stack[stack.length - 1].id : null;
     if (line.startsWith('~~')) {
       if (cur) cur.text += ' ' + line.slice(2).trim();
-      else cur = { chapter, page, text: line.slice(2).trim() };
+      else cur = { chapter, page: seen + 1, text: line.slice(2).trim() };
     } else if (line.startsWith('#')) {
       flush();
-      cur = { chapter, page, text: line.replace(/^#\s*/, '') };
+      cur = { chapter, page: seen + 1, text: line.replace(/^#\s*/, '') };
     }
     // أي سطر آخر (وسوم غير معروفة) يُتجاهل
   }
   flush();
+  // نص بعد آخر علامة (آخر صفحة بلا علامة تغلقها) يُنسب إلى آخر صفحة معروفة
+  for (const ps of passages) ps.page = pages.length ? Math.min(ps.page, pages.length) : null;
   return { meta, chapters, pages, passages };
 }

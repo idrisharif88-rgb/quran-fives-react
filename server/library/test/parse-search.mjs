@@ -40,7 +40,7 @@ test('search ignores tashkeel and unifies forms; reports vol/page/chapter', () =
     assert.ok(hits.length >= 1, q);
   }
   const [h] = searchLibrary(db, 'الصلاة');
-  assert.deepEqual([h.vol, h.page, h.chapter], [1, 5, 'باب فضل الصلاة']);
+  assert.deepEqual([h.vol, h.page, h.chapter], [1, 6, 'باب فضل الصلاة']); // النص قبل PageV01P006 في الصفحة 6
   assert.ok(h.source.includes('OpenITI'));
 });
 
