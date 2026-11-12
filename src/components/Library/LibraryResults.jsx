@@ -4,6 +4,7 @@ import LibraryHit from './LibraryHit';
 // النتائج: طريقة البحث، الكتب المختارة كوسوم تُزال، الملخص والترتيب،
 // ثم النتائج مجمّعة حسب الكتاب — أو قائمة كتاب واحد بصفحاتها
 export default function LibraryResults({ s, onOpen }) {
+  if (s.tooShort) return <p className="library-hint">اكتب حرفين على الأقل</p>;
   const nameOf = (id) => s.books.find((b) => b.id === id)?.name || '';
   const bookCount = s.single ? 1 : s.groups.length;
   return (

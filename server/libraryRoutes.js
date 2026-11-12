@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { searchLibrary, groupedResults, countByBook, listBooks, getPassage } from './library/search.js';
+import { searchLibrary, groupedResults, listBooks, getPassage } from './library/search.js';
 import { SECTIONS } from './library/sources.js';
+import { createLru } from './library/cache.js';
 
 // مكتبة الكتب الشيعية (OpenITI): قاعدة SQLite للقراءة فقط على الخادم.
 // تُبنى بـ `node library/build.js` وتُرفع بجانب البيانات؛ إن غابت أجابت المسارات 503
@@ -42,6 +43,14 @@ export function registerLibraryRoutes(app, { requireAccount, dataDir, libraryFil
     res.json({ books: listBooks(conn), sections: SECTIONS });
   }));
 
+  const lru = createLru();
+  const cached = (kind, p, run) => {
+    const key = JSON.stringify([kind, p]);
+    let v = lru.get(key);
+    if (v === undefined) lru.set(key, (v = run()));
+    return v;
+  };
+
   // books=1,2,3 (أو book=1 القديم)، exact=1 للعبارة كما هي، order=book لترتيب الكتاب
   const params = (req) => ({
     q: String(req.query.q ?? '').slice(0, MAX_Q),
@@ -51,16 +60,14 @@ export function registerLibraryRoutes(app, { requireAccount, dataDir, libraryFil
   });
 
   app.get('/api/library/search', requireAccount, withDb((conn, req, res) => {
-    const { q, ...opts } = params(req);
-    const limit = toInt(req.query.limit, 20, 1, 50);
-    const offset = toInt(req.query.offset, 0, 0, 10000);
-    res.json({ results: searchLibrary(conn, q, { ...opts, limit, offset }), limit, offset });
+    const p = { ...params(req), limit: toInt(req.query.limit, 20, 1, 50), offset: toInt(req.query.offset, 0, 0, 10000) };
+    res.json(cached('search', p, () => ({ results: searchLibrary(conn, p.q, p), limit: p.limit, offset: p.offset })));
   }));
 
   // النتائج مجمّعة حسب الكتاب، مع عدد النتائج في كل كتاب (للوحة الكتب)
   app.get('/api/library/grouped', requireAccount, withDb((conn, req, res) => {
-    const { q, ...opts } = params(req);
-    res.json({ groups: groupedResults(conn, q, opts), counts: countByBook(conn, q, opts) });
+    const p = params(req);
+    res.json(cached('grouped', p, () => groupedResults(conn, p.q, p)));
   }));
 
   app.get('/api/library/passage/:id', requireAccount, withDb((conn, req, res) => {

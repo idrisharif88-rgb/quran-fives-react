@@ -88,10 +88,29 @@ test('exact phrase, several books, counts and grouping', () => {
   assert.equal(searchLibrary(db, 'الدين عمود', { exact: true }).length, 0);   // الترتيب مهم في العبارة
   assert.equal(searchLibrary(db, 'الصلاة', { bookIds: [2] }).length, 1);
   assert.deepEqual(countByBook(db, 'الصلاة'), { 1: 1, 2: 1 });
-  const g = groupedResults(db, 'الصلاة');
+  const { groups: g, counts } = groupedResults(db, 'الصلاة');
+  assert.deepEqual(counts, { 1: 1, 2: 1 });   // العدد من المرور نفسه
+  assert.deepEqual(groupedResults(db, 'الصلاة', { bookIds: [2] }).counts, { 1: 1, 2: 1 });   // مع التصفية: كل الكتب
   assert.equal(g.length, 2);
   assert.ok(g.every((x) => x.count === 1 && x.hits.length === 1));
   assert.ok(listBooks(db).every((b) => b.section && b.name && b.vols === 1));
+});
+
+test('one letter is not a search; two letters are', () => {
+  const db = openLibrary(':memory:');
+  addBook(db, SAMPLE);
+  assert.deepEqual(searchLibrary(db, 'ص'), []);
+  assert.deepEqual(groupedResults(db, 'ا'), { groups: [], counts: {} });
+  assert.ok(searchLibrary(db, 'عم').length >= 1);   // «عمود» بالبادئة
+});
+
+test('LRU keeps the newest and drops the oldest', async () => {
+  const { createLru } = await import('../cache.js');
+  const c = createLru(2);
+  c.set('a', 1); c.set('b', 2); c.get('a'); c.set('c', 3);
+  assert.equal(c.get('b'), undefined);
+  assert.equal(c.get('a'), 1);
+  assert.equal(c.size, 2);
 });
 
 test('ms markers are hidden from the reader', () => {

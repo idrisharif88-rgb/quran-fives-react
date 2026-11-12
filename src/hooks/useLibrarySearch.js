@@ -4,6 +4,8 @@ import { readRecent, rememberSearch } from '../utils/libraryRecent';
 
 const DELAY = 400;   // انتظار بعد آخر حرف قبل الطلب
 const PAGE = 20;
+const MIN_LETTERS = 2;   // كالسيرفر: حرف واحد يطابق عشرات الآلاف ولا يفيد
+const lettersIn = (q) => q.replace(/[^\p{L}]/gu, '').length;
 
 // المكتبة: الكتب وأقسامها، كلمة البحث، الكتب المختارة، طريقة البحث والترتيب،
 // والنتائج مجمّعة حسب الكتاب — أو قائمة بصفحات إن اختير كتاب واحد
@@ -36,9 +38,13 @@ export default function useLibrarySearch() {
     const opts = { bookIds: selected, exact, order };
     setLoading(true);
     try {
-      if (offset === 0) setGrouped(await fetchLibraryGrouped(query, opts, ctrl.signal));
-      if (single) {
-        const page = await searchLibrary(query, { ...opts, offset, limit: PAGE }, ctrl.signal);
+      // الطلبان معاً لا واحداً بعد الآخر: كتاب واحد يحتاج المجمّعة (للأعداد) والقائمة
+      const [g, page] = await Promise.all([
+        offset === 0 ? fetchLibraryGrouped(query, opts, ctrl.signal) : null,
+        single ? searchLibrary(query, { ...opts, offset, limit: PAGE }, ctrl.signal) : null,
+      ]);
+      if (g) setGrouped(g);
+      if (page) {
         setList((prev) => (offset ? [...prev, ...page] : page));
         setHasMore(page.length === PAGE);
       }
@@ -51,7 +57,7 @@ export default function useLibrarySearch() {
   }, [query, selected, exact, order, single]);
 
   useEffect(() => {
-    if (!query.trim()) {
+    if (lettersIn(query) < MIN_LETTERS) {
       ctrlRef.current?.abort();
       setGrouped({ groups: [], counts: {} });
       setList([]);
@@ -71,6 +77,7 @@ export default function useLibrarySearch() {
   return {
     ...catalog, query, setQuery, selected, setSelected, exact, setExact, order, setOrder,
     groups: grouped.groups, counts: grouped.counts, total, list, single, hasMore, loading, error, recent,
+    tooShort: lettersIn(query) < MIN_LETTERS,
     loadMore: () => run(list.length),
     remember: () => setRecent(rememberSearch(query)),
     retry: () => { setError(null); setAttempt((n) => n + 1); },
