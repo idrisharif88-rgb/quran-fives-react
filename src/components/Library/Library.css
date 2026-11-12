@@ -149,7 +149,7 @@
   color: var(--app-muted);
 }
 .library-source-row { display: flex; gap: 8px; line-height: 1.6; }
-.library-source-key { flex: none; width: 74px; font-weight: 500; color: var(--app-text-strong); }
+.library-source-key { flex: none; min-width: 74px; white-space: nowrap; font-weight: 500; color: var(--app-text-strong); }
 .library-source-link {
   display: flex;
   align-items: center;
