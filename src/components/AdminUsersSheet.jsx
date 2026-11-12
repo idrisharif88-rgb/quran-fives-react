@@ -12,6 +12,7 @@ const PERMISSIONS = [
   { key: 'hifzExtraPortion', label: 'فتح ورد الغد في اليوم نفسه' },
   { key: 'sectionSwitch', label: 'التنقّل بين الحفظ والخماسيات' },
   { key: 'googleBackup', label: 'نسخ جوجل درايف' },
+  { key: 'library', label: 'المكتبة' },
 ];
 
 export default function AdminUsersSheet({ onClose, formatTime }) {

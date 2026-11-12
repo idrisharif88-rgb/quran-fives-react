@@ -2,7 +2,7 @@ import { SYNC_URL, SYNC_ENABLED } from './syncConfig';
 import { readAccount, authHeaders } from './syncAccount';
 
 // المكتبة على السيرفر (server/libraryRoutes.js). الطلبات بحساب المستخدم كالمزامنة.
-// الخطأ يحمل kind ليعرض الشاشة المناسبة: offline | signin | pending | unavailable | error
+// الخطأ يحمل kind ليعرض الشاشة المناسبة: offline | signin | pending | locked | unavailable | error
 export const LIBRARY_ENABLED = SYNC_ENABLED;
 
 const KIND_BY_STATUS = { 401: 'signin', 403: 'pending', 503: 'unavailable' };
@@ -15,7 +15,12 @@ async function get(path, signal) {
     if (e.name === 'AbortError') throw e;
     throw Object.assign(new Error('library offline'), { kind: 'offline' });
   }
-  if (!res.ok) throw Object.assign(new Error('library http ' + res.status), { kind: KIND_BY_STATUS[res.status] || 'error' });
+  if (!res.ok) {
+    // 403 برمز library-off: الحساب موافَق عليه لكن المكتبة لم تُفتح له
+    const body = res.status === 403 ? await res.json().catch(() => ({})) : {};
+    const kind = body.code === 'library-off' ? 'locked' : KIND_BY_STATUS[res.status] || 'error';
+    throw Object.assign(new Error('library http ' + res.status), { kind });
+  }
   return res.json();
 }
 

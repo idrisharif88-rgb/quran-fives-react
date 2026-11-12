@@ -332,7 +332,7 @@ function App() {
   const [isFiqhOpen, setIsFiqhOpen] = useState(false);
   const [isNotebookOpen, setIsNotebookOpen] = useState(false);   // «دفتر التحديثات» للمالك
   const notebookBackRef = useRef(null);
-  const [isLibraryOpen, setIsLibraryOpen] = useState(false);   // «المكتبة» — تجربة للمالك
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);   // «المكتبة» — لمن أذن له المشرف
   const libraryBackRef = useRef(null);
   const appScale = useAppScale();   // «حجم العرض»
   const [isScaleOpen, setIsScaleOpen] = useState(false);
@@ -466,7 +466,8 @@ function App() {
   useGoogleDailyBackup(Boolean(accountStatus?.googleBackup));
   // «فقهيات» محتوى خاص بالمالك: لا يظهر لغير حسابه
   const isOwner = Boolean(account && accountStatus?.admin);
-  const canSwitchSection = Boolean(account && accountStatus?.sectionSwitch);   // بإذن المشرف: حفظ ⇄ خماسيات بلا خروج
+  const canSwitchSection = Boolean(account && accountStatus?.sectionSwitch);
+  const canLibrary = Boolean(account && accountStatus?.library);   // «المكتبة» بإذن المشرف (والمشرف دائماً)   // بإذن المشرف: حفظ ⇄ خماسيات بلا خروج
   const hifzHome = useHifzHome();
   const hijriReminder = useHijriReminder(isOwner);   // المشرف: إضافة بدايات الأشهر الهجرية كل شهر
   const ijazatStore = useIjazat(persistedAppState.ijazat);   // إجازاتي: تُزامَن مع الحساب
@@ -2864,7 +2865,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات', 'المكتبة'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'حجم العرض', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'تواصل معنا', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
+                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات'] : []), ...(canLibrary ? ['المكتبة'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'حجم العرض', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'تواصل معنا', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -4269,7 +4270,7 @@ function App() {
       {appSection.needsChoice && <SectionChoice onChoose={appSection.choose} canSwitch={canSwitchSection} />}
       {isScaleOpen && <AppScaleSheet scale={appScale.scale} onChange={appScale.setScale} onClose={() => setIsScaleOpen(false)} backRef={scaleBackRef} />}
       {isNotebookOpen && isOwner && <UpdatesNotebook onClose={() => setIsNotebookOpen(false)} backRef={notebookBackRef} />}
-      {isLibraryOpen && isOwner && <Library onClose={closeLibrary} backRef={libraryBackRef} />}
+      {isLibraryOpen && canLibrary && <Library onClose={closeLibrary} backRef={libraryBackRef} />}
       {isFiqhOpen && isOwner && (
         <div style={{
           position: 'fixed', inset: 0, background: 'var(--app-bg)',

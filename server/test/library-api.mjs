@@ -18,7 +18,7 @@ PageV01P005
 # أَمَّا الزكاة فهي واجبة
 `;
 
-let dataDir, srv, base, noLib;
+let dataDir, srv, base, noLib, accounts;
 const auth = { Authorization: 'Basic ' + Buffer.from('owner:12345').toString('base64') };
 const get = async (route, headers = auth, origin = base) => {
   const r = await fetch(origin + route, { headers });
@@ -37,7 +37,7 @@ before(async () => {
   addBook(db, SAMPLE);
   db.close();
   const a = await listen({ libraryFile: libFile });
-  srv = a.s; base = a.origin;
+  srv = a.s; base = a.origin; accounts = a.accounts;
   await migrateLegacyOwner({ store: a.store, accounts: a.accounts, dataDir, user: 'Owner', code: '12345' });
   noLib = await listen({ libraryFile: path.join(dataDir, 'missing.db') });
 });
@@ -83,6 +83,17 @@ test('مدخلات سيئة: استعلام فارغ، حدود، مقطع غي�
   assert.equal((await get('/api/library/search?q=ا&limit=9999&offset=-5')).json.limit, 50);
   assert.equal((await get('/api/library/passage/99999')).status, 404);
   assert.equal((await get('/api/library/passage/abc')).status, 404);
+});
+
+test('المكتبة مغلقة لمستخدم موافَق عليه حتى يفتحها له المشرف', async () => {
+  await accounts.create('reader', '123456', 'قارئ', true);   // اسم لا بريد: بلا مفتاح جهاز
+  const reader = { Authorization: 'Basic ' + Buffer.from('reader:123456').toString('base64') };
+  const off = await get('/api/library/books', reader);
+  assert.equal(off.status, 403);
+  assert.equal(off.json.code, 'library-off');
+  await accounts.setPermission('reader', 'library', true);
+  assert.equal((await get('/api/library/books', reader)).status, 200);
+  assert.equal((await get('/api/auth/me', reader)).json.library, true);
 });
 
 test('غياب القاعدة → 503 ولا ينهار الخادم', async () => {

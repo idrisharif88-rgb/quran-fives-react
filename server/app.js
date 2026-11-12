@@ -129,6 +129,7 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
       googleBackup: req.isAdmin || permissions.googleBackup,
       hifzExtraPortion: req.isAdmin || permissions.hifzExtraPortion,
       sectionSwitch: req.isAdmin || permissions.sectionSwitch,
+      library: req.isAdmin || permissions.library,
     });
   });
 
@@ -184,7 +185,12 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
     v => Array.isArray(v), { updatedAt: 0, list: [] });
 
   registerFileRoutes(app, { store, dataDir, requireAccount, maxFileBytes, maxUserBytes });
-  registerLibraryRoutes(app, { requireAccount, dataDir, libraryFile });
+  // المكتبة مغلقة إلا لمن فتحها له المشرف (والمشرف دائماً). 403 برمز خاص: ليس «بانتظار الموافقة»
+  async function checkLibrary(req, res, next) {
+    if (req.isAdmin || (await accounts.permissionsOf(req.email)).library) return next();
+    res.status(403).json({ error: 'المكتبة غير مفعّلة لهذا الحساب', code: 'library-off' });
+  }
+  registerLibraryRoutes(app, { requireAccount: [...requireAccount, checkLibrary], dataDir, libraryFile });
 
   // حذف الحساب: كل ما تحت مجلّد المستخدم (الحساب، الحالة، الختمات، الملفات، الأجهزة) ورموزه المعلّقة
   const deleteAccount = async (key) => {
