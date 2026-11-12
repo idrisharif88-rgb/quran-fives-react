@@ -8,7 +8,7 @@ const HEADING = /^###\s*(\|+)\s*(.*)$/;
 const INLINE_PAGE = /\s*PageV(\d+)P(\d+)\s*/g; // علامة داخل السطر (71 منها في الكافي والعسكري)
 
 export function cleanTitle(t) {
-  return t.replace(/[()*]/g, ' ').replace(/\s+/g, ' ').trim();
+  return t.replace(/\bms\d+\b/g, ' ').replace(/[()*]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 export function parseMeta(lines) {

@@ -11,6 +11,7 @@ B=https://raw.githubusercontent.com/OpenITI
 BOOKS="
 0350AH/0329IbnYacqubKulayni/0329IbnYacqubKulayni.Kafi/0329IbnYacqubKulayni.Kafi.Shia001122Vols-ara1.mARkdown
 0275AH/0260ImamCaskari/0260ImamCaskari.Tafsir/0260ImamCaskari.Tafsir.Shia002334-ara1
+0425AH/0406SharifRadi/0406SharifRadi.NahjBalagha/0406SharifRadi.NahjBalagha.Shia20200618-ara1.mARkdown
 "
 
 FILES=""
