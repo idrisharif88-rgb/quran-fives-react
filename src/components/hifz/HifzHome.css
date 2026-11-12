@@ -1,4 +1,4 @@
-/* ── رئيسية قسم الحفظ وصفحاتها (أذكاري، تفسير، مسبحتي) ── */
+/* ── رئيسية قسم الحفظ وصفحاتها (تفسير، مسبحتي) ── */
 
 /* حلقة التقدّم (HifzRing) والقوس */
 .hifz-ring {
@@ -103,10 +103,10 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* البلاطات الثلاث */
+/* البلاطتان */
 .hifz-home-tiles {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -236,101 +236,11 @@
   cursor: default;
 }
 
-/* أذكاري */
-.hifz-azkar-head,
 .hifz-tasbeeh,
 .hifz-tafseer {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.hifz-azkar-head .hifz-dayprog-segs {
-  display: flex;
-  gap: 4px;
-}
-
-.hifz-azkar-list {
-  list-style: none;
-  margin: 0 0 10px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.hifz-azkar-list li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.hifz-azkar-tap {
-  flex: 1;
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px 10px;
-  padding: 12px;
-  border: 1px solid var(--app-border);
-  border-radius: 14px;
-  background: var(--app-surface-2);
-  color: var(--app-text-strong);
-  font-family: inherit;
-  text-align: right;
-  cursor: pointer;
-  touch-action: manipulation;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.hifz-azkar-tap:disabled {
-  cursor: default;
-}
-
-.hifz-azkar-text {
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.8;
-}
-
-.hifz-azkar-count {
-  min-width: 62px;
-  padding: 4px 10px;
-  border: 2px solid var(--app-accent-ink);
-  border-radius: 16px;
-  color: var(--app-accent-ink);
-  font-size: 13px;
-  font-weight: 900;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.hifz-azkar-list li.done .hifz-azkar-count {
-  border-color: var(--app-accent-deep);
-  background: var(--app-accent-deep);
-  color: var(--app-accent-deep-contrast, #ffffff);
-}
-
-.hifz-azkar-list li.done .hifz-azkar-text {
-  color: var(--app-muted);
-}
-
-.hifz-azkar-bar {
-  grid-column: 1 / -1;
-  height: 5px;
-  border-radius: 3px;
-  background: var(--app-border-strong);
-  overflow: hidden;
-}
-
-.hifz-azkar-bar i {
-  display: block;
-  height: 100%;
-  border-radius: 3px;
-  background: var(--app-accent);
-  transition: width 0.2s;
 }
 
 /* مسبحتي */
@@ -369,7 +279,12 @@
 }
 
 .hifz-tasbeeh-tap.full {
-  background: var(--hifz-gold-soft);
+  background: var(--app-accent-glow);
+  animation: hifz-tasbeeh-pop 0.6s ease-out;
+}
+
+@keyframes hifz-tasbeeh-pop {
+  40% { transform: scale(1.06); }
 }
 
 .hifz-tasbeeh-zikr {
@@ -416,13 +331,13 @@
 }
 
 .hifz-tasbeeh-chip.active {
-  border-color: var(--hifz-gold);
-  background: var(--hifz-gold);
-  color: var(--hifz-gold-ink);
+  border-color: var(--app-accent-deep);
+  background: var(--app-accent-deep);
+  color: var(--app-accent-deep-contrast, #ffffff);
 }
 
 .hifz-tasbeeh-chip.active small {
-  color: var(--hifz-gold-ink);
+  color: var(--app-accent-deep-contrast, #ffffff);
 }
 
 /* تفسير */
@@ -448,7 +363,7 @@
 .hifz-tafseer-note {
   margin: 0;
   padding-right: 12px;
-  border-right: 3px solid var(--hifz-gold);
+  border-right: 3px solid var(--app-accent-ink);
   font-size: 16px;
   line-height: 1.9;
   color: var(--app-text-strong);
@@ -456,20 +371,7 @@
   overflow-wrap: anywhere;
 }
 
-/* زرّ التنقّل إلى الخماسيات في رأس الشاشة */
-.hifz-switch {
-  height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--app-border);
-  border-radius: 20px;
-  background: var(--app-surface);
-  color: var(--app-accent-ink);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .hifz-ring-fill, .hifz-home-tile, .hifz-tasbeeh-tap, .hifz-azkar-bar i { transition: none; }
+  .hifz-ring-fill, .hifz-home-tile, .hifz-tasbeeh-tap { transition: none; }
+  .hifz-tasbeeh-tap.full { animation: none; }
 }

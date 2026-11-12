@@ -8,17 +8,15 @@
 .hifz-steps-strip {
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
+/* السهمان: خطّ عريض مدوّر بلا إطار ولا دائرة، ومساحة لمس 44px */
 .hifz-steps-arrow {
-  flex: 0 0 42px;
-  width: 42px;
-  height: 42px;
+  flex: 0 0 34px;
+  min-height: 44px;
   padding: 0;
-  border: 1px solid var(--app-border);
-  border-radius: 50%;
-  background: var(--app-surface);
+  border: 0;
+  background: none;
   color: var(--app-accent-ink);
   display: flex;
   align-items: center;
@@ -26,66 +24,86 @@
   cursor: pointer;
 }
 
+.hifz-steps-arrow svg {
+  width: 30px;
+  height: 30px;
+}
+
 .hifz-steps-arrow:disabled {
-  opacity: 0.35;
+  opacity: 0.25;
   cursor: default;
 }
 
+/* خمسة أعمدة متساوية: كل دائرة تملأ عمودها حتى 51px فلا تتلامس على أيّ عرض */
 .hifz-steps-dots {
   position: relative;
   flex: 1;
   min-width: 0;
   list-style: none;
   margin: 0;
-  padding: 0;
-  display: flex;
+  padding: 0 2px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  column-gap: 6px;
+  justify-items: center;
   align-items: center;
-  justify-content: space-between;
+}
+
+.hifz-steps-dots li {
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .hifz-steps-dots::before {
   content: '';
   position: absolute;
   top: 50%;
-  right: 16px;
-  left: 16px;
-  height: 2px;
-  background: var(--app-border);
+  right: 10%;
+  left: 10%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--app-border-strong);
 }
 
+/* منجزة: أخضر ممتلئ بعلامة؛ الجارية: حلقة خضراء برقمها؛ المقفلة: رمادي */
 .hifz-steps-dot {
   position: relative;
-  width: 34px;
-  height: 34px;
+  width: 100%;
+  max-width: 51px;
+  aspect-ratio: 1;
   padding: 0;
-  border: 2px solid var(--app-border-strong);
+  border: 3px solid var(--app-border-strong);
   border-radius: 50%;
   background: var(--app-surface);
   color: var(--app-muted);
   font-family: inherit;
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 900;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.15s;
+}
+
+.hifz-steps-dot svg {
+  width: 46%;
+  height: 46%;
 }
 
 .hifz-steps-dot.done {
-  border-color: var(--hifz-gold);
-  background: var(--hifz-gold);
-  color: var(--hifz-gold-ink);
-}
-
-.hifz-steps-dot.open {
   border-color: var(--app-accent-deep);
   background: var(--app-accent-deep);
   color: var(--app-accent-deep-contrast, #ffffff);
 }
 
+.hifz-steps-dot.open {
+  border: 4px solid var(--app-accent);
+  color: var(--app-accent-ink);
+}
+
 .hifz-steps-dot.view {
-  transform: scale(1.16);
   box-shadow: 0 0 0 4px var(--app-accent-glow);
 }
 
@@ -123,8 +141,8 @@
 }
 
 .hifz-steps-state.done {
-  border-color: var(--hifz-gold);
-  background: var(--hifz-gold-soft);
+  border-color: var(--app-accent-ink);
+  background: var(--app-accent-glow);
   color: var(--app-text-strong);
 }
 
@@ -140,20 +158,30 @@
   color: var(--app-muted);
 }
 
-.hifz-steps-redo {
-  align-self: flex-start;
+/* الإعادة: أيقونة وحدها بجانب حالة الخطوة، بلا إطار */
+.hifz-steps-side {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border: 1px solid var(--app-border);
-  border-radius: 18px;
-  background: var(--app-surface);
+  gap: 2px;
+}
+
+.hifz-steps-redo {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--app-accent-ink);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+}
+
+.hifz-steps-redo svg {
+  width: 34px;
+  height: 34px;
 }
 
 .hifz-steps-ask {
@@ -162,7 +190,7 @@
   gap: 8px;
   padding: 10px 12px;
   border-radius: 12px;
-  background: var(--hifz-gold-soft);
+  background: var(--app-accent-glow);
   font-size: 14px;
   line-height: 1.7;
   color: var(--app-text-strong);
@@ -177,6 +205,3 @@
   align-self: center;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hifz-steps-dot { transition: none; }
-}

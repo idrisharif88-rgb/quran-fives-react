@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { SURAH_METADATA } from '../../data/quranConstants';
-import { noteKey } from '../../utils/verseNotesFile';
-import VerseNoteEditor from '../VerseNoteEditor';
+import { TAFSEER_BOOKS } from '../../utils/tafseerApi';
+import useTafseerText from '../../hooks/useTafseerText';
 import HifzMushafVerses from './HifzMushafVerses';
 import { refsText } from './hifzText';
 
@@ -30,21 +30,17 @@ function VersePicker({ current, onPick, onToday }) {
 }
 
 /**
- * تفسير آية: آية اليوم (أو آية يختارها) بأسطر المصحف، وتحتها ما كتبه صاحبها من تفسير.
- * التفسير نفسه ملاحظات الآيات في التطبيق (verseNotes)، فما يُكتب هنا يظهر على بطاقة الخماسيات.
- * @param todayRef     أول آية ورد اليوم، أو null إن خُتم المصحف
- * @param notes        { 'سورة:آية': نصّ }
- * @param onSaveNote   (key, text)
- * @param noteBackRef  لزرّ الرجوع ما دامت نافذة الكتابة مفتوحة
+ * تفسير آية: آية اليوم (أو آية يختارها) بأسطر المصحف، وتحتها تفسيرها من كتاب يختاره،
+ * يُجلب من الإنترنت حين تُفتح الصفحة (tafseerApi). بلا شبكة: رسالة وزرّ «أعد المحاولة».
+ * @param todayRef أول آية ورد اليوم، أو null إن خُتم المصحف
  */
-export default function HifzTafseer({ home, todayRef, notes, onSaveNote, noteBackRef, actions }) {
+export default function HifzTafseer({ home, todayRef, actions }) {
   const [picking, setPicking] = useState(false);
-  const [writing, setWriting] = useState(false);
   const ref = home.tafseer ?? todayRef ?? { s: 1, a: 1 };
-  const key = noteKey(ref);
-  const note = notes?.[key]?.trim() || '';
+  const verseKey = `${ref.s}:${ref.a}`;
   const title = refsText([ref]);
   const isToday = !home.tafseer && Boolean(todayRef);
+  const tafseer = useTafseerText(ref, home.tafseerBook);
 
   return (
     <section className="hifz-section hifz-tafseer">
@@ -54,27 +50,30 @@ export default function HifzTafseer({ home, todayRef, notes, onSaveNote, noteBac
       </h3>
       {picking && (
         <VersePicker
-          key={key}
+          key={verseKey}
           current={ref}
           onPick={(next) => { actions.setTafseerVerse(next); setPicking(false); }}
           onToday={todayRef && home.tafseer ? () => { actions.setTafseerVerse(null); setPicking(false); } : undefined}
         />
       )}
-      <div className="hifz-verse mushaf"><HifzMushafVerses key={key} refs={[ref]} /></div>
-      {note
-        ? <p className="hifz-tafseer-note">{note}</p>
-        : <p className="hifz-home-empty">لم تكتب تفسير هذه الآية بعد.</p>}
-      <button type="button" className={`hifz-btn ${note ? '' : 'primary'}`.trim()} onClick={() => setWriting(true)}>{note ? 'عدّل التفسير' : 'اكتب تفسيرها'}</button>
-      {writing && (
-        <VerseNoteEditor
-          title="تفسير"
-          verse={title}
-          initialText={note}
-          onSave={(text) => { onSaveNote(key, text); setWriting(false); }}
-          onCancel={() => setWriting(false)}
-          backRef={noteBackRef}
-        />
+      <div className="hifz-verse mushaf"><HifzMushafVerses key={verseKey} refs={[ref]} /></div>
+
+      <div className="hifz-tasbeeh-chips" role="radiogroup" aria-label="كتاب التفسير">
+        {TAFSEER_BOOKS.map((book) => (
+          <button key={book.id} type="button" role="radio" aria-checked={book.id === home.tafseerBook} className={`hifz-tasbeeh-chip ${book.id === home.tafseerBook ? 'active' : ''}`.trim()} onClick={() => actions.setTafseerBook(book.id)}>
+            {book.name}
+          </button>
+        ))}
+      </div>
+
+      {tafseer.status === 'loading' && <p className="hifz-home-empty" role="status">جارٍ جلب التفسير…</p>}
+      {tafseer.status === 'error' && (
+        <div className="hifz-home-empty" role="alert">
+          تعذّر جلب التفسير — تحقّق من الإنترنت.
+          <button type="button" className="hifz-btn" onClick={tafseer.retry}>أعد المحاولة</button>
+        </div>
       )}
+      {tafseer.status === 'ok' && <p className="hifz-tafseer-note">{tafseer.text}</p>}
     </section>
   );
 }

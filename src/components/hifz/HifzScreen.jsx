@@ -8,7 +8,6 @@ import HifzReminderSettings from './HifzReminderSettings';
 import HifzListenView from './HifzListenView';
 import HifzStart from './HifzStart';
 import HifzHome from './HifzHome';
-import HifzAzkar from './HifzAzkar';
 import HifzTasbeeh from './HifzTasbeeh';
 import HifzTafseer from './HifzTafseer';
 import HifzDayProgress from './HifzDayProgress';
@@ -22,25 +21,24 @@ import './HifzScreen.css';
 import './HifzHome.css';
 
 // صفحات القسم: الرئيسية، ورد اليوم، وصفحات البلاطات الثلاث
-const PAGE_TITLE = { home: 'برنامج الحفظ', day: 'ورد اليوم', azkar: 'أذكاري', tafseer: 'تفسير آية', tasbeeh: 'مسبحتي' };
+const PAGE_TITLE = { home: 'برنامج الحفظ', day: 'ورد اليوم', tafseer: 'تفسير آية', tasbeeh: 'مسبحتي' };
 
 /**
  * شاشة برنامج الحفظ: رئيسية (HifzHome) تُفتح منها صفحة ورد اليوم بخطّها الزمني، وصفحات
- * أذكاري وتفسير ومسبحتي. زرّ الرجوع يعيد من أي صفحة إلى الرئيسية.
+ * تفسير ومسبحتي. زرّ الرجوع يعيد من أي صفحة إلى الرئيسية.
  * @param hifz    ما يعيده useHifz
  * @param reciter  المقرئ المختار في التطبيق، و onReciterChange يغيّره (بجانب زرّ التلاوة)
  * @param contacts ما يعيده useHifzContacts (شيوخ خطوة تأكيد الحافظ)
  * @param backRef  يُملأ بدالّة تغلق ما فُتح فوق الشاشة (الاستماع، نموذج الشيخ، تنبيه الإتمام)
  *                 ليغلقه زرّ الرجوع أولاً قبل الشاشة نفسها
- * @param homeData ما يعيده useHifzHome (أذكاري، مسبحتي، آية التفسير)
- * @param notes / onSaveNote / noteBackRef تفسير الآيات (verseNotes) لصفحة التفسير
+ * @param homeData ما يعيده useHifzHome (مسبحتي، آية التفسير وكتابه)
  * @param canTakeExtra المشرف ومن أذن له: فتح ورد الغد في اليوم نفسه بعد إتمام اليوم
  * @param onSwitchSection لمن أذن له المشرف: الانتقال إلى قسم الخماسيات بلا تسجيل خروج
  * @param canCustomStart أذن المشرف لهذا الحساب أن يبدأ الحفظ من آية يختارها
  * @param trial   وضع التجربة جارٍ (hifz عندها برنامج التجربة): شريطه، و«تخطَّ» في كل خطوة
  * @param onTrialStart / onTrialEnd للمشرف وحده (غائبان عن غيره): الدخول إلى وضع التجربة والخروج منه
  */
-export default function HifzScreen({ hifz, homeData, notes, onSaveNote, noteBackRef, reciter, onReciterChange, contacts, onOpenAccount, onSwitchSection, backRef, canTakeExtra = false, canCustomStart = false, trial = false, onTrialStart, onTrialEnd }) {
+export default function HifzScreen({ hifz, homeData, reciter, onReciterChange, contacts, onOpenAccount, onSwitchSection, backRef, canTakeExtra = false, canCustomStart = false, trial = false, onTrialStart, onTrialEnd }) {
   const { program, plan, today, celebrate, inSession, method, actions } = hifz;
   const [page, setPage] = useState('home');                  // الصفحة المعروضة (PAGE_TITLE)
   const [confirming, setConfirming] = useState(null);       // سؤال مفتوح أسفل الشاشة: 'reset' | 'cancel'
@@ -110,21 +108,18 @@ export default function HifzScreen({ hifz, homeData, notes, onSaveNote, noteBack
           </button>
         )}
         <h2>{PAGE_TITLE[onHome ? 'home' : page]}</h2>
-        {onHome && onSwitchSection
-          ? <button type="button" className="hifz-switch" onClick={onSwitchSection}>⇄ الخماسيات</button>
-          : <span className="hifz-header-spacer" />}
+        <span className="hifz-header-spacer" />
       </div>
       {trial && <HifzTrialBar canAdvance={Boolean(program)} onNextDay={actions.nextDay} onJump={actions.jumpDays} onEnd={onTrialEnd} />}
 
       <div className="hifz-body">
         {!program && <HifzStart onStart={actions.start} canCustomStart={canCustomStart || trial} onTrialStart={trial ? undefined : onTrialStart} />}
         {program && page === 'home' && (
-          <HifzHome program={program} plan={plan} today={today} home={homeData.home} homeDay={homeData.day} tafseerRef={tafseerRef} onOpen={setPage} />
+          <HifzHome program={program} plan={plan} today={today} home={homeData.home} tafseerRef={tafseerRef} onOpen={setPage} onSwitchSection={onSwitchSection} />
         )}
-        {program && page === 'azkar' && <HifzAzkar home={homeData.home} day={homeData.day} actions={homeData.actions} />}
         {program && page === 'tasbeeh' && <HifzTasbeeh home={homeData.home} day={homeData.day} actions={homeData.actions} />}
         {program && page === 'tafseer' && (
-          <HifzTafseer home={homeData.home} todayRef={todayRef} notes={notes} onSaveNote={onSaveNote} noteBackRef={noteBackRef} actions={homeData.actions} />
+          <HifzTafseer home={homeData.home} todayRef={todayRef} actions={homeData.actions} />
         )}
         {program && page === 'day' && (
           <>
