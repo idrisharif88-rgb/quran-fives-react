@@ -55,6 +55,13 @@ test('prefixed forms are found: الصلاة → بالصلاة، صلاة → �
   assert.equal(searchLibrary(db, 'تاب عمود').length, 0);  // «الكتاب» لا يطابق «تاب»
 });
 
+test('a page marker inside a line counts and is removed from the text', () => {
+  const r = parseOpenITI(SAMPLE.replace('~~وهي من أفضل', '~~وهي PageV01P005 من أفضل').replace('PageV01P005\n', ''));
+  assert.equal(r.pages.length, 2);
+  assert.ok(!r.passages.some((p) => p.text.includes('PageV')));
+  assert.deepEqual(r.passages.map((p) => r.pages[p.page - 1].page), [5, 6]);
+});
+
 test('ms markers are hidden from the reader', () => {
   const r = parseOpenITI(SAMPLE);
   assert.ok(!r.passages.some((p) => /ms\d/.test(p.text)));

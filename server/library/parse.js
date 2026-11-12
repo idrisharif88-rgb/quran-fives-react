@@ -5,6 +5,7 @@
 //   #META# حقل :: قيمة ← بيانات الكتاب
 const PAGE = /^(?:#\s*)?PageV(\d+)P(\d+)\s*$/;
 const HEADING = /^###\s*(\|+)\s*(.*)$/;
+const INLINE_PAGE = /\s*PageV(\d+)P(\d+)\s*/g; // علامة داخل السطر (71 منها في الكافي والعسكري)
 
 export function cleanTitle(t) {
   return t.replace(/[()*]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -66,13 +67,20 @@ export function parseOpenITI(raw) {
       continue;
     }
 
+    // علامات الصفحة داخل السطر: تُحذف من النص وتُحسب بعد بدء الفقرة، فالفقرة تبقى في صفحة بدايتها
+    const inline = [...line.matchAll(INLINE_PAGE)];
+    const body = inline.length ? line.replace(INLINE_PAGE, ' ').trimEnd() : line;
     const chapter = stack.length ? stack[stack.length - 1].id : null;
-    if (line.startsWith('~~')) {
-      if (cur) cur.text += ' ' + line.slice(2).trim();
-      else cur = { chapter, page: seen + 1, text: line.slice(2).trim() };
-    } else if (line.startsWith('#')) {
+    if (body.startsWith('~~')) {
+      if (cur) cur.text += ' ' + body.slice(2).trim();
+      else cur = { chapter, page: seen + 1, text: body.slice(2).trim() };
+    } else if (body.startsWith('#')) {
       flush();
-      cur = { chapter, page: seen + 1, text: line.replace(/^#\s*/, '') };
+      cur = { chapter, page: seen + 1, text: body.replace(/^#\s*/, '') };
+    }
+    for (const m of inline) {
+      pages.push({ id: pages.length + 1, vol: +m[1], page: +m[2] });
+      seen = pages.length;
     }
     // أي سطر آخر (وسوم غير معروفة) يُتجاهل
   }
