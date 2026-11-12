@@ -35,9 +35,11 @@ export function variantsOf(word) {
 
 // كلمة البحث → استعلام FTS5 آمن: كل كلمة وصيغها بين علامتي تنصيص يجمعها OR، و AND بين الكلمات،
 // وآخر كلمة بحرف البادئة (*) ليعمل البحث أثناء الكتابة.
-export function toFtsQuery(q) {
+// exact: العبارة كما هي — الكلمات متتالية بلا سوابق ولا بادئة
+export function toFtsQuery(q, { exact = false } = {}) {
   const words = indexText(q).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
   if (!words.length) return '';
+  if (exact) return `"${words.join(' ')}"`;
   return words.map((w, i) => {
     const star = i === words.length - 1 ? '*' : '';
     const forms = variantsOf(w).map((v) => `"${v}"${star}`);

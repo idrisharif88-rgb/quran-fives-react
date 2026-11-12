@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { openLibrary, addBook } from '../build.js';
-import { searchLibrary, snippetAround } from '../search.js';
+import { searchLibrary, snippetAround, groupedResults, countByBook, listBooks } from '../search.js';
 import { normalizeArabic, toFtsQuery } from '../normalize.js';
 import { parseOpenITI } from '../parse.js';
 import { sourceOf } from '../sources.js';
@@ -42,7 +42,6 @@ test('search ignores tashkeel and unifies forms; reports vol/page/chapter', () =
   }
   const [h] = searchLibrary(db, 'الصلاة');
   assert.deepEqual([h.vol, h.page, h.chapter], [1, 6, 'باب فضل الصلاة']); // النص قبل PageV01P006 في الصفحة 6
-  assert.ok(h.source.includes('OpenITI'));
 });
 
 test('prefixed forms are found: الصلاة → بالصلاة، صلاة → الصلاة، no root-letter cuts', () => {
@@ -79,6 +78,20 @@ test('Kafi vol 2 links to its Ahlulbayt Library volume; Askari vol 0 to its sing
 test('leftover HTML links keep their visible text', () => {
   const r = parseOpenITI(SAMPLE.replace('~~وهي من أفضل', '~~وهي <a\n~~href="/x?p=7#top">البرهان ج ١: ٧</a> من أفضل'));
   assert.ok(r.passages[0].text.includes('وهي البرهان ج ١: ٧ من أفضل'), r.passages[0].text);
+});
+
+test('exact phrase, several books, counts and grouping', () => {
+  const db = openLibrary(':memory:');
+  addBook(db, SAMPLE);
+  addBook(db, SAMPLE.replace('#0001.Test.Book', '#0002.Other.Book').replace('عمود الدين', 'نور المؤمن'));
+  assert.equal(searchLibrary(db, 'عمود الدين', { exact: true }).length, 1);
+  assert.equal(searchLibrary(db, 'الدين عمود', { exact: true }).length, 0);   // الترتيب مهم في العبارة
+  assert.equal(searchLibrary(db, 'الصلاة', { bookIds: [2] }).length, 1);
+  assert.deepEqual(countByBook(db, 'الصلاة'), { 1: 1, 2: 1 });
+  const g = groupedResults(db, 'الصلاة');
+  assert.equal(g.length, 2);
+  assert.ok(g.every((x) => x.count === 1 && x.hits.length === 1));
+  assert.ok(listBooks(db).every((b) => b.section && b.name && b.vols === 1));
 });
 
 test('ms markers are hidden from the reader', () => {

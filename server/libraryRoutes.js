@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { searchLibrary, listBooks, getPassage } from './library/search.js';
+import { searchLibrary, groupedResults, countByBook, listBooks, getPassage } from './library/search.js';
+import { SECTIONS } from './library/sources.js';
 
 // مكتبة الكتب الشيعية (OpenITI): قاعدة SQLite للقراءة فقط على الخادم.
 // تُبنى بـ `node library/build.js` وتُرفع بجانب البيانات؛ إن غابت أجابت المسارات 503
@@ -38,15 +39,28 @@ export function registerLibraryRoutes(app, { requireAccount, dataDir, libraryFil
   };
 
   app.get('/api/library/books', requireAccount, withDb((conn, req, res) => {
-    res.json({ books: listBooks(conn) });
+    res.json({ books: listBooks(conn), sections: SECTIONS });
   }));
 
+  // books=1,2,3 (أو book=1 القديم)، exact=1 للعبارة كما هي، order=book لترتيب الكتاب
+  const params = (req) => ({
+    q: String(req.query.q ?? '').slice(0, MAX_Q),
+    bookIds: String(req.query.books ?? req.query.book ?? '').split(',').map((v) => toInt(v, 0, 0, 1e9)).filter(Boolean).slice(0, 50),
+    exact: req.query.exact === '1',
+    order: req.query.order === 'book' ? 'book' : 'rank',
+  });
+
   app.get('/api/library/search', requireAccount, withDb((conn, req, res) => {
-    const q = String(req.query.q ?? '').slice(0, MAX_Q);
-    const bookId = toInt(req.query.book, null, 1, 1e9);
+    const { q, ...opts } = params(req);
     const limit = toInt(req.query.limit, 20, 1, 50);
     const offset = toInt(req.query.offset, 0, 0, 10000);
-    res.json({ results: searchLibrary(conn, q, { bookId, limit, offset }), limit, offset });
+    res.json({ results: searchLibrary(conn, q, { ...opts, limit, offset }), limit, offset });
+  }));
+
+  // النتائج مجمّعة حسب الكتاب، مع عدد النتائج في كل كتاب (للوحة الكتب)
+  app.get('/api/library/grouped', requireAccount, withDb((conn, req, res) => {
+    const { q, ...opts } = params(req);
+    res.json({ groups: groupedResults(conn, q, opts), counts: countByBook(conn, q, opts) });
   }));
 
   app.get('/api/library/passage/:id', requireAccount, withDb((conn, req, res) => {

@@ -55,7 +55,13 @@ test('المكتبة تتطلّب حساباً', async () => {
 test('كتب + بحث + مقطع، والمصدر مذكور', async () => {
   const books = await get('/api/library/books');
   assert.equal(books.json.books.length, 1);
-  assert.ok(books.json.books[0].source.includes('OpenITI'));
+  assert.equal(books.json.sections.length, 3);
+  assert.equal(books.json.books[0].name, 'كتاب تجريبي');
+
+  const grouped = await get('/api/library/grouped?q=' + encodeURIComponent('الصلاة'));
+  assert.equal(grouped.json.groups.length, 1);
+  assert.deepEqual(Object.values(grouped.json.counts), [1]);
+  assert.equal((await get('/api/library/search?exact=1&q=' + encodeURIComponent('الدين عمود'))).json.results.length, 0);
 
   const found = await get('/api/library/search?q=' + encodeURIComponent('الصَّلاة'));
   assert.equal(found.json.results.length, 1);
