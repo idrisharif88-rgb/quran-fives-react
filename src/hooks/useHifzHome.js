@@ -2,15 +2,15 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadStoredState, saveStoredState, LOCAL_SYNC_EVENT } from '../utils/persistence';
 import { dayKey } from '../utils/hifzSchedule';
 import {
-  HIFZ_HOME_KEY, normalizeHome, tapZikr, addZikr, removeZikr,
-  tapTasbeeh, zeroTasbeeh, pickTasbeeh, addTasbeeh, removeTasbeeh, setTafseerVerse,
+  HIFZ_HOME_KEY, normalizeHome,
+  tapTasbeeh, zeroTasbeeh, nextTasbeeh, pickTasbeeh, addTasbeeh, removeTasbeeh, setTafseerVerse, setTafseerBook,
 } from '../utils/hifzHome';
 
 const load = () => normalizeHome(loadStoredState(HIFZ_HOME_KEY));
 const newId = () => `z${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 /**
- * رئيسية قسم الحفظ: أذكاري ومسبحتي وآية التفسير. المنطق في utils/hifzHome؛ هنا التخزين.
+ * رئيسية قسم الحفظ: مسبحتي وآية التفسير وكتابه. المنطق في utils/hifzHome؛ هنا التخزين.
  * تُزامَن مع الحساب (SYNCED_LOCAL_KEYS)، فتنزيل من السحابة يعيد القراءة.
  */
 export default function useHifzHome() {
@@ -31,15 +31,14 @@ export default function useHifzHome() {
   }, []);
 
   const actions = useMemo(() => ({
-    tapZikr: (id) => apply((s, day) => tapZikr(s, day, id)),
-    addZikr: (text, target) => apply((s) => addZikr(s, newId(), text, target)),
-    removeZikr: (id) => apply((s) => removeZikr(s, id)),
     tapTasbeeh: () => apply((s, day) => tapTasbeeh(s, day)),
     zeroTasbeeh: () => apply(zeroTasbeeh),
+    nextTasbeeh: () => apply(nextTasbeeh),
     pickTasbeeh: (id) => apply((s) => pickTasbeeh(s, id)),
     addTasbeeh: (text, target) => apply((s) => addTasbeeh(s, newId(), text, target)),
     removeTasbeeh: (id) => apply((s) => removeTasbeeh(s, id)),
     setTafseerVerse: (ref) => apply((s) => setTafseerVerse(s, ref)),
+    setTafseerBook: (id) => apply((s) => setTafseerBook(s, id)),
   }), [apply]);
 
   return { home, day: dayKey(), actions };

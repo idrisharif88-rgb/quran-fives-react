@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
 import { TOTAL_VERSES, daysBetween } from '../../utils/hifzSchedule';
 import { dayProgress, juzProgress } from '../../utils/hifzStepNav';
-import { azkarSummary, activeTasbeeh } from '../../utils/hifzHome';
+import { activeTasbeeh } from '../../utils/hifzHome';
+import { TAFSEER_BOOKS } from '../../utils/tafseerApi';
 import HifzRing from './HifzRing';
+import SectionSwitchIcon from '../SectionSwitch/SectionSwitchIcon';
 import { refsText, isMulti } from './hifzText';
 
 const BookIcon = () => (
@@ -30,16 +32,17 @@ function Arch({ juz, memorized, total }) {
 }
 
 /**
- * رئيسية قسم الحفظ: قوس الجزء الجاري، زرّ ورد اليوم، ثم ثلاث بلاطات تفتح صفحاتها:
- * أذكاري، تفسير، مسبحتي. كل بلاطة تعرض حالها الآن.
+ * رئيسية قسم الحفظ: قوس الجزء الجاري، زرّ ورد اليوم، ثم بلاطتان تفتحان صفحتيهما:
+ * تفسير، مسبحتي. كل بلاطة تعرض حالها الآن.
  * @param today يوم البرنامج (effectiveDay) — homeDay يوم التقويم لعدّ الأذكار
- * @param onOpen ('day' | 'azkar' | 'tafseer' | 'tasbeeh')
+ * @param onOpen ('day' | 'tafseer' | 'tasbeeh')
+ * @param onSwitchSection بإذن المشرف (sectionSwitch): أيقونة الخماسيات في الوسط تحت البلاطتين
  */
-export default function HifzHome({ program, plan, today, home, homeDay, tafseerRef, onOpen }) {
+export default function HifzHome({ program, plan, today, home, tafseerRef, onOpen, onSwitchSection }) {
   const juz = useMemo(() => juzProgress(program), [program]);
   const progress = dayProgress(program, plan);
-  const azkar = azkarSummary(home, homeDay);
   const zikr = activeTasbeeh(home);
+  const tafseerBookName = TAFSEER_BOOKS.find((book) => book.id === home.tafseerBook)?.name ?? '';
   const refs = plan.verse ? plan.verse.refs.filter(Boolean) : [];
   const started = progress.done > 0;
   const title = plan.complete ? 'تمّ ورد اليوم' : started ? 'أكمل ورد اليوم' : 'ابدأ ورد اليوم';
@@ -61,15 +64,10 @@ export default function HifzHome({ program, plan, today, home, homeDay, tafseerR
       </button>
 
       <div className="hifz-home-tiles">
-        <button type="button" className="hifz-home-tile" onClick={() => onOpen('azkar')}>
-          <HifzRing value={azkar.done} total={azkar.total} stroke={12}><em dir="ltr">{azkar.done}/{azkar.total}</em></HifzRing>
-          <b>أذكاري</b>
-          <small>{azkar.total === 0 ? 'أضف ذكرك' : azkar.done === azkar.total ? 'أتممتها اليوم' : `بقي ${azkar.total - azkar.done}`}</small>
-        </button>
         <button type="button" className="hifz-home-tile" onClick={() => onOpen('tafseer')}>
           <span className="hifz-ring hifz-home-book"><BookIcon /></span>
           <b>تفسير</b>
-          <small>{refsText([tafseerRef])}</small>
+          <small>{refsText([tafseerRef])} · {tafseerBookName}</small>
         </button>
         <button type="button" className="hifz-home-tile" onClick={() => onOpen('tasbeeh')}>
           <HifzRing value={home.tasbeehCount} total={zikr?.target ?? 0} stroke={12}><em>{home.tasbeehCount}</em></HifzRing>
@@ -77,6 +75,8 @@ export default function HifzHome({ program, plan, today, home, homeDay, tafseerR
           <small>{zikr ? zikr.text : 'أضف ذكرك'}</small>
         </button>
       </div>
+
+      {onSwitchSection && <SectionSwitchIcon to="fives" onClick={onSwitchSection} />}
     </>
   );
 }

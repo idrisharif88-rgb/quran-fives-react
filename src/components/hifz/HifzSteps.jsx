@@ -5,17 +5,17 @@ import { STEP_TEXT } from './hifzText';
 import './HifzSteps.css';
 
 const CheckIcon = () => (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7" /></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7" /></svg>
 );
 const LockIcon = () => (
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M18 8h-1V6A5 5 0 0 0 7 6v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zM9 6a3 3 0 0 1 6 0v2H9V6z" /></svg>
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 8h-1V6A5 5 0 0 0 7 6v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zM9 6a3 3 0 0 1 6 0v2H9V6z" /></svg>
 );
 const RedoIcon = () => (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9" /><path d="M4 4v5h5" /></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9" /><path d="M4 4v5h5" /></svg>
 );
 // السهم بحسب اتجاه القراءة: السابق إلى اليمين والتالي إلى اليسار
 const Arrow = ({ next }) => (
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={next ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'} /></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={next ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'} /></svg>
 );
 
 const STATE_LABEL = { [STEP_STATE.DONE]: 'تمّت', [STEP_STATE.OPEN]: 'خطوتك الآن', [STEP_STATE.LOCKED]: 'مقفلة' };
@@ -66,7 +66,12 @@ export default function HifzSteps({ program, plan, reciter, actions, extras, ver
 
       <div className="hifz-steps-head">
         <strong>{view + 1}. {STEP_TEXT[id].title}</strong>
-        <span className={`hifz-steps-state ${state}`}>{STATE_LABEL[state]}</span>
+        <span className="hifz-steps-side">
+          <span className={`hifz-steps-state ${state}`}>{STATE_LABEL[state]}</span>
+          {state === STEP_STATE.DONE && !asking && (
+            <button type="button" className="hifz-steps-redo" onClick={() => setAsking(true)} aria-label={`أعد خطوة ${STEP_TEXT[id].title}`} title="أعد الخطوة"><RedoIcon /></button>
+          )}
+        </span>
       </div>
       <p className="hifz-steps-hint">{STEP_TEXT[id].hint(rules)}</p>
 
@@ -77,9 +82,6 @@ export default function HifzSteps({ program, plan, reciter, actions, extras, ver
         <button type="button" className="hifz-skip" onClick={actions.skip}>تخطَّ ←</button>
       )}
 
-      {state === STEP_STATE.DONE && !asking && (
-        <button type="button" className="hifz-steps-redo" onClick={() => setAsking(true)}><RedoIcon /> أعد الخطوة</button>
-      )}
       {state === STEP_STATE.DONE && asking && (
         <div className="hifz-steps-ask" role="alertdialog" aria-label="تأكيد إعادة الخطوة">
           <span>إعادة «{STEP_TEXT[id].title}»؟ يُمسح ما أُنجز فيها وحدها.</span>
