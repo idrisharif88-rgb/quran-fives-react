@@ -1,5 +1,6 @@
 package com.shoaib.quranfives;
 
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.webkit.ValueCallback;
@@ -43,6 +44,13 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
             } catch (Exception ignored) { }
         }
         super.onCreate(savedInstanceState);
+
+        // الاتجاه: لا قيد في الـ manifest (Google Play: أندرويد 16 يتجاهله على اللوحيّات والقابلة
+        // للطيّ وينبّه عليه). الهاتف يبقى عموديّاً من هنا كما كان، واللوحيّ يدور بحرّية.
+        // configChanges يشمل orientation|screenSize، فالدوران لا يعيد إنشاء الشاشة ولا يضيع شيء.
+        if (!largeScreen) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        }
 
         // إصلاح الشريط الأسود أسفل WebView (inset مزدوج لشريط التنقّل):
         // يملأ WebView الشاشة كاملة (edge-to-edge) فلا يبقى شريط أسود/أبيض.

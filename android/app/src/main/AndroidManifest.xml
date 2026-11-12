@@ -12,7 +12,6 @@
         <meta-data android:name="android.max_aspect" android:value="2.4"/>
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
-            android:screenOrientation="portrait"
             android:maxAspectRatio="2.4"
             android:name=".MainActivity"
             android:label="@string/title_activity_main"

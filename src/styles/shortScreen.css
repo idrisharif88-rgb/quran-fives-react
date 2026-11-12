@@ -1,0 +1,9 @@
+/* الشاشات القصيرة: اللوحيّ أفقياً (أندرويد 16 يدوّره ولا يُقفل اتجاهه) نحو 528px ارتفاعاً.
+   بطاقة الآيات هي العنصر المرن في عمود الصفحة، فكانت تنضغط إلى صفر وتختفي تحت الأزرار.
+   هنا لها حدّ أدنى، فيُمرَّر عمود الصفحة (app-container: overflow-y auto) بدل أن تختفي. */
+@media (orientation: landscape) and (max-height: 640px) {
+  .content-layout:not(.night-counter-layout) {
+    flex-shrink: 0;
+    min-height: max(300px, calc(62 * var(--vh)));
+  }
+}

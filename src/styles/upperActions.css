@@ -1,9 +1,12 @@
-/* صفّ أزرار الخماسيات العلوي: مقاس واحد لكل أزراره من مكان واحد.
+/* صفّ أزرار الخماسيات العلوي: المقاسات كلّها من هنا، لا في JSX ولا في ملفّ زرّ بعينه.
+   --upper-size  الأزرار الثلاثة في الوسط (المزيد، بدايات الصفحات، الآية)
+   --upper-big   الزاويتان: التقويم يميناً، والحفظ يساراً (بإذن المشرف) — أكبر بخُمس
    كانت المقاسات متفرّقة (70/56 للأزرار، 65 للتقويم مكتوباً في JSX، 46 لأيقونة الحفظ)
-   فاختلفت الأيقونات حجماً. الآن: متغيّران على الصفّ، وكلّ .action-icon فيه يقرأهما. */
+   ونصّ التقويم 14px ثابتاً فخرج من دائرته على اللوحيّ. */
 .action-buttons-container.upper-actions {
   --upper-gap: 50px;
   --upper-size: 70px;
+  --upper-big: calc(var(--upper-size) * 1.2);
   gap: var(--upper-gap);
 }
 
@@ -14,16 +17,63 @@
   box-sizing: border-box;
 }
 
+/* ── التقويم في الزاوية اليمنى، والحفظ في اليسرى، والثلاثة في الوسط ──
+   في العربية أوّل عنصر يميناً: order يضع التقويم أوّلاً والحفظ آخراً، وهامش auto على
+   كلّ منهما يدفع الوسط إلى المنتصف. حين لا أيقونة حفظ يحلّ محلّها فراغ بمقاسها
+   (::after) فيبقى الوسط في المنتصف. */
+.action-buttons-container.upper-actions.with-calendar {
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  padding-inline: 12px;
+  box-sizing: border-box;
+  --upper-gap: 20px;
+}
+
+.upper-actions.with-calendar .action-icon.calendar-icon,
+.upper-actions.with-calendar .action-icon.section-switch-action {
+  width: var(--upper-big);
+  height: var(--upper-big);
+}
+
+.upper-actions.with-calendar .calendar-icon {
+  order: -1;
+  margin-inline-end: auto;
+  padding: 6px;
+}
+
+.upper-actions.with-calendar .section-switch-action {
+  order: 99;
+  margin-inline-start: auto;
+}
+
+.upper-actions.with-calendar:not(.has-section-switch)::after {
+  content: '';
+  order: 99;
+  flex: none;
+  width: var(--upper-big);
+  margin-inline-start: auto;
+}
+
+/* نصّ التقويم يتبع دائرته فلا يخرج منها: الشهر سطران، والتاريخ والسنة سطر */
+.calendar-icon-text {
+  font-size: calc(var(--upper-big, 65px) * 0.2);
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 600px) {
   .action-buttons-container.upper-actions {
     --upper-gap: 35px;
     --upper-size: 56px;
   }
 
-  /* خمسة أزرار (أيقونة الحفظ بإذن المشرف): فراغ أضيق، والمقاس يصغر معاً إن ضاقت الشاشة.
-     100 * --vw عرض الشاشة مصحَّحاً لحجم العرض (appScale.css)؛ 32px حاشيتا الصفّ */
-  .action-buttons-container.upper-actions.has-section-switch {
-    --upper-gap: 14px;
-    --upper-size: min(56px, calc((100 * var(--vw) - 32px - 4 * var(--upper-gap)) / 5));
+  /* عرض الصفّ على الهاتف: ثلاثة أزرار وزاويتان بقدر 1.2، وأربعة فراغات. 100 * --vw عرض
+     الشاشة مصحَّحاً لحجم العرض (appScale.css)؛ 56px حاشيتا الصفحة والصفّ. */
+  .action-buttons-container.upper-actions.with-calendar {
+    --upper-gap: 12px;
+    --upper-size: min(56px, calc((100 * var(--vw) - 56px - 4 * var(--upper-gap)) / 5.4));
   }
 }
