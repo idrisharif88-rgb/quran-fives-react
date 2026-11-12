@@ -1,7 +1,7 @@
 import { arabicNumber } from '../../utils/libraryText';
 import { NextIcon } from './LibraryIcons';
 
-// المصدر تحت النص: الكتاب والناشر، النص الرقمي (OpenITI)، ورابط المجلد في مكتبة أهل البيت (ع)
+// المصدر تحت النص: الكتاب والناشر، النص الرقمي (OpenITI)، ورابط الصفحة نفسها في مكتبة أهل البيت (ع)
 export default function LibrarySource({ passage }) {
   const { edition, digital, compareUrl, book, author, vol } = passage;
   return (

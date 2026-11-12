@@ -61,5 +61,5 @@ export function getPassage(db, id) {
   const near = (op, ord) => db.prepare(`SELECT id FROM passage WHERE book_id = ? AND seq ${op} ? ORDER BY seq ${ord} LIMIT 1`)
     .get(p.book_id, p.seq)?.id ?? null;
   const { chapter_id, book_id, seq, uri, source, sourceUrl, ...rest } = p; // eslint-disable-line no-unused-vars
-  return { ...rest, ...sourceOf(uri, p.vol), bookId: book_id, chapterPath: path, prevId: near('<', 'DESC'), nextId: near('>', 'ASC') };
+  return { ...rest, ...sourceOf(uri, p.vol, p.page), bookId: book_id, chapterPath: path, prevId: near('<', 'DESC'), nextId: near('>', 'ASC') };
 }

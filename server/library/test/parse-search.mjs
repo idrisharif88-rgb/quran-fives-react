@@ -65,6 +65,11 @@ test('a page marker inside a line counts and is removed from the text', () => {
 
 test('Kafi vol 2 links to its Ahlulbayt Library volume; Askari vol 0 to its single volume', () => {
   assert.equal(sourceOf('0329IbnYacqubKulayni.Kafi.Shia001122Vols-ara1', 2).compareUrl, 'https://ablibrary.net/book_content/b/3250/1');
+  // الصفحة المطبوعة 10 من الكافي ج1 = صفحة المسح 58 (تحقق يدوي)؛ العسكري 273 = 281، و587 = 597
+  assert.equal(sourceOf('0329IbnYacqubKulayni.Kafi.Shia001122Vols-ara1', 1, 10).compareUrl, 'https://ablibrary.net/book_content/b/3249/58');
+  assert.equal(sourceOf('0260ImamCaskari.Tafsir.Shia002334-ara1', 0, 273).compareUrl, 'https://ablibrary.net/book_content/b/12394/281');
+  assert.equal(sourceOf('0260ImamCaskari.Tafsir.Shia002334-ara1', 0, 587).compareUrl, 'https://ablibrary.net/book_content/b/12394/597');
+  assert.equal(sourceOf('0329IbnYacqubKulayni.Kafi.Shia001122Vols-ara1', 2, 494).compareUrl, 'https://ablibrary.net/book_content/b/3250/494');
   assert.equal(sourceOf('0260ImamCaskari.Tafsir.Shia002334-ara1', 0).compareUrl, 'https://ablibrary.net/book_content/b/12394/1');
   assert.equal(sourceOf('0329IbnYacqubKulayni.Kafi.Shia001122Vols-ara1', 2).edition, 'الكافي، دار الكتب الإسلامية - طهران');
   assert.equal(sourceOf('0260ImamCaskari.Tafsir.Shia002334-ara1', 0).edition, 'تفسير الإمام العسكري (ع)، مدرسة الإمام المهدي (ع) - قم');

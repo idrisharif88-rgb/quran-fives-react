@@ -1,6 +1,7 @@
 // الطبعة المطبوعة لكل كتاب، ومجلداته في مكتبة أهل البيت (ع) — ablibrary.net — لمقابلة الصفحة.
 // المفتاح بداية معرّف OpenITI (المؤلف.الكتاب). رقم المجلد 0 في OpenITI = مجلد واحد.
-// رابط المكتبة يفتح المجلد لا الصفحة: أرقام روابطها فهرس المسح لا الصفحة المطبوعة.
+// رقم الصفحة في رابط المكتبة فهرس المسح لا الصفحة المطبوعة: الفرق (shift) صفحات المقدمة قبل الصفحة 1،
+// قيس لكل مجلد في ثلاث نقاط (أول/وسط/آخر) في 2026-11-12. رقم واحد = فرق ثابت؛ [[من صفحة، فرق]…] = فرق يتغيّر.
 // بيانات كل كتاب كما في «هوية الكتاب» بمكتبة أهل البيت: العنوان، المؤلف، المساهم، الناشر
 const SOURCES = {
   '0329IbnYacqubKulayni.Kafi': {
@@ -9,12 +10,14 @@ const SOURCES = {
     contributor: 'تصحيح وتعليق: علي أكبر الغفاري',
     publisher: 'دار الكتب الإسلامية - طهران',
     ablibrary: [3249, 3250, 3251, 3252, 3253, 3254, 3255, 3256],
+    shift: [48, 0, 4, 0, 0, 0, 0, 24],
   },
   '0260ImamCaskari.Tafsir': {
     title: 'تفسير الإمام العسكري (ع)',
     author: 'المنسوب إلى الإمام العسكري (ع)',
     publisher: 'مدرسة الإمام المهدي (ع) - قم',
     ablibrary: [12394],
+    shift: [[[1, 8], [587, 10]]], // الصفحة 586 تشغل ثلاث صفحات مسح
   },
   '0085SulaymIbnQaysHilali.KitabSulaym': {
     title: 'كتاب سليم بن قيس الهلالي',
@@ -30,6 +33,7 @@ const SOURCES = {
     title: 'تفسير العياشي',
     publisher: 'المكتبة العلمية الإسلامية - طهران',
     ablibrary: [1655, 1656],
+    shift: [7, 0],
   },
   '0406SharifRadi.NahjBalagha': {
     title: 'نهج البلاغة',
@@ -42,16 +46,22 @@ const SOURCES = {
 
 export const DIGITAL_SOURCE = 'OpenITI';
 
-export function sourceOf(uri, vol) {
+const shiftAt = (shift, page) => (Array.isArray(shift)
+  ? shift.reduce((acc, [from, s]) => (page >= from ? s : acc), 0)
+  : shift || 0);
+
+export function sourceOf(uri, vol, page) {
   const key = Object.keys(SOURCES).find((k) => uri?.startsWith(k + '.'));
   const s = key && SOURCES[key];
   if (!s) return { edition: null, compareUrl: null, digital: DIGITAL_SOURCE };
-  const id = s.ablibrary[Math.max(0, (vol || 1) - 1)];
+  const i = Math.max(0, (vol || 1) - 1);
+  const id = s.ablibrary[i];
+  const at = page ? page + shiftAt(s.shift?.[i], page) : 1;
   // «الكافي، دار الكتب الإسلامية - طهران» — الكتاب ثم الناشر، والمجلد في رابط المكتبة
   const edition = `${s.title}، ${s.publisher}`;
   return {
     edition,
-    compareUrl: id ? `https://ablibrary.net/book_content/b/${id}/1` : null,
+    compareUrl: id ? `https://ablibrary.net/book_content/b/${id}/${at}` : null,
     digital: DIGITAL_SOURCE,
   };
 }
