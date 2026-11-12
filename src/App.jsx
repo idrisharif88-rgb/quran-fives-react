@@ -56,6 +56,7 @@ import CounterPageHead from './components/CounterPageHead';
 import ReviewRecorder from './components/ReviewRecorder/ReviewRecorder';
 import GoogleBackup from './components/GoogleBackup/GoogleBackup';
 import UpdatesNotebook from './components/UpdatesNotebook/UpdatesNotebook';
+import Library from './components/Library/Library';
 import AppScaleSheet from './components/AppScale/AppScaleSheet';
 import ContactUs from './components/ContactUs/ContactUs';
 import WelcomeScreen from './components/Welcome/WelcomeScreen';
@@ -331,6 +332,8 @@ function App() {
   const [isFiqhOpen, setIsFiqhOpen] = useState(false);
   const [isNotebookOpen, setIsNotebookOpen] = useState(false);   // «دفتر التحديثات» للمالك
   const notebookBackRef = useRef(null);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);   // «المكتبة» — تجربة للمالك
+  const libraryBackRef = useRef(null);
   const appScale = useAppScale();   // «حجم العرض»
   const [isScaleOpen, setIsScaleOpen] = useState(false);
   const scaleBackRef = useRef(null);
@@ -401,6 +404,7 @@ function App() {
   const closeKhatmaCongrats = useCallback(() => setIsKhatmaCongratsOpen(false), []);
   const [isKhatmaProgressOpen, setIsKhatmaProgressOpen] = useState(false); // تقدّم الختمة ومعدّل الختمات (من دائرة «ختماتي»)
   const closeKhatmaProgress = useCallback(() => setIsKhatmaProgressOpen(false), []);
+  const closeLibrary = useCallback(() => setIsLibraryOpen(false), []);
   // جلسات الجزء (المصدر: محلي، append-only، تُرفع مع المزامنة)
   const [sessions, setSessions] = useState(() => (
     Array.isArray(persistedAppState.sessions) ? persistedAppState.sessions : []
@@ -2071,6 +2075,10 @@ function App() {
       notebookBackRef.current();
       return true;
     }
+    if (libraryBackRef.current) {
+      libraryBackRef.current();
+      return true;
+    }
     // إجازاتي: داخل القسم يرجع درجةً درجة، ومن قائمته يُغلق
     if (ijazatBackRef.current) {
       ijazatBackRef.current();
@@ -2856,7 +2864,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'حجم العرض', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'تواصل معنا', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
+                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات', 'المكتبة'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'حجم العرض', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'تواصل معنا', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -2868,6 +2876,7 @@ function App() {
                         if (option === 'إجازاتي') { mainKeyboard.closeKeyboard(); setIsIjazatOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'المحفوظات') { setIsSavedSessionsOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'دفتر التحديثات') { mainKeyboard.closeKeyboard(); setIsNotebookOpen(true); setIsMoreMenuOpen(false); return; }
+                        if (option === 'المكتبة') { mainKeyboard.closeKeyboard(); setIsLibraryOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فقهيات') { mainKeyboard.closeKeyboard(); setIsFiqhOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فأل القرآن') { mainKeyboard.closeKeyboard(); setIsFalOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
                         if (option === 'البحث في القرآن') { mainKeyboard.closeKeyboard(); setIsSearchOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -4260,6 +4269,7 @@ function App() {
       {appSection.needsChoice && <SectionChoice onChoose={appSection.choose} canSwitch={canSwitchSection} />}
       {isScaleOpen && <AppScaleSheet scale={appScale.scale} onChange={appScale.setScale} onClose={() => setIsScaleOpen(false)} backRef={scaleBackRef} />}
       {isNotebookOpen && isOwner && <UpdatesNotebook onClose={() => setIsNotebookOpen(false)} backRef={notebookBackRef} />}
+      {isLibraryOpen && isOwner && <Library onClose={closeLibrary} backRef={libraryBackRef} />}
       {isFiqhOpen && isOwner && (
         <div style={{
           position: 'fixed', inset: 0, background: 'var(--app-bg)',

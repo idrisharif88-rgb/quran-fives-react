@@ -31,8 +31,10 @@ export function parseOpenITI(raw) {
   let page = null;
   let cur = null; // الفقرة الجارية
 
+  // معالم ms0001 علامات ترقيم داخلية في OpenITI، لا تُعرض للقارئ
   const flush = () => {
-    if (cur && cur.text.trim()) passages.push({ chapter: cur.chapter, page: cur.page, text: cur.text.trim() });
+    const text = cur ? cur.text.replace(/\s*\bms\d+\b/g, '').replace(/\s{2,}/g, ' ').trim() : '';
+    if (text) passages.push({ chapter: cur.chapter, page: cur.page, text });
     cur = null;
   };
 

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { openLibrary, addBook } from '../build.js';
-import { searchLibrary } from '../search.js';
+import { searchLibrary, snippetAround } from '../search.js';
 import { normalizeArabic, toFtsQuery } from '../normalize.js';
 import { parseOpenITI } from '../parse.js';
 
@@ -42,6 +42,17 @@ test('search ignores tashkeel and unifies forms; reports vol/page/chapter', () =
   const [h] = searchLibrary(db, 'الصلاة');
   assert.deepEqual([h.vol, h.page, h.chapter], [1, 5, 'باب فضل الصلاة']);
   assert.ok(h.source.includes('OpenITI'));
+});
+
+test('ms markers are hidden from the reader', () => {
+  const r = parseOpenITI(SAMPLE);
+  assert.ok(!r.passages.some((p) => /ms\d/.test(p.text)));
+});
+
+test('snippet centres on the match in a long passage', () => {
+  const long = Array.from({ length: 200 }, (_, i) => 'كلمه' + i).join(' ') + ' الصَّلاة آخر';
+  const s = snippetAround(long, 'الصلاه');
+  assert.ok(s.startsWith('… ') && s.includes('الصَّلاة'));
 });
 
 test('hostile query cannot break FTS syntax', () => {

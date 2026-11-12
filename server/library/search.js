@@ -1,4 +1,19 @@
-import { toFtsQuery } from './normalize.js';
+import { toFtsQuery, normalizeArabic } from './normalize.js';
+
+const WINDOW = 40; // كلمات المقطع المعروض في النتيجة
+
+// مقطع حول أول كلمة مطابقة، لا أول النص: المطابقة قد تقع في آخر حديث طويل
+export function snippetAround(text, q) {
+  const terms = normalizeArabic(q).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const words = text.split(/\s+/);
+  if (words.length <= WINDOW) return text;
+  const bare = (w) => normalizeArabic(w).replace(/[^\p{L}\p{N}]/gu, '');
+  let hit = words.findIndex((w) => terms.some((t) => bare(w).includes(t)));
+  if (hit < 0) hit = 0;
+  const start = Math.max(0, Math.min(hit - 10, words.length - WINDOW));
+  const end = start + WINDOW;
+  return (start > 0 ? '… ' : '') + words.slice(start, end).join(' ') + (end < words.length ? ' …' : '');
+}
 
 // بحث نصي كامل. يعيد مقاطع قصيرة مع الكتاب والباب والمجلد والصفحة.
 export function searchLibrary(db, q, { bookId = null, limit = 20, offset = 0 } = {}) {
@@ -6,8 +21,7 @@ export function searchLibrary(db, q, { bookId = null, limit = 20, offset = 0 } =
   if (!fts) return [];
   const rows = db.prepare(`
     SELECT p.id, p.text, b.id AS book_id, b.title AS book, b.author, b.source,
-           c.title AS chapter, pg.vol, pg.page,
-           snippet(passage_fts, 0, '«', '»', ' … ', 24) AS snippet_norm
+           c.title AS chapter, pg.vol, pg.page
     FROM passage_fts
     JOIN passage p ON p.id = passage_fts.rowid
     JOIN book b ON b.id = p.book_id
@@ -18,7 +32,7 @@ export function searchLibrary(db, q, { bookId = null, limit = 20, offset = 0 } =
   return rows.map((r) => ({
     id: r.id, bookId: r.book_id, book: r.book, author: r.author, source: r.source,
     chapter: r.chapter, vol: r.vol, page: r.page,
-    snippet: r.text.length > 300 ? r.text.slice(0, 300) + ' …' : r.text,
+    snippet: snippetAround(r.text, q),
   }));
 }
 
