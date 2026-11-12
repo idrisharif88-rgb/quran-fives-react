@@ -44,6 +44,17 @@ test('search ignores tashkeel and unifies forms; reports vol/page/chapter', () =
   assert.ok(h.source.includes('OpenITI'));
 });
 
+test('prefixed forms are found: الصلاة → بالصلاة، صلاة → الصلاة، no root-letter cuts', () => {
+  const db = openLibrary(':memory:');
+  addBook(db, SAMPLE.replace('# أَمَّا الزكاة', '# فليبدأ بالصلاة وللزكاة والكتاب ثم تاب'));
+  assert.equal(searchLibrary(db, 'الصلاة').length, 2);   // الصَّلاةُ + بالصلاة
+  assert.equal(searchLibrary(db, 'صلاة').length, 2);
+  assert.equal(searchLibrary(db, 'الزكاة').length, 1);    // وللزكاة
+  assert.equal(searchLibrary(db, 'كتاب').length, 1);      // والكتاب
+  assert.equal(searchLibrary(db, 'كتاب تاب').length, 1);
+  assert.equal(searchLibrary(db, 'تاب عمود').length, 0);  // «الكتاب» لا يطابق «تاب»
+});
+
 test('ms markers are hidden from the reader', () => {
   const r = parseOpenITI(SAMPLE);
   assert.ok(!r.passages.some((p) => /ms\d/.test(p.text)));
@@ -56,7 +67,7 @@ test('snippet centres on the match in a long passage', () => {
 });
 
 test('hostile query cannot break FTS syntax', () => {
-  assert.equal(toFtsQuery('" OR *'), '"OR"*'); // الكلمة محصورة بين علامتي تنصيص فلا تُفسَّر عامل
+  assert.ok(toFtsQuery('" OR *').startsWith('("OR"*')); // الكلمة محصورة بين علامتي تنصيص فلا تُفسَّر عامل
   assert.equal(toFtsQuery('" * -'), '');
   const db = openLibrary(':memory:');
   assert.doesNotThrow(() => searchLibrary(db, 'a"b NEAR( ) -x'));

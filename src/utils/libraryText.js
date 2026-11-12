@@ -9,10 +9,13 @@ export const normalizeArabic = (s) => String(s ?? '')
 
 const bare = (w) => normalizeArabic(w).replace(/[^\p{L}\p{N}]/gu, '');
 
-// الكلمة تطابق إن ساوت كلمة البحث أو سبقتها سابقة قصيرة (و، ب، فـ، لـ…): «بالصلاة» لـ«الصلاة».
+// الكلمة تطابق إن ساوت كلمة البحث أو سبقتها سابقة (و، ب، فـ، لـ، ال، وبال…): «بالصلاة» لـ«الصلاة».
+// مطابق لتوسعة السيرفر (variantsOf في server/library/normalize.js).
 // آخر كلمة تطابق بدايتها أيضاً، كما يبحث السيرفر بالبادئة.
-const PREFIX = 2;
+const PREFIX = 4;
 const matches = (word, term, isLast) => {
+  const stem = term.startsWith('ال') && term.length > 3 ? term.slice(2) : term;
+  if (stem !== term && word.endsWith(stem) && word.length - stem.length <= PREFIX && /ل/.test(word.slice(0, -stem.length))) return true;
   const at = word.indexOf(term);
   if (at < 0 || at > PREFIX) return false;
   return at + term.length === word.length || (isLast && at === 0);

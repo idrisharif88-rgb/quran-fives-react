@@ -13,6 +13,10 @@ describe('libraryText', () => {
     const hits = highlightParts('عليه السلام على محمد وآله', 'على محمد وآل').filter((p) => p.hit).map((p) => p.text);
     expect(hits).toEqual(['على', 'محمد', 'وآله']);
   });
+  it('lights up prefixed forms', () => {
+    const hits = highlightParts('للصلاة وبالصلاة صلاة', 'الصلاة').filter((p) => p.hit).map((p) => p.text);
+    expect(hits).toEqual(['للصلاة', 'وبالصلاة']);
+  });
   it('keeps the text intact', () => {
     const t = 'قال: من كانت له  حاجة';
     expect(highlightParts(t, 'حاجه').map((p) => p.text).join('')).toBe(t);
