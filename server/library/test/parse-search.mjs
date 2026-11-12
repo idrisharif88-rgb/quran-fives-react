@@ -66,6 +66,8 @@ test('a page marker inside a line counts and is removed from the text', () => {
 test('Kafi vol 2 links to its Ahlulbayt Library volume; Askari vol 0 to its single volume', () => {
   assert.equal(sourceOf('0329IbnYacqubKulayni.Kafi.Shia001122Vols-ara1', 2).compareUrl, 'https://ablibrary.net/book_content/b/3250/1');
   assert.equal(sourceOf('0260ImamCaskari.Tafsir.Shia002334-ara1', 0).compareUrl, 'https://ablibrary.net/book_content/b/12394/1');
+  assert.equal(sourceOf('0329IbnYacqubKulayni.Kafi.Shia001122Vols-ara1', 2).edition, 'الكافي، الشيخ الكليني، تصحيح وتعليق: علي أكبر الغفاري، ج 2، دار الكتب الإسلامية - طهران');
+  assert.equal(sourceOf('0260ImamCaskari.Tafsir.Shia002334-ara1', 0).edition, 'تفسير الإمام العسكري (ع)، المنسوب إلى الإمام العسكري (ع)، مدرسة الإمام المهدي (ع) - قم');
   assert.equal(sourceOf('X.Y', 1).edition, null);
 });
 
