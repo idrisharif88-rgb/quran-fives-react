@@ -32,8 +32,8 @@ export function sourceOf(uri, vol) {
   const s = key && SOURCES[key];
   if (!s) return { edition: null, compareUrl: null, digital: DIGITAL_SOURCE };
   const id = s.ablibrary[Math.max(0, (vol || 1) - 1)];
-  // «الكافي، الشيخ الكليني، تصحيح وتعليق: علي أكبر الغفاري، ج 2، دار الكتب الإسلامية - طهران»
-  const edition = [s.title, s.author, s.contributor, vol ? `ج ${vol}` : null, s.publisher].filter(Boolean).join('، ');
+  // «الكافي، دار الكتب الإسلامية - طهران» — الكتاب ثم الناشر، والمجلد في رابط المكتبة
+  const edition = `${s.title}، ${s.publisher}`;
   return {
     edition,
     compareUrl: id ? `https://ablibrary.net/book_content/b/${id}/1` : null,
