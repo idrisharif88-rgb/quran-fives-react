@@ -27,7 +27,9 @@
   margin-inline: auto;
   padding-inline: 12px;
   box-sizing: border-box;
-  --upper-gap: 20px;
+  /* الهاتف: الفراغ بين الثلاثة 12px (Note 9، 410px) ويتّسع قليلاً مع العرض؛
+     الشاشات العريضة تحسبه من عرض الصفّ — انظر آخر الملف */
+  --upper-gap: clamp(12px, calc(8 * var(--vw) - 21px), 40px);
 }
 
 .upper-actions.with-calendar .action-icon.calendar-icon,
@@ -55,13 +57,19 @@
   margin-inline-start: auto;
 }
 
-/* نصّ التقويم يتبع دائرته فلا يخرج منها: الشهر سطران، والتاريخ والسنة سطر */
+/* نصّ التقويم يتبع دائرته: هذا الحجم الأكبر، وFitText يصغّره إن كبّر خطّ النظام النصّ.
+   الشهر سطران، والتاريخ والسنة سطر */
 .calendar-icon-text {
   font-size: calc(var(--upper-big, 65px) * 0.2);
   font-weight: 700;
   line-height: 1.15;
   text-align: center;
-  overflow-wrap: anywhere;
+  /* لا كسر داخل الكلمة: «خميس» كان ينقسم سطرين («خمي / س») فيبدو متّسعاً لـ FitText.
+     الفراغ وحده يكسر السطر («جمادى / الثانية»)، والكلمة الأطول من الدائرة يصغّرها FitText */
+  overflow-wrap: normal;
+  word-break: keep-all;
+  /* عرض النصّ = أطول كلمة فيه، لا عرض الدائرة: هكذا يقيس FitText ما يحتاجه النصّ فعلاً */
+  width: min-content;
 }
 
 @media (max-width: 600px) {
@@ -73,7 +81,23 @@
   /* عرض الصفّ على الهاتف: ثلاثة أزرار وزاويتان بقدر 1.2، وأربعة فراغات. 100 * --vw عرض
      الشاشة مصحَّحاً لحجم العرض (appScale.css)؛ 56px حاشيتا الصفحة والصفّ. */
   .action-buttons-container.upper-actions.with-calendar {
-    --upper-gap: 12px;
     --upper-size: min(56px, calc((100 * var(--vw) - 56px - 4 * var(--upper-gap)) / 5.4));
+  }
+}
+
+/* الشاشات العريضة (اللوحيّ والحاسوب، من 560px): الثلاثة تتوزّع بالتساوي بين الزاويتين.
+   الفراغ يُحسب من عرض الصفّ الفعلي: (عرض الصفّ − حاشيتاه − زاويتان بقدر 1.2 − ثلاثة أزرار) ÷ 6،
+   أي ستّة فراغات متساوية حول الأزرار الثلاثة. الهاتف (Note 9، 410px) لا يدخل هنا. */
+@media (min-width: 560px) {
+  .action-buttons-container.upper-actions.with-calendar {
+    --upper-gap: max(12px, calc((min(640px, 100 * var(--vw)) - 24px - 5.4 * var(--upper-size)) / 6));
+  }
+}
+
+/* 560–600px يقع أيضاً في قاعدة الهاتف التي تحسب المقاس من الفراغ؛ يُثبَّت هنا كي لا يدور
+   الحساب على نفسه (المقاس من الفراغ والفراغ من المقاس) */
+@media (min-width: 560px) and (max-width: 600px) {
+  .action-buttons-container.upper-actions.with-calendar {
+    --upper-size: 56px;
   }
 }
