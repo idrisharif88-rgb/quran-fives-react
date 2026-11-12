@@ -4,6 +4,7 @@ import { placeLabel } from '../../utils/libraryText';
 import { BackIcon, NextIcon } from './LibraryIcons';
 import LibraryText from './LibraryText';
 import LibraryStatus from './LibraryStatus';
+import LibrarySource from './LibrarySource';
 
 // قراءة المقطع كاملاً مع مسار الباب والمصدر، والتنقّل إلى السابق والتالي
 export default function LibraryReader({ id, query, onBack }) {
@@ -43,9 +44,7 @@ export default function LibraryReader({ id, query, onBack }) {
           )}
           <div className="library-page-tag">{placeLabel(passage, true)}</div>
           <p className="library-body"><LibraryText text={passage.text} query={query} /></p>
-          <div className="library-source">
-            المصدر: {passage.book}{passage.author ? `، ${passage.author}` : ''}. النص الرقمي: {passage.source}. ما بين [ ] زيادة المحقق.
-          </div>
+          <LibrarySource passage={passage} />
         </>
       )}
 

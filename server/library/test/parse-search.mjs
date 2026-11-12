@@ -4,6 +4,7 @@ import { openLibrary, addBook } from '../build.js';
 import { searchLibrary, snippetAround } from '../search.js';
 import { normalizeArabic, toFtsQuery } from '../normalize.js';
 import { parseOpenITI } from '../parse.js';
+import { sourceOf } from '../sources.js';
 
 const SAMPLE = `#META# 000.BookURI :: #0001.Test.Book
 #META# 020.BookTITLE :: كتاب تجريبي
@@ -60,6 +61,12 @@ test('a page marker inside a line counts and is removed from the text', () => {
   assert.equal(r.pages.length, 2);
   assert.ok(!r.passages.some((p) => p.text.includes('PageV')));
   assert.deepEqual(r.passages.map((p) => r.pages[p.page - 1].page), [5, 6]);
+});
+
+test('Kafi vol 2 links to its Ahlulbayt Library volume; Askari vol 0 to its single volume', () => {
+  assert.equal(sourceOf('0329IbnYacqubKulayni.Kafi.Shia001122Vols-ara1', 2).compareUrl, 'https://ablibrary.net/book_content/b/3250/1');
+  assert.equal(sourceOf('0260ImamCaskari.Tafsir.Shia002334-ara1', 0).compareUrl, 'https://ablibrary.net/book_content/b/12394/1');
+  assert.equal(sourceOf('X.Y', 1).edition, null);
 });
 
 test('ms markers are hidden from the reader', () => {

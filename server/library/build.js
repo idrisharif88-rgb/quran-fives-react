@@ -7,7 +7,7 @@ import { parseOpenITI } from './parse.js';
 import { indexText } from './normalize.js';
 import { SCHEMA } from './schema.js';
 
-export const DEFAULT_SOURCE = 'OpenITI · المكتبة الشيعية (shiaonlinelibrary.com)';
+export const DEFAULT_SOURCE = 'OpenITI';
 
 export function openLibrary(file) {
   const db = new DatabaseSync(file);

@@ -140,12 +140,32 @@
 }
 .library-source {
   margin: 0 16px 12px;
-  padding: 10px 0 0;
+  padding-top: 10px;
   border-top: 1px solid var(--app-accent-border);
-  font-size: 12.5px;
-  line-height: 1.7;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
   color: var(--app-muted);
 }
+.library-source-row { display: flex; gap: 8px; line-height: 1.6; }
+.library-source-key { flex: none; width: 74px; font-weight: 500; color: var(--app-text-strong); }
+.library-source-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--app-accent-border);
+  border-radius: 12px;
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.library-source-link svg { width: 22px; height: 22px; flex: none; }
 .library-nav {
   position: sticky;
   bottom: 0;

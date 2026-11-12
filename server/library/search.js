@@ -1,4 +1,5 @@
 import { toFtsQuery, normalizeArabic } from './normalize.js';
+import { sourceOf } from './sources.js';
 
 const WINDOW = 40; // كلمات المقطع المعروض في النتيجة
 
@@ -45,7 +46,7 @@ export function listBooks(db) {
 // نص مقطع كامل مع مساره (باب ← أب) والمقطعين المجاورين
 export function getPassage(db, id) {
   const p = db.prepare(`
-    SELECT p.id, p.seq, p.text, p.chapter_id, p.book_id, b.title AS book, b.author, b.source, b.source_url AS sourceUrl,
+    SELECT p.id, p.seq, p.text, p.chapter_id, p.book_id, b.uri, b.title AS book, b.author, b.source, b.source_url AS sourceUrl,
            pg.vol, pg.page
     FROM passage p JOIN book b ON b.id = p.book_id LEFT JOIN page pg ON pg.id = p.page_id
     WHERE p.id = ?`).get(id);
@@ -59,6 +60,6 @@ export function getPassage(db, id) {
   }
   const near = (op, ord) => db.prepare(`SELECT id FROM passage WHERE book_id = ? AND seq ${op} ? ORDER BY seq ${ord} LIMIT 1`)
     .get(p.book_id, p.seq)?.id ?? null;
-  const { chapter_id, book_id, seq, ...rest } = p; // eslint-disable-line no-unused-vars
-  return { ...rest, bookId: book_id, chapterPath: path, prevId: near('<', 'DESC'), nextId: near('>', 'ASC') };
+  const { chapter_id, book_id, seq, uri, source, sourceUrl, ...rest } = p; // eslint-disable-line no-unused-vars
+  return { ...rest, ...sourceOf(uri, p.vol), bookId: book_id, chapterPath: path, prevId: near('<', 'DESC'), nextId: near('>', 'ASC') };
 }

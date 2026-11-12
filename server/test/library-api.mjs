@@ -67,7 +67,8 @@ test('كتب + بحث + مقطع، والمصدر مذكور', async () => {
   assert.deepEqual(full.json.chapterPath, ['كتاب الصلاة']);
   assert.equal(full.json.prevId, null);
   assert.ok(full.json.nextId);
-  assert.ok(full.json.source.includes('OpenITI'));
+  assert.equal(full.json.digital, 'OpenITI');
+  assert.equal(full.json.compareUrl, null); // كتاب الاختبار ليس في جدول الطبعات
 });
 
 test('مدخلات سيئة: استعلام فارغ، حدود، مقطع غير موجود', async () => {
