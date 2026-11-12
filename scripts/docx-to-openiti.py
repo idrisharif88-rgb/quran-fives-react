@@ -5,7 +5,7 @@
         --title "..." --author "..."
 
 Chapters: a paragraph starting with المقدمة / الفصل … / الخاتمة becomes "### |". A bare
-«الفصل الأول» takes the next paragraph as its title. Text before the first chapter goes
+«الفصل الأول» takes the next short paragraph as its title, after any opening verse ﴿…﴾. Text before the first chapter goes
 under «عن الكتاب». No page markers: Word's rendered pages are not a printed edition.
 Images and empty paragraphs are dropped. Standard library only.
 """
@@ -35,10 +35,20 @@ def convert(paras, uri, title, author):
         m = CHAPTER.match(text)
         if m and len(text) < 90:
             name, rest = m.group(1), m.group(2).strip()
-            if name.startswith('الفصل') and not rest and i + 1 < len(paras) and len(paras[i + 1]) < 90:
-                rest = paras[i + 1]
-                i += 1
+            epigraph = []
+            if name.startswith('الفصل') and not rest:
+                # العنوان في السطر التالي، وقد تسبقه آية افتتاحية ﴿…﴾ تبقى نصاً تحت العنوان
+                j = i + 1
+                while j < len(paras) and paras[j].startswith(('﴿', '"', '«')) and j - i <= 2:
+                    epigraph.append(paras[j])
+                    j += 1
+                if j < len(paras) and len(paras[j]) < 90:
+                    rest = paras[j]
+                    i = j
+                else:
+                    epigraph = []
             out.append(f'### | {name}: {rest}' if rest else f'### | {name}')
+            out.extend('# ' + e for e in epigraph)
         else:
             out.append('# ' + text)
         i += 1
