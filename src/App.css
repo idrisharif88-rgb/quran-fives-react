@@ -584,11 +584,6 @@ button:focus-visible,
   height: 32px;
 }
 
-.action-icon.calendar-icon {
-  width: 65px;
-  height: 65px;
-}
-
 .night-timer {
   display: flex;
   align-items: center;

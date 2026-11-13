@@ -106,7 +106,8 @@ import useHifzContacts from './hooks/useHifzContacts';
 import SectionChoice from './components/SectionChoice/SectionChoice';
 import useHifzHome from './hooks/useHifzHome';
 import SectionSwitchIcon from './components/SectionSwitch/SectionSwitchIcon';
-import FitText from './components/FitText/FitText';
+import HomeFooter from './components/HomeFooter/HomeFooter';
+import MoreMenuItemContent from './components/MoreMenu/MoreMenuItemContent';
 import useAppSection from './hooks/useAppSection';
 import { SECTION } from './utils/appSection';
 
@@ -312,7 +313,6 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   // التاريخ الهجري للمشهد الرئيسي: من جدول الأهلّة المعتمد محلياً، ويتجدّد كل يوم وحده
   const hijriData = useHijriToday(calcHijriOffline);
-  const [hijriIndex, setHijriIndex] = useState(0);
   // سجلّ الختمات خاص الآن: لا يُحفظ في الحالة المشتركة بل يُحمَّل من الخادم بعد الدخول
   const [khatmaList, setKhatmaList] = useState([]);
   // قفل الختمات: يُفتح بحساب المستخدم (useAccount) بعد تحميل سجلّه
@@ -1410,15 +1410,6 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (hijriData.length === 0) return undefined;
-
-    const interval = setInterval(() => {
-      setHijriIndex(prev => (prev + 1) % hijriData.length);
-    }, 1500);
-
-    return () => clearInterval(interval);
-  }, [hijriData.length]);
 
   // إيقاف الصوت تلقائياً عند الانتقال لخماسية أخرى أو تغيير وضع العرض
   useEffect(() => {
@@ -2807,7 +2798,7 @@ function App() {
       )}
       {/* الأزرار العلوية */}
       {!isQuizMode && viewMode !== 'starred' && viewMode !== 'page-starred' && viewMode !== 'page-ends-starred' && viewMode !== 'night-counter' && viewMode !== 'quranic-wonders' && viewMode !== 'surah-pages' && (
-      <div className={`action-buttons-container upper-actions${canSwitchSection ? ' has-section-switch' : ''}${!isPageStartsMode && !isPageEndsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' ? ' with-calendar' : ''}`}>
+      <div className="action-buttons-container upper-actions">
         {(isPageStartsMode || isPageEndsMode || isNightCounterMode || isSurahFivesMode) && (
           <>
             {!isNightCounterMode && (
@@ -2855,12 +2846,12 @@ function App() {
                 </svg>
               </button>
               {isMoreMenuOpen && (
-                <div className="ayah-menu-popover more-menu-popover" dir="rtl" style={{ minWidth: '180px' }}>
+                <div className="ayah-menu-popover more-menu-popover more-menu-list" dir="rtl" style={{ minWidth: '180px' }}>
                   {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'حجم العرض', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'تواصل معنا', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
-                      className={`ayah-menu-item ${(option === 'الوضع الليلي' && isNightMode) || (option === 'السور المتشابهة في العدد' && viewMode === 'shared-verses') ? 'active' : ''}`}
+                      className={`ayah-menu-item more-menu-row ${(option === 'الوضع الليلي' && isNightMode) || (option === 'السور المتشابهة في العدد' && viewMode === 'shared-verses') ? 'active' : ''}`}
                       onClick={() => {
                         if (option === 'المصحف') { mainKeyboard.closeKeyboard(); setIsMushafOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'العداد') { setViewMode('night-counter'); setIsMoreMenuOpen(false); return; }
@@ -2888,7 +2879,7 @@ function App() {
                         setIsMoreMenuOpen(false);
                       }}
                     >
-                      {option === ACCENT_THEME_LABEL ? `${option}: ${ACCENT_THEME_NAMES[accentTheme]}` : option}
+                      <MoreMenuItemContent option={option} label={option === ACCENT_THEME_LABEL ? `${option}: ${ACCENT_THEME_NAMES[accentTheme]}` : option} />
                     </button>
                   ))}
                 </div>
@@ -2997,23 +2988,6 @@ function App() {
             </div>
           </>
         )}
-        
-
-        {!isPageStartsMode && !isPageEndsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' && <div
-          className="action-icon calendar-icon"
-          style={{ cursor: 'default' }}
-        >
-          {hijriData.length > 0 ? (
-            <FitText className="calendar-icon-text" padding={9}>{hijriData[hijriIndex]}</FitText>
-          ) : (
-            <span className="calendar-icon-text">...</span>
-          )}
-        </div>}
-        {/* بإذن المشرف: الانتقال إلى قسم الحفظ بلا تسجيل خروج */}
-        {canSwitchSection && !isPageStartsMode && !isPageEndsMode && !isNightCounterMode && !isSurahFivesMode && viewMode !== 'shared-verses' && (
-          <SectionSwitchIcon to="hifz" onClick={() => appSection.choose(SECTION.HIFZ)} />
-        )}
-
       </div>
       )}
 
@@ -3665,6 +3639,10 @@ function App() {
             )}
           </button>
         )}
+        {/* بإذن المشرف: الانتقال إلى قسم الحفظ بلا تسجيل خروج */}
+        {canSwitchSection && !isSurahFivesMode && viewMode !== 'shared-verses' && viewMode !== 'surah-pages' && (
+          <SectionSwitchIcon to="hifz" onClick={() => appSection.choose(SECTION.HIFZ)} />
+        )}
       </div>
       )}
 
@@ -3700,7 +3678,9 @@ function App() {
               {currentIndex + 1} / {TOTAL_GROUPS}
             </div>
           </div>
-          <AccountBadge account={account} onOpen={() => setIsSyncPanelOpen(true)} syncing={isSyncing} failed={syncFailed} onRetry={handleSyncRetry} />
+          <HomeFooter hijri={hijriData}>
+            <AccountBadge account={account} onOpen={() => setIsSyncPanelOpen(true)} syncing={isSyncing} failed={syncFailed} onRetry={handleSyncRetry} />
+          </HomeFooter>
         </>
       )}
 

@@ -1,0 +1,22 @@
+/* الاسم والتاريخ في سطر واحد: الخطّ والحجم واللون نفسها، والإطار للاسم وحده لأنّه وحده يُضغط */
+.home-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 16px 0;
+}
+
+.home-footer .account-badge {
+  margin: 0;
+  min-width: 0;
+}
+
+.home-footer-date {
+  margin-inline-start: auto;
+  flex: none;
+  color: var(--app-accent-ink);
+  font-size: 13.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
