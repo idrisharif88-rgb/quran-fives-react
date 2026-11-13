@@ -6,20 +6,20 @@ import { SYNC_URL, SYNC_ENABLED } from './syncConfig';
 import { readAccount, authHeaders } from './syncAccount';
 const BASE = 'https://api.quran.com/api/v4/tafsirs';
 
-// كتب التفسير العربية المتاحة، والأول هو الافتراضي (أقصرها وأيسرها)
+// كتب التفسير التي اختارها المالك، والأول هو الافتراضي
 export const TAFSEER_BOOKS = [
-  { id: 16, name: 'الميسر' },
-  { id: 91, name: 'السعدي' },
-  { id: 14, name: 'ابن كثير' },
   { id: 15, name: 'الطبري' },
   { id: 90, name: 'القرطبي' },
   { id: 94, name: 'البغوي' },
-  { id: 93, name: 'الوسيط' },
-  // من خادمنا (server/tafsirRoutes.js) لا من quran.com: يحتاج حساباً موافَقاً عليه
-  { id: 'qummi', name: 'القمي', server: true },
+  // من خادمنا (server/tafsirRoutes.js) لا من quran.com: لمن فتحه له المشرف (permission: 'qummi')
+  { id: 'qummi', name: 'القمي', server: true, permission: 'qummi' },
 ];
 export const DEFAULT_TAFSEER_BOOK = TAFSEER_BOOKS[0].id;
 export const isTafseerBook = (id) => TAFSEER_BOOKS.some((book) => book.id === id);
+
+// الكتب التي يراها هذا الحساب (status من readAccountStatus)، والكتاب المختار إن كان منها وإلا الافتراضي
+export const tafseerBooksFor = (status) => TAFSEER_BOOKS.filter((book) => !book.permission || status?.admin || status?.[book.permission]);
+export const allowedTafseerBook = (id, status) => (tafseerBooksFor(status).some((book) => book.id === id) ? id : DEFAULT_TAFSEER_BOOK);
 
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
 

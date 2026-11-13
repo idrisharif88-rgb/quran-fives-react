@@ -79,6 +79,7 @@ export function createAccounts(store, { maxUsers }) {
   //   hifzExtraPortion فتح ورد الغد في اليوم نفسه بعد إتمام ورد اليوم ومراجعته
   //   sectionSwitch    التنقّل بين قسم الحفظ وقسم الخماسيات بلا تسجيل خروج
   //   library          «المكتبة»: البحث في كتب السيرفر
+  //   qummi            تفسير القمي في صفحة التفسير
   async function setPermission(user, name, allowed) {
     const key = userKey(user);
     const account = await store.read(key, ACCOUNT_FILE, null);
@@ -95,6 +96,7 @@ export function createAccounts(store, { maxUsers }) {
       hifzExtraPortion: account?.permissions?.hifzExtraPortion === true,
       sectionSwitch: account?.permissions?.sectionSwitch === true,
       library: account?.permissions?.library === true,
+      qummi: account?.permissions?.qummi === true,
     };
   }
 
@@ -113,6 +115,7 @@ export function createAccounts(store, { maxUsers }) {
         hifzExtraPortion: a.permissions?.hifzExtraPortion === true,
         sectionSwitch: a.permissions?.sectionSwitch === true,
         library: a.permissions?.library === true,
+        qummi: a.permissions?.qummi === true,
       }))
       .sort((a, b) => b.createdAt - a.createdAt);
   }

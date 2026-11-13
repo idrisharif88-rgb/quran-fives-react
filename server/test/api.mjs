@@ -112,7 +112,7 @@ test('موافقة المشرف: الحساب الجديد لا يزامن قب�
   const ahmad = basic('ahmad@example.com', 'secret1', devices.ahmad);
   const owner = basic('owner', '12345');
   // داخلٌ لكن بانتظار الموافقة
-  assert.deepEqual((await call('GET', '/api/auth/me', { headers: ahmad })).json, { name: 'أحمد علي', approved: false, admin: false, hifzCustomStart: false, googleBackup: false, hifzExtraPortion: false, sectionSwitch: false, library: false });
+  assert.deepEqual((await call('GET', '/api/auth/me', { headers: ahmad })).json, { name: 'أحمد علي', approved: false, admin: false, hifzCustomStart: false, googleBackup: false, hifzExtraPortion: false, sectionSwitch: false, library: false, qummi: false });
   assert.equal((await call('GET', '/api/state', { headers: ahmad })).status, 403);
   assert.equal((await call('PUT', '/api/khitma', { headers: ahmad, body: { list: [], baseUpdatedAt: 0 } })).status, 403);
   // غير المشرف لا يرى اللوحة ولا يوافق على نفسه
@@ -120,7 +120,7 @@ test('موافقة المشرف: الحساب الجديد لا يزامن قب�
   const approve = (headers, user, approved) => call('POST', '/api/admin/users/approval', { headers, body: { user, approved } });
   assert.equal((await approve(ahmad, 'ahmad@example.com', true)).status, 403);
 
-  assert.deepEqual((await call('GET', '/api/auth/me', { headers: owner })).json, { name: 'owner', approved: true, admin: true, hifzCustomStart: true, googleBackup: true, hifzExtraPortion: true, sectionSwitch: true, library: true });
+  assert.deepEqual((await call('GET', '/api/auth/me', { headers: owner })).json, { name: 'owner', approved: true, admin: true, hifzCustomStart: true, googleBackup: true, hifzExtraPortion: true, sectionSwitch: true, library: true, qummi: true });
   const listed = await call('GET', '/api/admin/users', { headers: owner });
   assert.deepEqual(listed.json.users.map(u => [u.user, u.approved, u.admin]), [['ahmad@example.com', false, false], ['owner', true, true]]);
   assert.equal('hash' in listed.json.users[0], false);

@@ -131,6 +131,7 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
       hifzExtraPortion: req.isAdmin || permissions.hifzExtraPortion,
       sectionSwitch: req.isAdmin || permissions.sectionSwitch,
       library: req.isAdmin || permissions.library,
+      qummi: req.isAdmin || permissions.qummi,
     });
   });
 
@@ -192,8 +193,12 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
     res.status(403).json({ error: 'المكتبة غير مفعّلة لهذا الحساب', code: 'library-off' });
   }
   registerLibraryRoutes(app, { requireAccount: [...requireAccount, checkLibrary], dataDir, libraryFile });
-  // تفسير القمي لصفحة التفسير: لكل حساب موافَق عليه، بلا صلاحية المكتبة
-  registerTafsirRoutes(app, { requireAccount });
+  // تفسير القمي لصفحة التفسير: لمن فتحه له المشرف (والمشرف دائماً)
+  async function checkQummi(req, res, next) {
+    if (req.isAdmin || (await accounts.permissionsOf(req.email)).qummi) return next();
+    res.status(403).json({ error: 'تفسير القمي غير مفعّل لهذا الحساب', code: 'qummi-off' });
+  }
+  registerTafsirRoutes(app, { requireAccount: [...requireAccount, checkQummi] });
 
   // حذف الحساب: كل ما تحت مجلّد المستخدم (الحساب، الحالة، الختمات، الملفات، الأجهزة) ورموزه المعلّقة
   const deleteAccount = async (key) => {

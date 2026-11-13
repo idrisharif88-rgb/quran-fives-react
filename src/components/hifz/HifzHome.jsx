@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { TOTAL_VERSES, daysBetween } from '../../utils/hifzSchedule';
 import { dayProgress, juzProgress } from '../../utils/hifzStepNav';
 import { activeTasbeeh } from '../../utils/hifzHome';
-import { TAFSEER_BOOKS } from '../../utils/tafseerApi';
+import { TAFSEER_BOOKS, allowedTafseerBook } from '../../utils/tafseerApi';
+import { readAccountStatus } from '../../utils/syncAccount';
 import HifzRing from './HifzRing';
 import SectionSwitchIcon from '../SectionSwitch/SectionSwitchIcon';
 import { refsText, isMulti } from './hifzText';
@@ -42,7 +43,7 @@ export default function HifzHome({ program, plan, today, home, tafseerRef, onOpe
   const juz = useMemo(() => juzProgress(program), [program]);
   const progress = dayProgress(program, plan);
   const zikr = activeTasbeeh(home);
-  const tafseerBookName = TAFSEER_BOOKS.find((book) => book.id === home.tafseerBook)?.name ?? '';
+  const tafseerBookName = TAFSEER_BOOKS.find((book) => book.id === allowedTafseerBook(home.tafseerBook, readAccountStatus()))?.name ?? '';
   const refs = plan.verse ? plan.verse.refs.filter(Boolean) : [];
   const started = progress.done > 0;
   const title = plan.complete ? 'تمّ ورد اليوم' : started ? 'أكمل ورد اليوم' : 'ابدأ ورد اليوم';

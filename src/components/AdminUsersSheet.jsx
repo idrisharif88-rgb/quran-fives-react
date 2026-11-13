@@ -13,6 +13,7 @@ const PERMISSIONS = [
   { key: 'sectionSwitch', label: 'التنقّل بين الحفظ والخماسيات' },
   { key: 'googleBackup', label: 'نسخ جوجل درايف' },
   { key: 'library', label: 'المكتبة' },
+  { key: 'qummi', label: 'تفسير القمي' },
 ];
 
 export default function AdminUsersSheet({ onClose, formatTime }) {
