@@ -10,6 +10,8 @@ import { registerAuthRoutes } from './authRoutes.js';
 import { registerAdminRoutes } from './adminRoutes.js';
 import { registerFileRoutes } from './fileRoutes.js';
 import { registerAccountDeleteRoutes } from './accountDeleteRoutes.js';
+import { registerLibraryRoutes } from './libraryRoutes.js';
+import { registerTafsirRoutes } from './tafsirRoutes.js';
 
 const DEFAULT_LIMITS = {
   ipMail: { windowMs: 60 * 60 * 1000, max: 10 },     // رسائل تأكيد/استرجاع لكل عنوان
@@ -38,7 +40,7 @@ function readCreds(req) {
 }
 
 // adminUser: حساب المشرف (المالك) — يوافق على الحسابات الجديدة ولا يحتاج موافقة
-export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpOptions, adminUser = '', maxFileBytes = 50 * 1024 * 1024, maxUserBytes = 200 * 1024 * 1024 }) {
+export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpOptions, adminUser = '', maxFileBytes = 50 * 1024 * 1024, maxUserBytes = 200 * 1024 * 1024, libraryFile }) {
   const adminName = normalizeUser(adminUser);
   const store = createStore(dataDir);
   const accounts = createAccounts(store, { maxUsers });
@@ -128,6 +130,8 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
       googleBackup: req.isAdmin || permissions.googleBackup,
       hifzExtraPortion: req.isAdmin || permissions.hifzExtraPortion,
       sectionSwitch: req.isAdmin || permissions.sectionSwitch,
+      library: req.isAdmin || permissions.library,
+      qummi: req.isAdmin || permissions.qummi,
     });
   });
 
@@ -183,6 +187,18 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
     v => Array.isArray(v), { updatedAt: 0, list: [] });
 
   registerFileRoutes(app, { store, dataDir, requireAccount, maxFileBytes, maxUserBytes });
+  // المكتبة مغلقة إلا لمن فتحها له المشرف (والمشرف دائماً). 403 برمز خاص: ليس «بانتظار الموافقة»
+  async function checkLibrary(req, res, next) {
+    if (req.isAdmin || (await accounts.permissionsOf(req.email)).library) return next();
+    res.status(403).json({ error: 'المكتبة غير مفعّلة لهذا الحساب', code: 'library-off' });
+  }
+  registerLibraryRoutes(app, { requireAccount: [...requireAccount, checkLibrary], dataDir, libraryFile });
+  // تفسير القمي لصفحة التفسير: لمن فتحه له المشرف (والمشرف دائماً)
+  async function checkQummi(req, res, next) {
+    if (req.isAdmin || (await accounts.permissionsOf(req.email)).qummi) return next();
+    res.status(403).json({ error: 'تفسير القمي غير مفعّل لهذا الحساب', code: 'qummi-off' });
+  }
+  registerTafsirRoutes(app, { requireAccount: [...requireAccount, checkQummi] });
 
   // حذف الحساب: كل ما تحت مجلّد المستخدم (الحساب، الحالة، الختمات، الملفات، الأجهزة) ورموزه المعلّقة
   const deleteAccount = async (key) => {

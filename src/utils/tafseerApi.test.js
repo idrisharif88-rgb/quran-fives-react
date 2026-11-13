@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { tafseerPlainText, fetchTafseer, TAFSEER_BOOKS, DEFAULT_TAFSEER_BOOK, isTafseerBook } from './tafseerApi';
+import { tafseerPlainText, fetchTafseer, TAFSEER_BOOKS, DEFAULT_TAFSEER_BOOK, isTafseerBook, tafseerBooksFor, allowedTafseerBook } from './tafseerApi';
 
 afterEach(() => vi.unstubAllGlobals());
 const reply = (ok, body) => vi.fn().mockResolvedValue({ ok, status: ok ? 200 : 500, json: async () => body });
@@ -34,10 +34,15 @@ describe('الجلب', () => {
     vi.stubGlobal('fetch', reply(true, { tafsir: { text: '' } }));
     await expect(fetchTafseer({ s: 1, a: 1 }, 16)).rejects.toThrow();
   });
-  it('الكتب: الميسر أولاً، وغير المعروف مرفوض', () => {
-    expect(DEFAULT_TAFSEER_BOOK).toBe(16);
-    expect(TAFSEER_BOOKS).toHaveLength(7);
-    expect(isTafseerBook(91)).toBe(true);
+  it('الكتب: الطبري أولاً، والقمي بإذن، وغير المعروف مرفوض', () => {
+    expect(DEFAULT_TAFSEER_BOOK).toBe(15);
+    expect(TAFSEER_BOOKS.map((b) => b.name)).toEqual(["الطبري", "القرطبي", "البغوي", "القمي"]);
+    expect(tafseerBooksFor(null).map((b) => b.id)).toEqual([15, 90, 94]);
+    expect(tafseerBooksFor({ qummi: true })).toHaveLength(4);
+    expect(allowedTafseerBook("qummi", null)).toBe(15);
+    expect(isTafseerBook("qummi")).toBe(true);
+    expect(isTafseerBook(90)).toBe(true);
+    expect(isTafseerBook(16)).toBe(false);
     expect(isTafseerBook(999)).toBe(false);
   });
 });

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { SURAH_METADATA } from '../../data/quranConstants';
-import { TAFSEER_BOOKS } from '../../utils/tafseerApi';
+import { tafseerBooksFor, allowedTafseerBook } from '../../utils/tafseerApi';
+import { readAccountStatus } from '../../utils/syncAccount';
 import useTafseerText from '../../hooks/useTafseerText';
 import HifzMushafVerses from './HifzMushafVerses';
 import { refsText } from './hifzText';
@@ -58,7 +59,10 @@ export default function HifzTafseer({ home, todayRef, actions }) {
   const verseKey = `${ref.s}:${ref.a}`;
   const title = refsText([ref]);
   const isToday = !home.tafseer && Boolean(todayRef);
-  const tafseer = useTafseerText(ref, home.tafseerBook);
+  const status = readAccountStatus();
+  const books = tafseerBooksFor(status);
+  const bookId = allowedTafseerBook(home.tafseerBook, status);
+  const tafseer = useTafseerText(ref, bookId);
 
   return (
     <section className="hifz-section hifz-tafseer">
@@ -77,8 +81,8 @@ export default function HifzTafseer({ home, todayRef, actions }) {
       <div className="hifz-verse mushaf"><HifzMushafVerses key={verseKey} refs={[ref]} /></div>
 
       <div className="hifz-tasbeeh-chips" role="radiogroup" aria-label="كتاب التفسير">
-        {TAFSEER_BOOKS.map((book) => (
-          <button key={book.id} type="button" role="radio" aria-checked={book.id === home.tafseerBook} className={`hifz-tasbeeh-chip ${book.id === home.tafseerBook ? 'active' : ''}`.trim()} onClick={() => actions.setTafseerBook(book.id)}>
+        {books.map((book) => (
+          <button key={book.id} type="button" role="radio" aria-checked={book.id === bookId} className={`hifz-tasbeeh-chip ${book.id === bookId ? 'active' : ''}`.trim()} onClick={() => actions.setTafseerBook(book.id)}>
             {book.name}
           </button>
         ))}
@@ -91,7 +95,7 @@ export default function HifzTafseer({ home, todayRef, actions }) {
           <button type="button" className="hifz-btn" onClick={tafseer.retry}>أعد المحاولة</button>
         </div>
       )}
-      {tafseer.status === 'ok' && <TafseerText key={`${home.tafseerBook}:${verseKey}`} text={tafseer.text} />}
+      {tafseer.status === 'ok' && <TafseerText key={`${bookId}:${verseKey}`} text={tafseer.text} />}
     </section>
   );
 }
