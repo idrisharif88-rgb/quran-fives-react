@@ -10,7 +10,7 @@ export function registerAdminRoutes(app, { accounts, signedIn, adminName }) {
   app.get('/api/admin/users', requireAdmin, async (req, res) => {
     const users = (await accounts.list()).map(u => {
       const admin = u.user === adminName;
-      return { ...u, admin, approved: u.approved || admin, hifzCustomStart: u.hifzCustomStart || admin, googleBackup: u.googleBackup || admin, hifzExtraPortion: u.hifzExtraPortion || admin, sectionSwitch: u.sectionSwitch || admin };
+      return { ...u, admin, approved: u.approved || admin, hifzCustomStart: u.hifzCustomStart || admin, googleBackup: u.googleBackup || admin, hifzExtraPortion: u.hifzExtraPortion || admin, sectionSwitch: u.sectionSwitch || admin, library: u.library || admin, qummi: u.qummi || admin };
     });
     res.json({ users });
   });
@@ -27,8 +27,8 @@ export function registerAdminRoutes(app, { accounts, signedIn, adminName }) {
   });
 
   // صلاحية لحساب بعينه: hifzCustomStart (بدء الحفظ من آية يختارها)، googleBackup (نسخة في جوجل درايف)،
-  // hifzExtraPortion (فتح ورد الغد في اليوم نفسه)، sectionSwitch (التنقّل بين الحفظ والخماسيات)
-  const PERMISSIONS = ['hifzCustomStart', 'googleBackup', 'hifzExtraPortion', 'sectionSwitch'];
+  // hifzExtraPortion (فتح ورد الغد في اليوم نفسه)، sectionSwitch (التنقّل بين الحفظ والخماسيات)، library (المكتبة)، qummi (تفسير القمي)
+  const PERMISSIONS = ['hifzCustomStart', 'googleBackup', 'hifzExtraPortion', 'sectionSwitch', 'library', 'qummi'];
   app.post('/api/admin/users/permission', requireAdmin, async (req, res) => {
     const { user, permission, allowed } = req.body || {};
     if (typeof user !== 'string' || !PERMISSIONS.includes(permission) || typeof allowed !== 'boolean') {

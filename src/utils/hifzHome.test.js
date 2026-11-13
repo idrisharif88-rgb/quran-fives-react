@@ -14,13 +14,13 @@ describe('الحالة الأولى', () => {
     expect(s.tasbeeh).toEqual(DEFAULT_TASBEEH);
     expect(s.tasbeehActive).toBe('t1');
     expect(s.tafseer).toBeNull();
-    expect(s.tafseerBook).toBe(16);
+    expect(s.tafseerBook).toBe(15);
   });
 
   it('قائمة أفرغها صاحبها تبقى فارغة، والتالف يُسقط', () => {
     const s = normalizeHome({ azkar: [{ id: 'old' }], tafseerBook: 999, tasbeeh: [{ id: 'x', text: ' ذكر ', target: 5 }, { id: 'y', text: '', target: 5 }, { id: 'z', text: 'م', target: 0 }], tasbeehActive: 'gone', tasbeehCount: -3, tafseer: { s: 200, a: 1 } });
     expect(s).not.toHaveProperty('azkar');
-    expect(s.tafseerBook).toBe(16);
+    expect(s.tafseerBook).toBe(15);
     expect(s.tasbeeh).toEqual([{ id: 'x', text: 'ذكر', target: 5 }]);
     expect(s.tasbeehActive).toBe('x');
     expect(s.tasbeehCount).toBe(0);
@@ -83,13 +83,13 @@ describe('آية التفسير', () => {
   });
 
   it('الكتاب: معروف يُحفظ، وغير معروف يُرفض', () => {
-    const s = setTafseerBook(normalizeHome(null), 91);
-    expect(s.tafseerBook).toBe(91);
+    const s = setTafseerBook(normalizeHome(null), 90);
+    expect(s.tafseerBook).toBe(90);
     expect(setTafseerBook(s, 999)).toBe(s);
   });
 
   it('تبقى بعد الحفظ والقراءة', () => {
-    const saved = JSON.parse(JSON.stringify(setTafseerBook(setTafseerVerse(tapTasbeeh(normalizeHome(null), D1), { s: 1, a: 5 }), 14)));
-    expect(normalizeHome(saved)).toMatchObject({ tafseer: { s: 1, a: 5 }, tafseerBook: 14, tasbeehCount: 1, tasbeehDay: D1 });
+    const saved = JSON.parse(JSON.stringify(setTafseerBook(setTafseerVerse(tapTasbeeh(normalizeHome(null), D1), { s: 1, a: 5 }), 94)));
+    expect(normalizeHome(saved)).toMatchObject({ tafseer: { s: 1, a: 5 }, tafseerBook: 94, tasbeehCount: 1, tasbeehDay: D1 });
   });
 });
