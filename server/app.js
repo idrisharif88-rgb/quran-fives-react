@@ -11,6 +11,7 @@ import { registerAdminRoutes } from './adminRoutes.js';
 import { registerFileRoutes } from './fileRoutes.js';
 import { registerAccountDeleteRoutes } from './accountDeleteRoutes.js';
 import { registerLibraryRoutes } from './libraryRoutes.js';
+import { registerTafsirRoutes } from './tafsirRoutes.js';
 
 const DEFAULT_LIMITS = {
   ipMail: { windowMs: 60 * 60 * 1000, max: 10 },     // رسائل تأكيد/استرجاع لكل عنوان
@@ -191,6 +192,8 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
     res.status(403).json({ error: 'المكتبة غير مفعّلة لهذا الحساب', code: 'library-off' });
   }
   registerLibraryRoutes(app, { requireAccount: [...requireAccount, checkLibrary], dataDir, libraryFile });
+  // تفسير القمي لصفحة التفسير: لكل حساب موافَق عليه، بلا صلاحية المكتبة
+  registerTafsirRoutes(app, { requireAccount });
 
   // حذف الحساب: كل ما تحت مجلّد المستخدم (الحساب، الحالة، الختمات، الملفات، الأجهزة) ورموزه المعلّقة
   const deleteAccount = async (key) => {

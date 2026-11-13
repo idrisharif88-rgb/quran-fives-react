@@ -36,7 +36,8 @@ describe('الجلب', () => {
   });
   it('الكتب: الميسر أولاً، وغير المعروف مرفوض', () => {
     expect(DEFAULT_TAFSEER_BOOK).toBe(16);
-    expect(TAFSEER_BOOKS).toHaveLength(7);
+    expect(TAFSEER_BOOKS).toHaveLength(8);
+    expect(isTafseerBook("qummi")).toBe(true);
     expect(isTafseerBook(91)).toBe(true);
     expect(isTafseerBook(999)).toBe(false);
   });
