@@ -37,6 +37,9 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     private boolean imeByPadding = false;
     // أزرار الصوت تقلّب الصفحات ما دام التطبيق يطلب ذلك (useVolumeNav)؛ وإلا بقيت للصوت
     private volatile boolean volumeNav = false;
+    // الإمساك بزرّ الصوت يقلّب صفحة كل VOLUME_REPEAT_MS
+    private static final long VOLUME_REPEAT_MS = 250;
+    private long lastVolumeNavAt = 0;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -152,15 +155,18 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                 .setAppearanceLightNavigationBars(!dark);
     }
 
-    // خفض الصوت = الصفحة التالية، رفعه = السابقة. الضغطة الأولى فقط (لا تكرار عند الإمساك)،
+    // رفع الصوت = الصفحة التالية، خفضه = السابقة (اختيار المالك). الإمساك يكرّر كل VOLUME_REPEAT_MS،
     // ورفع الإصبع يُبتلع أيضاً فلا يظهر شريط الصوت
     @Override
     public boolean dispatchKeyEvent(android.view.KeyEvent event) {
         int code = event.getKeyCode();
         boolean volumeKey = code == android.view.KeyEvent.KEYCODE_VOLUME_DOWN || code == android.view.KeyEvent.KEYCODE_VOLUME_UP;
         if (volumeNav && volumeKey && bridge != null) {
-            if (event.getAction() == android.view.KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
-                String dir = code == android.view.KeyEvent.KEYCODE_VOLUME_DOWN ? "next" : "prev";
+            long now = android.os.SystemClock.uptimeMillis();
+            boolean first = event.getRepeatCount() == 0;
+            if (event.getAction() == android.view.KeyEvent.ACTION_DOWN && (first || now - lastVolumeNavAt >= VOLUME_REPEAT_MS)) {
+                lastVolumeNavAt = now;
+                String dir = code == android.view.KeyEvent.KEYCODE_VOLUME_UP ? "next" : "prev";
                 bridge.triggerWindowJSEvent("volumeNav", "{\"dir\":\"" + dir + "\"}");
             }
             return true;

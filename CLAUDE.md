@@ -65,7 +65,7 @@ Establish a baseline first, scope checks to changed files, and grep for orphaned
 
 # Page Navigation Rules
 
-- **Long press and volume keys turn pages** (`pageNav.js`, `useLongPressNav`, `useVolumeNav`, switches in «إعدادات الصوت» via `PageNavSettings`; device setting `quran-fives-page-nav-v1`, both on by default). Long press: left half = next, right half = previous; buttons and inputs keep their own press. Volume: down = next, up = previous. `navigatePage` in App routes to the mushaf when open, else the counter (`counterStepUp`/`counterStepDown`, same as tapping the circle and «−»), else `handleSwipeNav`. `MainActivity` takes the volume keys only while JS calls `setVolumeNav(true)` — a page screen is showing and no recitation is playing — so the keys stay volume keys everywhere else.
+- **Long press and volume keys turn pages** (`pageNav.js`, `useLongPressNav`, `useVolumeNav`, switches in «إعدادات الصوت» via `PageNavSettings`; device setting `quran-fives-page-nav-v1`, both on by default). Long press: left half = next, right half = previous; buttons and inputs keep their own press. Volume: up = next, down = previous (the owner's choice); holding a key repeats every 250 ms. Holding the counter circle or «−» repeats the step too (`useHoldRepeat`, off with the long-press switch). `navigatePage` in App routes to the mushaf when open, else the counter (`counterStepUp`/`counterStepDown`, same as tapping the circle and «−»), else `handleSwipeNav`. `MainActivity` takes the volume keys only while JS calls `setVolumeNav(true)` — a page screen is showing and no recitation is playing — so the keys stay volume keys everywhere else.
 
 # Hifz Rules
 

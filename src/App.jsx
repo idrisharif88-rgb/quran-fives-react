@@ -81,6 +81,7 @@ import useKhatmaPages from './hooks/useKhatmaPages';
 import usePageNavSettings from './hooks/usePageNavSettings';
 import useLongPressNav from './hooks/useLongPressNav';
 import useVolumeNav from './hooks/useVolumeNav';
+import useHoldRepeat from './hooks/useHoldRepeat';
 import { dayKey } from './utils/hifzSchedule';
 import { hijriFromTable } from './utils/hijriDate';
 import useHijriToday from './hooks/useHijriToday';
@@ -1721,6 +1722,9 @@ function App() {
   useLongPressNav(pageNav.longPress && pageNavScreen, navigatePage);
   // أثناء التلاوة يبقى الزرّان للصوت
   useVolumeNav(pageNav.volume && pageNavScreen && !isPlaying, navigatePage);
+  // الإمساك بدائرة العدّاد أو «−» يكرّر الخطوة
+  const counterUpHold = useHoldRepeat(counterStepUp, pageNav.longPress);
+  const counterDownHold = useHoldRepeat(counterStepDown, pageNav.longPress);
 
   const handleSwipeNav = (direction) => {
     if (viewMode === 'khmasiyat') {
@@ -3379,7 +3383,7 @@ function App() {
                   type="button"
                   className="night-counter-circle"
                   style={{ background: 'none', border: 'none' }}
-                  onPointerDown={() => counterStepUp()}
+                  {...counterUpHold}
                   aria-label="night counter"
                 >
                   <CounterRing value={activeNightCounter?.value ?? 0} status={lapStatus(stopwatch.currentLapMs, targetMs)} />
@@ -3453,7 +3457,7 @@ function App() {
                 <button
                   type="button"
                   className="night-counter-btn night-counter-minus-btn"
-                  onClick={() => counterStepDown()}
+                  {...counterDownHold}
                 >
                   -
                 </button>
