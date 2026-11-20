@@ -5,6 +5,12 @@ import { loadStoredState, saveStoredState } from './persistence';
 export const PAGE_NAV_KEY = 'quran-fives-page-nav-v1';
 export const PAGE_NAV_EVENT = 'quran-fives-page-nav-change';
 export const LONG_PRESS_MS = 450;
+
+// الإمساك يتسارع: أوّل تكرار بعد 250ms، ثم يقصر كل مرّة حتى 50ms (نحو 20 خطوة في الثانية)
+const REPEAT_FIRST_MS = 250;
+const REPEAT_MIN_MS = 50;
+const REPEAT_SPEEDUP = 0.82;
+export const repeatDelay = (step) => Math.max(REPEAT_MIN_MS, Math.round(REPEAT_FIRST_MS * REPEAT_SPEEDUP ** step));
 const MOVE_TOLERANCE_PX = 12;
 
 const DEFAULTS = { longPress: true, volume: true };
@@ -28,7 +34,7 @@ export const directionAt = (x, width) => (x < width / 2 ? 'next' : 'prev');
 export const movedTooFar = (a, b) => Math.hypot(b.x - a.x, b.y - a.y) > MOVE_TOLERANCE_PX;
 
 // الضغط المطوّل على زرّ أو حقل يبقى له، لا للتنقّل
-const OWN_PRESS = 'button, a, input, select, textarea, [role="button"], [contenteditable="true"]';
+const OWN_PRESS = 'button, a, input, select, textarea, [role="button"], [contenteditable="true"], [data-own-press]';
 // مساحات التنقّل: شاشة البطاقات والعدّاد، وصفحة المصحف
 const NAV_AREA = '.content-layout, .mushaf-pager';
 

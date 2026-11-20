@@ -82,6 +82,7 @@ import usePageNavSettings from './hooks/usePageNavSettings';
 import useLongPressNav from './hooks/useLongPressNav';
 import useVolumeNav from './hooks/useVolumeNav';
 import useHoldRepeat from './hooks/useHoldRepeat';
+import CounterSectionStrip from './components/CounterSections/CounterSectionStrip';
 import { dayKey } from './utils/hifzSchedule';
 import { hijriFromTable } from './utils/hijriDate';
 import useHijriToday from './hooks/useHijriToday';
@@ -2797,6 +2798,7 @@ function App() {
         <KhatmaProgressDialog
           khatmas={khatmaList}
           pages={khatmaPages.pages}
+          onReset={khatmaPages.reset}
           today={dayKey()}
           onClose={closeKhatmaProgress}
           backRef={celebrationBackRef}
@@ -3357,6 +3359,8 @@ function App() {
                   </button>
                 </div>
               </div>
+
+              <CounterSectionStrip counters={nightCounters} activeId={activeNightCounterId} onSelect={setActiveNightCounterId} />
 
               <StopwatchBar
                 totalMs={stopwatch.totalMs}

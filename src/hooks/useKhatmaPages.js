@@ -28,5 +28,7 @@ export default function useKhatmaPages() {
   const mark = useCallback((page) => apply((p) => markPage(p, page, Date.now())), [apply]);
   const unmark = useCallback((page) => apply((p) => unmarkPage(p, page)), [apply]);
 
-  return { pages, mark, unmark };
+  const reset = useCallback(() => apply((p) => (Object.keys(p).length ? {} : p)), [apply]);
+
+  return { pages, mark, unmark, reset };
 }

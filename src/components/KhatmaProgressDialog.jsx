@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import ModalDialog from './ModalDialog';
 import { khatmaProgress, khatmaAverage, KHATMA_TARGET_DAYS } from '../utils/khatmaProgress';
 import './KhatmaProgressDialog.css';
@@ -20,8 +20,11 @@ const one = (n) => n.toFixed(1).replace(/\.0$/, '');
  * @param pages    الصفحات المنقورة في كل العدّادات { [page]: ms }
  * @param today    مفتاح اليوم
  * @param backRef  يُملأ بدالّة الإغلاق ما دامت مفتوحة، لزرّ الرجوع في الهاتف
+ * @param onReset  يمحو الصفحات المنقورة (تقدّم الختمة الجارية) بعد تأكيد داخل النافذة
  */
-export default function KhatmaProgressDialog({ khatmas, pages, today, onClose, backRef }) {
+export default function KhatmaProgressDialog({ khatmas, pages, today, onClose, backRef, onReset }) {
+  const [confirmReset, setConfirmReset] = useState(false);
+
   useEffect(() => {
     if (!backRef) return undefined;
     backRef.current = onClose;
@@ -60,6 +63,17 @@ export default function KhatmaProgressDialog({ khatmas, pages, today, onClose, b
           : <strong>ختمة كل {one(avg.average)} يوم</strong>}
         <span>{avg.count} ختمة في {avg.days} يوماً</span>
       </div>
+      {onReset && (confirmReset ? (
+        <div className="khatma-progress-reset-confirm">
+          <span>تُمحى الصفحات المقروءة في هذه الختمة، ويبدأ العدّ من الصفر. العدّادات والختمات المسجّلة لا تتغيّر.</span>
+          <div>
+            <button type="button" className="khatma-progress-reset-yes" onClick={() => { onReset(); setConfirmReset(false); }}>صفّر التقدّم</button>
+            <button type="button" className="khatma-progress-close" onClick={() => setConfirmReset(false)}>تراجع</button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" className="khatma-progress-reset" onClick={() => setConfirmReset(true)}>تصفير التقدّم</button>
+      ))}
       <button type="button" className="khatma-progress-close" onClick={onClose}>إغلاق</button>
     </ModalDialog>
   );

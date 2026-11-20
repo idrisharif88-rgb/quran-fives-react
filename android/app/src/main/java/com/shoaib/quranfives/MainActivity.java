@@ -37,9 +37,9 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     private boolean imeByPadding = false;
     // أزرار الصوت تقلّب الصفحات ما دام التطبيق يطلب ذلك (useVolumeNav)؛ وإلا بقيت للصوت
     private volatile boolean volumeNav = false;
-    // الإمساك بزرّ الصوت يقلّب صفحة كل VOLUME_REPEAT_MS
-    private static final long VOLUME_REPEAT_MS = 250;
+    // الإمساك بزرّ الصوت يتكرّر متسارعاً، كالضغط المطوّل في الصفحة (repeatDelay في pageNav.js)
     private long lastVolumeNavAt = 0;
+    private int volumeRepeatStep = 0;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -155,7 +155,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                 .setAppearanceLightNavigationBars(!dark);
     }
 
-    // رفع الصوت = الصفحة التالية، خفضه = السابقة (اختيار المالك). الإمساك يكرّر كل VOLUME_REPEAT_MS،
+    // رفع الصوت = الصفحة التالية، خفضه = السابقة (اختيار المالك). الإمساك يكرّر متسارعاً،
     // ورفع الإصبع يُبتلع أيضاً فلا يظهر شريط الصوت
     @Override
     public boolean dispatchKeyEvent(android.view.KeyEvent event) {
@@ -164,7 +164,10 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         if (volumeNav && volumeKey && bridge != null) {
             long now = android.os.SystemClock.uptimeMillis();
             boolean first = event.getRepeatCount() == 0;
-            if (event.getAction() == android.view.KeyEvent.ACTION_DOWN && (first || now - lastVolumeNavAt >= VOLUME_REPEAT_MS)) {
+            if (first) volumeRepeatStep = 0;
+            long gap = Math.max(50, Math.round(250 * Math.pow(0.82, volumeRepeatStep)));
+            if (event.getAction() == android.view.KeyEvent.ACTION_DOWN && (first || now - lastVolumeNavAt >= gap)) {
+                if (!first) volumeRepeatStep++;
                 lastVolumeNavAt = now;
                 String dir = code == android.view.KeyEvent.KEYCODE_VOLUME_UP ? "next" : "prev";
                 bridge.triggerWindowJSEvent("volumeNav", "{\"dir\":\"" + dir + "\"}");
