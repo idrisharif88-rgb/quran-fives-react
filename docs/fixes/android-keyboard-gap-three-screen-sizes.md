@@ -42,3 +42,9 @@ On all three the page sits flush above the keyboard: no box, no flash, no black 
 Inspect the debug build (`adb forward tcp:9333 localabstract:webview_devtools_remote_<pid>`) and
 read `innerHeight` with the keyboard open. Far smaller than the space above the keyboard
 means two mechanisms are both resizing — keep exactly one per device class.
+
+## 2026-11-20 — phones too
+Several phones showed the same white box over the sign-in email. Any Android 11+ phone has the
+IME insets SystemBars pads by, so it hit the same double shift. `imeByPadding` in `MainActivity`
+now takes the large-screen path when `smallestScreenWidthDp >= 600` **or** `SDK_INT >= 30`.
+Android 10 and older (Note 9) keep `adjustPan` + plugin resize.
