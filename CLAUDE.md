@@ -61,7 +61,7 @@ Establish a baseline first, scope checks to changed files, and grep for orphaned
 
 # Khatma Tracker Rules
 
-- **Every counter is a section.** A counter has `start` (first page, default 1 — old counters have none and read from page 1) and `value` (the page being read). `KhatmaProgressDialog` adds the pages `[start, value-1]` of all counters (`pagesReadBy`, overlaps counted once), so reading 400→600 then 1→100 is tracked as one khatma.
+- **The tracker counts taps, not counter numbers.** Every tap on the counter circle saves the finished page with its time (`useKhatmaPages`, `khatmaPages.js`, key `quran-fives-khatma-pages-v1` — synced, backed up, wiped on sign-out); «−» removes it. `KhatmaProgressDialog` counts pages tapped after the last recorded khatma, so several counters (400→600, then 1→100) add up with no start field, and a counter number typed by hand counts nothing. There was a «من صفحة» field once: the owner set the number but not the start, and 1–480 was counted.
 
 # Hifz Rules
 
