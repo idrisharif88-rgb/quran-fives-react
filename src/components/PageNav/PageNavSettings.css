@@ -1,0 +1,75 @@
+.page-nav-settings {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-2);
+  text-align: right;
+}
+
+.page-nav-settings-title {
+  margin-bottom: 8px;
+  font-weight: 800;
+  color: var(--app-text);
+}
+
+.page-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.page-nav-row + .page-nav-row {
+  border-top: 1px solid var(--app-border);
+}
+
+.page-nav-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--app-text);
+}
+
+.page-nav-text small {
+  color: var(--app-muted);
+  font-size: 12px;
+}
+
+/* مفتاح تشغيل بسيط: مسار ومقبض، لون التفعيل من التوكن */
+.page-nav-switch {
+  -webkit-appearance: none;
+  appearance: none;
+  flex-shrink: 0;
+  position: relative;
+  width: 46px;
+  height: 26px;
+  margin: 0;
+  border-radius: 13px;
+  background: var(--app-border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.page-nav-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: right 0.15s;
+}
+
+.page-nav-switch:checked {
+  background: var(--app-accent);
+}
+
+.page-nav-switch:checked::after {
+  right: 23px;
+}

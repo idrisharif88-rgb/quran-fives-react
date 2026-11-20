@@ -35,6 +35,8 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     // على هذه الهواتف أيضاً كانت الآليات الثلاث تطرح لوحة المفاتيح مرّتين فيظهر مربّع أبيض فوق حقل البريد.
     // أندرويد 10 فأقلّ (Note 9) يبقى على adjustPan والإضافة — docs/fixes/android-keyboard-gap-three-screen-sizes.md
     private boolean imeByPadding = false;
+    // أزرار الصوت تقلّب الصفحات ما دام التطبيق يطلب ذلك (useVolumeNav)؛ وإلا بقيت للصوت
+    private volatile boolean volumeNav = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -119,6 +121,12 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                 });
             }
 
+            // تفعيل/إيقاف تقليب الصفحات بأزرار الصوت (شاشة قابلة للتقليب، الإعداد مفعّل، لا تلاوة)
+            @JavascriptInterface
+            public void setVolumeNav(final boolean enabled) {
+                volumeNav = enabled;
+            }
+
             // إنهاء التطبيق (يُستدعى من زر «خروج» في مربع تأكيد الخروج)
             @JavascriptInterface
             public void finishApp() {
@@ -142,6 +150,22 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                 .setAppearanceLightStatusBars(!dark);
         WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
                 .setAppearanceLightNavigationBars(!dark);
+    }
+
+    // خفض الصوت = الصفحة التالية، رفعه = السابقة. الضغطة الأولى فقط (لا تكرار عند الإمساك)،
+    // ورفع الإصبع يُبتلع أيضاً فلا يظهر شريط الصوت
+    @Override
+    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
+        int code = event.getKeyCode();
+        boolean volumeKey = code == android.view.KeyEvent.KEYCODE_VOLUME_DOWN || code == android.view.KeyEvent.KEYCODE_VOLUME_UP;
+        if (volumeNav && volumeKey && bridge != null) {
+            if (event.getAction() == android.view.KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+                String dir = code == android.view.KeyEvent.KEYCODE_VOLUME_DOWN ? "next" : "prev";
+                bridge.triggerWindowJSEvent("volumeNav", "{\"dir\":\"" + dir + "\"}");
+            }
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
     }
 
     @Override

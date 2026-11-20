@@ -78,6 +78,9 @@ import useBrowserBack, { leaveSite } from './hooks/useBrowserBack';
 import CelebrationDialog from './components/CelebrationDialog';
 import KhatmaProgressDialog from './components/KhatmaProgressDialog';
 import useKhatmaPages from './hooks/useKhatmaPages';
+import usePageNavSettings from './hooks/usePageNavSettings';
+import useLongPressNav from './hooks/useLongPressNav';
+import useVolumeNav from './hooks/useVolumeNav';
 import { dayKey } from './utils/hifzSchedule';
 import { hijriFromTable } from './utils/hijriDate';
 import useHijriToday from './hooks/useHijriToday';
@@ -216,6 +219,9 @@ function formatHijriTimestamp(ms) {
   const hour12 = hours % 12 || 12;
   return `${dayName} ${day} ${month} ${year} — ${hour12}:${minutes} ${period}`;
 }
+
+// الشاشات التي تقلّبها الضغطة المطوّلة وأزرار الصوت
+const PAGE_NAV_VIEWS = ['khmasiyat', 'surah-fives', 'page-starts', 'page-ends', 'night-counter'];
 
 function App() {
   const [persistedAppState] = useState(() => loadStoredState(APP_STORAGE_KEY) || {});
@@ -1658,6 +1664,63 @@ function App() {
       // ignore
     }
   };
+
+  // نقرة دائرة العدّاد (ومثلها الضغط المطوّل وزرّ خفض الصوت): تُنهي الصفحة الجارية
+  const counterStepUp = () => {
+    if (!activeNightCounter) return;
+    const finishedPage = activeNightCounter.value;
+    const wasRunning = stopwatch.isRunning;
+    const hasLimit = Number.isInteger(activeNightCounter.limit);
+    const nextValue = hasLimit
+      ? Math.min(activeNightCounter.limit, finishedPage + 1)
+      : finishedPage + 1;
+    // إنهاء آخر صفحة في المصحف: تهنئة بالختمة (مرة، عند تجاوزها)
+    if (finishedPage === MUSHAF.totalPages) setIsKhatmaCongratsOpen(true);
+    // سجّل زمن الصفحة المنتهية إن وُجدت صفحة فعلية
+    if (finishedPage >= 1) {
+      stopwatch.recordLap(finishedPage);
+      khatmaPages.mark(finishedPage);
+    }
+    setNightCounters(prev => prev.map(counter => (
+      counter.id === activeNightCounterId ? { ...counter, value: nextValue } : counter
+    )));
+    // إن كانت الساعة متوقفة (جديدة أو مؤقّتة)، شغّلها للصفحة الجديدة
+    if (!wasRunning) {
+      stopwatch.start();
+    }
+    playNightCounterSound('up');
+  };
+
+  const counterStepDown = () => {
+    if (!activeNightCounter) return;
+    playNightCounterSound('down');
+    stopwatch.resetCurrentLap();
+    khatmaPages.unmark(activeNightCounter.value - 1);
+    setNightCounters(prev => prev.map(counter => (
+      counter.id === activeNightCounterId
+        ? { ...counter, value: Math.max(0, counter.value - 1) }
+        : counter
+    )));
+  };
+
+  // الضغط المطوّل وأزرار الصوت: المصحف إن كان مفتوحاً، وإلا العدّاد أو البطاقات
+  const navigatePage = (direction) => {
+    if (isMushafOpen) {
+      setMushafPage(p => Math.min(MUSHAF.totalPages, Math.max(1, p + (direction === 'next' ? 1 : -1))));
+      return;
+    }
+    if (viewMode === 'night-counter') {
+      if (direction === 'next') counterStepUp(); else counterStepDown();
+      return;
+    }
+    handleSwipeNav(direction);
+  };
+  const pageNav = usePageNavSettings();
+  const pageNavScreen = !isHifzOpen && !appSection.needsChoice
+    && (isMushafOpen || PAGE_NAV_VIEWS.includes(viewMode));
+  useLongPressNav(pageNav.longPress && pageNavScreen, navigatePage);
+  // أثناء التلاوة يبقى الزرّان للصوت
+  useVolumeNav(pageNav.volume && pageNavScreen && !isPlaying, navigatePage);
 
   const handleSwipeNav = (direction) => {
     if (viewMode === 'khmasiyat') {
@@ -3316,30 +3379,7 @@ function App() {
                   type="button"
                   className="night-counter-circle"
                   style={{ background: 'none', border: 'none' }}
-                  onPointerDown={() => {
-                    if (!activeNightCounter) return;
-                    const finishedPage = activeNightCounter.value;
-                    const wasRunning = stopwatch.isRunning;
-                    const hasLimit = Number.isInteger(activeNightCounter.limit);
-                    const nextValue = hasLimit
-                      ? Math.min(activeNightCounter.limit, finishedPage + 1)
-                      : finishedPage + 1;
-                    // إنهاء آخر صفحة في المصحف: تهنئة بالختمة (مرة، عند تجاوزها)
-                    if (finishedPage === MUSHAF.totalPages) setIsKhatmaCongratsOpen(true);
-                    // سجّل زمن الصفحة المنتهية إن وُجدت صفحة فعلية
-                    if (finishedPage >= 1) {
-                      stopwatch.recordLap(finishedPage);
-                      khatmaPages.mark(finishedPage);
-                    }
-                    setNightCounters(prev => prev.map(counter => (
-                      counter.id === activeNightCounterId ? { ...counter, value: nextValue } : counter
-                    )));
-                    // إن كانت الساعة متوقفة (جديدة أو مؤقّتة)، شغّلها للصفحة الجديدة
-                    if (!wasRunning) {
-                      stopwatch.start();
-                    }
-                    playNightCounterSound('up');
-                  }}
+                  onPointerDown={() => counterStepUp()}
                   aria-label="night counter"
                 >
                   <CounterRing value={activeNightCounter?.value ?? 0} status={lapStatus(stopwatch.currentLapMs, targetMs)} />
@@ -3413,17 +3453,7 @@ function App() {
                 <button
                   type="button"
                   className="night-counter-btn night-counter-minus-btn"
-                  onClick={() => {
-                    if (!activeNightCounter) return;
-                    playNightCounterSound('down');
-                    stopwatch.resetCurrentLap();
-                    khatmaPages.unmark(activeNightCounter.value - 1);
-                    setNightCounters(prev => prev.map(counter => (
-                      counter.id === activeNightCounterId
-                        ? { ...counter, value: Math.max(0, counter.value - 1) }
-                        : counter
-                    )));
-                  }}
+                  onClick={() => counterStepDown()}
                 >
                   -
                 </button>

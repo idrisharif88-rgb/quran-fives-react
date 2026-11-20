@@ -63,6 +63,10 @@ Establish a baseline first, scope checks to changed files, and grep for orphaned
 
 - **The tracker counts taps, not counter numbers.** Every tap on the counter circle saves the finished page with its time (`useKhatmaPages`, `khatmaPages.js`, key `quran-fives-khatma-pages-v1` — synced, backed up, wiped on sign-out); «−» removes it. `KhatmaProgressDialog` counts pages tapped after the last recorded khatma, so several counters (400→600, then 1→100) add up with no start field, and a counter number typed by hand counts nothing. There was a «من صفحة» field once: the owner set the number but not the start, and 1–480 was counted.
 
+# Page Navigation Rules
+
+- **Long press and volume keys turn pages** (`pageNav.js`, `useLongPressNav`, `useVolumeNav`, switches in «إعدادات الصوت» via `PageNavSettings`; device setting `quran-fives-page-nav-v1`, both on by default). Long press: left half = next, right half = previous; buttons and inputs keep their own press. Volume: down = next, up = previous. `navigatePage` in App routes to the mushaf when open, else the counter (`counterStepUp`/`counterStepDown`, same as tapping the circle and «−»), else `handleSwipeNav`. `MainActivity` takes the volume keys only while JS calls `setVolumeNav(true)` — a page screen is showing and no recitation is playing — so the keys stay volume keys everywhere else.
+
 # Hifz Rules
 
 - **The day's portion is one unit.** `rules.versesPerDay` (1, 3, 5 or 7, chosen at start) sets how many consecutive verses are memorised through the same five steps. Completing the last step appends one `memorizedOn` entry *per verse*, so every verse ages by its own clock and the boxes need no change. Use `portionOf` / `plan.verse.indices` / `plan.verse.refs`; `plan.verse.index` and `.ref` are only the first verse.
