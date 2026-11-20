@@ -1,0 +1,66 @@
+/* سهما أقسام العدّاد: على جانبي الدائرة في منتصفها، مساحة لمس أعرض من السهم */
+.night-counter-screen {
+  position: relative;
+}
+
+.counter-section-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 72px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--app-accent-ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 2;
+}
+
+.counter-section-arrow.is-left { left: 0; }
+.counter-section-arrow.is-right { right: 0; }
+
+.counter-section-arrow:active svg {
+  opacity: 0.7;
+}
+
+.counter-section-arrow:focus-visible {
+  outline: 2px solid var(--app-accent-ink);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+/* اسم القسم لحظة التبديل: فوق الدائرة، يختفي وحده */
+.counter-section-name {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 70%;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: var(--app-accent-deep);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  z-index: 3;
+  animation: counter-section-name 1.4s ease forwards;
+}
+
+@keyframes counter-section-name {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .counter-section-name { animation: none; }
+}

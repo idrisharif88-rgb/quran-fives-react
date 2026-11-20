@@ -31,11 +31,21 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     private static final int PICK_CONTACT_REQUEST = 2001;
     // أقصر ضلع 600dp فأكثر (لوحيّ): لوحة المفاتيح تُعالَج فيه بغير طريقة الهاتف — انظر onCreate
     private boolean largeScreen = false;
+    // لوحة المفاتيح عبر حشو Capacitor وحده: الشاشات الكبيرة وكل هاتف بأندرويد 11 فأكثر.
+    // على هذه الهواتف أيضاً كانت الآليات الثلاث تطرح لوحة المفاتيح مرّتين فيظهر مربّع أبيض فوق حقل البريد.
+    // أندرويد 10 فأقلّ (Note 9) يبقى على adjustPan والإضافة — docs/fixes/android-keyboard-gap-three-screen-sizes.md
+    private boolean imeByPadding = false;
+    // أزرار الصوت تقلّب الصفحات ما دام التطبيق يطلب ذلك (useVolumeNav)؛ وإلا بقيت للصوت
+    private volatile boolean volumeNav = false;
+    // الإمساك بزرّ الصوت يتكرّر متسارعاً، كالضغط المطوّل في الصفحة (repeatDelay في pageNav.js)
+    private long lastVolumeNavAt = 0;
+    private int volumeRepeatStep = 0;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         largeScreen = getResources().getConfiguration().smallestScreenWidthDp >= 600;
-        if (largeScreen) {
+        imeByPadding = largeScreen || android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R;
+        if (imeByPadding) {
             // الشاشات الكبيرة: Capacitor يرفع الصفحة فوق لوحة المفاتيح بنفسه (حشو بارتفاعها)، وتصغير
             // إضافة Keyboard (resizeOnFullScreen) فوقه يترك مربّعاً فارغاً، فيُطفأ هنا قبل تحميلها
             config = CapConfig.loadDefault(this);
@@ -58,7 +68,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
 
         // الشاشات الكبيرة (أقصر ضلع 600dp فأكثر): adjustPan يزيح النافذة فوق الحشو، فلا إزاحة هنا.
         // الهواتف (Note 9) تبقى على adjustPan والإضافة — docs/fixes/android-webview-black-input.md
-        if (largeScreen) {
+        if (imeByPadding) {
             getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
         }
 
@@ -114,6 +124,12 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                 });
             }
 
+            // تفعيل/إيقاف تقليب الصفحات بأزرار الصوت (شاشة قابلة للتقليب، الإعداد مفعّل، لا تلاوة)
+            @JavascriptInterface
+            public void setVolumeNav(final boolean enabled) {
+                volumeNav = enabled;
+            }
+
             // إنهاء التطبيق (يُستدعى من زر «خروج» في مربع تأكيد الخروج)
             @JavascriptInterface
             public void finishApp() {
@@ -129,7 +145,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         int color = windowBackground;
         getWindow().getDecorView().setBackgroundColor(color);
         // اللوحيّ: الحشو تحت WebView يظهر لحظةً أثناء صعود لوحة المفاتيح، ولونه من الثيم (#f4f6f8)
-        if (largeScreen && bridge != null && bridge.getWebView().getParent() instanceof android.view.View) {
+        if (imeByPadding && bridge != null && bridge.getWebView().getParent() instanceof android.view.View) {
             ((android.view.View) bridge.getWebView().getParent()).setBackgroundColor(color);
         }
         boolean dark = isDarkColor(color);
@@ -137,6 +153,28 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                 .setAppearanceLightStatusBars(!dark);
         WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
                 .setAppearanceLightNavigationBars(!dark);
+    }
+
+    // رفع الصوت = الصفحة التالية، خفضه = السابقة (اختيار المالك). الإمساك يكرّر متسارعاً،
+    // ورفع الإصبع يُبتلع أيضاً فلا يظهر شريط الصوت
+    @Override
+    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
+        int code = event.getKeyCode();
+        boolean volumeKey = code == android.view.KeyEvent.KEYCODE_VOLUME_DOWN || code == android.view.KeyEvent.KEYCODE_VOLUME_UP;
+        if (volumeNav && volumeKey && bridge != null) {
+            long now = android.os.SystemClock.uptimeMillis();
+            boolean first = event.getRepeatCount() == 0;
+            if (first) volumeRepeatStep = 0;
+            long gap = Math.max(50, Math.round(250 * Math.pow(0.82, volumeRepeatStep)));
+            if (event.getAction() == android.view.KeyEvent.ACTION_DOWN && (first || now - lastVolumeNavAt >= gap)) {
+                if (!first) volumeRepeatStep++;
+                lastVolumeNavAt = now;
+                String dir = code == android.view.KeyEvent.KEYCODE_VOLUME_UP ? "next" : "prev";
+                bridge.triggerWindowJSEvent("volumeNav", "{\"dir\":\"" + dir + "\"}");
+            }
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
     }
 
     @Override

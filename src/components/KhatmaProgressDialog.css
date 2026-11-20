@@ -85,3 +85,50 @@
   font-weight: 800;
   cursor: pointer;
 }
+
+/* تصفير التقدّم: رابط هادئ، ثم تأكيد داخل النافذة */
+.khatma-progress-reset {
+  align-self: center;
+  padding: 4px 10px;
+  border: none;
+  background: none;
+  color: var(--app-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.khatma-progress-reset-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #b91c1c;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--app-text);
+}
+
+.khatma-progress-reset-confirm > div {
+  display: flex;
+  gap: 8px;
+}
+
+.khatma-progress-reset-confirm button {
+  flex: 1;
+}
+
+.khatma-progress-reset-yes {
+  padding: 11px 12px;
+  border: none;
+  border-radius: 999px;
+  background: #b91c1c;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}

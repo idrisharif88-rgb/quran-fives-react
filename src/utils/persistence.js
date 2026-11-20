@@ -19,6 +19,7 @@ export const SYNCED_LOCAL_KEYS = [
   VERSE_STYLE_STORAGE_KEY,   // بطاقة الآيات: نصّ أو مصحف مدني (useVerseStyle)
   'quran-fives-updates-notebook-v1',   // دفتر التحديثات للمالك (updatesNotebook.js)
   'quran-fives-hifz-home-v1',          // رئيسية الحفظ: مسبحتي وآية التفسير وكتابه (hifzHome.js)
+  'quran-fives-khatma-pages-v1',       // الصفحات المنقورة لتقدّم الختمة (khatmaPages.js)
 ];
 export const LOCAL_SYNC_EVENT = 'quran-fives-local-sync';
 

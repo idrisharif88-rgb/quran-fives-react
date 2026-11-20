@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { partsRead, khatmaProgress, khatmaAverage, KHATMA_EPOCH } from './khatmaProgress';
+import { partsRead, khatmaProgress, khatmaAverage, KHATMA_EPOCH, partsReadOfPages } from './khatmaProgress';
 
 const at = (y, m, d) => new Date(y, m - 1, d, 12).getTime();
 
@@ -70,5 +70,24 @@ describe('khatmaAverage (since 13 Dhu al-Hijjah 1447)', () => {
 
   it('has no average before the first khatma', () => {
     expect(khatmaAverage({ timestamps: [], today: '2026-07-04' })).toMatchObject({ count: 0, average: null });
+  });
+});
+
+describe('khatma from tapped pages (several counters)', () => {
+  it('counts only the pages tapped, wherever each counter started', () => {
+    // قسم من 402 نُقرت فيه 80 صفحة، وقسم من 1 نُقرت فيه 60
+    const pages = {};
+    for (let p = 402; p < 482; p++) pages[p] = at(2026, 10, 12);
+    for (let p = 1; p <= 60; p++) pages[p] = at(2026, 10, 13);
+    const r = khatmaProgress({ lastKhatmaAt: at(2026, 10, 11), pages, today: '2026-10-14' });
+    expect(r.read).toBeCloseTo(partsReadOfPages(new Set(Object.keys(pages).map(Number))), 5);
+    expect(r.read).toBeGreaterThan(6.9);
+    expect(r.read).toBeLessThan(7.1);
+  });
+
+  it('ignores pages tapped before the last khatma', () => {
+    const pages = { 1: at(2026, 10, 10), 2: at(2026, 10, 12) };
+    const r = khatmaProgress({ lastKhatmaAt: at(2026, 10, 11), pages, today: '2026-10-14' });
+    expect(r.read).toBeCloseTo(1 / 21, 5);
   });
 });

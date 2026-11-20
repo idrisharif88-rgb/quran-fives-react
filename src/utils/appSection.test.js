@@ -28,9 +28,15 @@ describe('app section choice', () => {
     expect(sectionFor(loadSectionChoice(), 'b@e.com')).toBeNull();
   });
 
-  it('signed out has no section', () => {
+  it('signed out does not inherit an account choice', () => {
     saveSectionChoice('a@e.com', SECTION.FIVES);
     expect(sectionFor(loadSectionChoice(), null)).toBeNull();
+  });
+
+  it('remembers a signed-out choice for the device only', () => {
+    saveSectionChoice(null, SECTION.HIFZ);
+    expect(sectionFor(loadSectionChoice(), null)).toBe(SECTION.HIFZ);
+    expect(sectionFor(loadSectionChoice(), 'a@e.com')).toBeNull();
   });
 
   it('asks again after the choice is cleared', () => {

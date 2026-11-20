@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { RECITERS } from '../data/reciters';
 import { downloadSurah, clearAudioCache } from '../utils/audioDownloader';
 import { SURAH_METADATA } from '../data/quranConstants';
+import PageNavSettings from './PageNav/PageNavSettings';
 import './AudioSettings.css';
 
 const AudioSettings = ({ activeReciter, setActiveReciter, currentSurahNumber, onClose }) => {
@@ -109,6 +110,8 @@ const AudioSettings = ({ activeReciter, setActiveReciter, currentSurahNumber, on
             تفريغ مساحة الصوتيات المحملة
           </button>
         </div>
+
+        <PageNavSettings />
 
         <div className="audio-settings-actions">
           <button type="button" className="khmasiyat-quiz-btn secondary" onClick={onClose} style={{ width: '100%' }}>
