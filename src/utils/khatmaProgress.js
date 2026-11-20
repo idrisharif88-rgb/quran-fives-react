@@ -1,4 +1,4 @@
-import { JUZ_START_PAGES, juzPageRange } from '../data/juzPages';
+import { JUZ_START_PAGES, juzPageRange, LAST_PAGE } from '../data/juzPages';
 import { dayKey, daysBetween } from './hifzSchedule';
 import { hijriToDayKey } from './hijriDate';
 
@@ -26,19 +26,48 @@ export function partsRead(pagesDone) {
 }
 
 /**
+ * الصفحات المقروءة في كل الأقسام: لكل عدّاد من صفحة بدايته (start، 1 إن لم تُحدَّد) إلى ما قبل قيمته.
+ * الأقسام المتداخلة لا تُعدّ صفحاتها مرّتين.
+ */
+export function pagesReadBy(counters) {
+  const pages = new Set();
+  for (const counter of counters || []) {
+    const start = Math.max(1, Number.isInteger(counter?.start) ? counter.start : 1);
+    const last = Math.min(LAST_PAGE, (Number(counter?.value) || 0) - 1);
+    for (let page = start; page <= last; page++) pages.add(page);
+  }
+  return pages;
+}
+
+// الأجزاء المقروءة بكسورها من مجموعة صفحات متفرّقة
+export function partsReadOfPages(pages) {
+  let parts = 0;
+  for (let juz = 1; juz <= TOTAL_PARTS; juz++) {
+    const { start, end } = juzPageRange(juz);
+    let done = 0;
+    for (let page = start; page <= end; page++) if (pages.has(page)) done++;
+    parts += done / (end - start + 1);
+  }
+  return parts;
+}
+
+/**
  * أين وصلت الختمة الجارية قياساً إلى حدّ الأيام العشرة.
  * @param lastKhatmaAt طابع آخر ختمة مسجّلة (ms)، أو null فتُحسب من KHATMA_EPOCH
  * @param page         قيمة العدّاد: الصفحة التي يُقرأ فيها الآن (ما قبلها منجز)
+ * @param counters     كل العدّادات (الأقسام)؛ إن وُجدت حُسب المقروء منها مجتمعةً بدل page
  * @param today        مفتاح اليوم 'YYYY-MM-DD'
  * @returns dayNumber  رقم اليوم في الختمة: يوم الختم لا يُعدّ، واليوم الأوّل غده (ختم قبل 3 أيام ← اليوم
  *                     الثالث). صفر في يوم الختم نفسه.
  *          read, left أجزاء — daysLeft أيام باقية واليوم منها — rate المطلوب يومياً (null إن فات الموعد)
  *          status     'done' | 'onTrack' | 'speedUp' | 'atRisk' | 'late'
  */
-export function khatmaProgress({ lastKhatmaAt, page, today }) {
+export function khatmaProgress({ lastKhatmaAt, page, counters, today }) {
   const startKey = lastKhatmaAt ? dayKey(new Date(lastKhatmaAt)) : KHATMA_EPOCH;
   const dayNumber = Math.max(0, daysBetween(startKey, today));
-  const read = partsRead(Math.max(0, (Number(page) || 0) - 1));
+  const read = counters
+    ? partsReadOfPages(pagesReadBy(counters))
+    : partsRead(Math.max(0, (Number(page) || 0) - 1));
   const left = Math.max(0, TOTAL_PARTS - read);
   // يوم الختم نفسه: الأيام العشرة كلّها أمامه
   const daysLeft = dayNumber === 0 ? KHATMA_TARGET_DAYS : KHATMA_TARGET_DAYS - dayNumber + 1;

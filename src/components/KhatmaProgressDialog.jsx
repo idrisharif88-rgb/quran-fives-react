@@ -17,11 +17,11 @@ const one = (n) => n.toFixed(1).replace(/\.0$/, '');
  * تقدّم الختمة الجارية (حدّها عشرة أيام) ومعدّل الختمات منذ 13 ذي الحجة 1447.
  * نافذة حاجبة: لا يُلمس ما خلفها حتى تُغلق.
  * @param khatmas  الختمات المسجّلة [{ timestamp }]
- * @param page     قيمة العدّاد (الصفحة الجارية)
+ * @param counters كل العدّادات: كل عدّاد قسم من صفحة بدايته إلى قيمته
  * @param today    مفتاح اليوم
  * @param backRef  يُملأ بدالّة الإغلاق ما دامت مفتوحة، لزرّ الرجوع في الهاتف
  */
-export default function KhatmaProgressDialog({ khatmas, page, today, onClose, backRef }) {
+export default function KhatmaProgressDialog({ khatmas, counters, today, onClose, backRef }) {
   useEffect(() => {
     if (!backRef) return undefined;
     backRef.current = onClose;
@@ -30,7 +30,7 @@ export default function KhatmaProgressDialog({ khatmas, page, today, onClose, ba
 
   const timestamps = khatmas.map((k) => k.timestamp).filter(Number.isFinite);
   const lastKhatmaAt = timestamps.length ? Math.max(...timestamps) : null;
-  const p = khatmaProgress({ lastKhatmaAt, page, today });
+  const p = khatmaProgress({ lastKhatmaAt, counters, today });
   const avg = khatmaAverage({ timestamps, today });
   const status = STATUS[p.status];
 

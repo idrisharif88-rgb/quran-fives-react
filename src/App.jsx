@@ -296,6 +296,7 @@ function App() {
   const [nightCounterNameInput, setNightCounterNameInput] = useState('');
   const [nightCounterValueInput, setNightCounterValueInput] = useState('0');
   const [nightCounterLimitInput, setNightCounterLimitInput] = useState('');
+  const [nightCounterStartInput, setNightCounterStartInput] = useState('1');   // أول صفحة في القسم
   // إعدادات ساعة الحفظ: الهدف لكل صفحة (ثانية) والأفضلان الشخصيان (متوسط الصفحة + زمن الجزء)
   const [stopwatchTargetSeconds, setStopwatchTargetSeconds] = useState(() => (
     Number.isFinite(persistedAppState.stopwatchTargetSeconds) ? persistedAppState.stopwatchTargetSeconds : 60
@@ -466,7 +467,8 @@ function App() {
   useGoogleDailyBackup(Boolean(accountStatus?.googleBackup));
   // «فقهيات» محتوى خاص بالمالك: لا يظهر لغير حسابه
   const isOwner = Boolean(account && accountStatus?.admin);
-  const canSwitchSection = Boolean(account && accountStatus?.sectionSwitch);
+  // بلا حساب لا خروج يُبدَّل به، فالتنقّل مفتوح للزائر
+  const canSwitchSection = !account || Boolean(accountStatus?.sectionSwitch);
   const canLibrary = Boolean(account && accountStatus?.library);   // «المكتبة» بإذن المشرف (والمشرف دائماً)   // بإذن المشرف: حفظ ⇄ خماسيات بلا خروج
   const hifzHome = useHifzHome();
   const hijriReminder = useHijriReminder(isOwner);   // المشرف: إضافة بدايات الأشهر الهجرية كل شهر
@@ -786,6 +788,7 @@ function App() {
     setNightCounterLimitInput(
       Number.isInteger(activeNightCounter.limit) ? String(activeNightCounter.limit) : ''
     );
+    setNightCounterStartInput(String(Number.isInteger(activeNightCounter.start) ? activeNightCounter.start : 1));
   }, [activeNightCounterId, activeNightCounter]);
 
   // عند فتح التطبيق: نفحص الخادم فحصاً للقراءة فقط (fetchRemoteInfo) ولا نطبّق
@@ -1764,18 +1767,23 @@ function App() {
     const name = nightCounterNameInput.trim() || 'العداد';
     const parsedValue = parseInt(nightCounterValueInput, 10);
     const parsedLimit = parseInt(nightCounterLimitInput, 10);
+    const parsedStart = parseInt(nightCounterStartInput, 10);
+    const start = Number.isFinite(parsedStart) ? Math.max(1, parsedStart) : 1;
     const value = Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0;
     const limit = Number.isFinite(parsedLimit) ? Math.max(0, parsedLimit) : null;
-    const finalValue = limit !== null ? Math.min(value, limit) : value;
+    // قسم يبدأ من صفحة: لا يقف العدّاد قبلها
+    const fromStart = start > 1 && value < start ? start : value;
+    const finalValue = limit !== null ? Math.min(fromStart, limit) : fromStart;
 
     setNightCounters(prev => prev.map(counter => (
       counter.id === activeNightCounterId
-        ? { ...counter, name, value: finalValue, limit }
+        ? { ...counter, name, value: finalValue, limit, start }
         : counter
     )));
     setNightCounterNameInput(name);
     setNightCounterValueInput(String(finalValue));
     setNightCounterLimitInput(limit !== null ? String(limit) : '');
+    setNightCounterStartInput(String(start));
   };
 
   const handleAddNightCounter = () => {
@@ -1915,6 +1923,15 @@ function App() {
       allowColon: false,
       maxLength: 7,
       label: 'العدد الحالي',
+      submitLabel: 'حفظ',
+      onSubmit: applyNightCounterInputs,
+    },
+    counterStart: {
+      value: nightCounterStartInput,
+      setValue: setNightCounterStartInput,
+      allowColon: false,
+      maxLength: 3,
+      label: 'من صفحة',
       submitLabel: 'حفظ',
       onSubmit: applyNightCounterInputs,
     },
@@ -2726,7 +2743,7 @@ function App() {
       {isKhatmaProgressOpen && (
         <KhatmaProgressDialog
           khatmas={khatmaList}
-          page={activeNightCounter?.value ?? 0}
+          counters={nightCounters}
           today={dayKey()}
           onClose={closeKhatmaProgress}
           backRef={celebrationBackRef}
@@ -3887,6 +3904,14 @@ function App() {
               </div>
               
               <div className="settings-row night-counter-numbers" style={{ marginBottom: '15px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', color: 'var(--app-muted)', marginBottom: '5px' }}>من صفحة</label>
+                  <input
+                    type="text"
+                    placeholder="1"
+                    {...mainKeyboard.getInputProps('counterStart', { className: 'night-counter-input' })}
+                  />
+                </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', color: 'var(--app-muted)', marginBottom: '5px' }}>العدد الحالي</label>
                   <input

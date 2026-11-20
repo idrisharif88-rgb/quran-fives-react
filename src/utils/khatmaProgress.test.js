@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { partsRead, khatmaProgress, khatmaAverage, KHATMA_EPOCH } from './khatmaProgress';
+import { partsRead, khatmaProgress, khatmaAverage, KHATMA_EPOCH, pagesReadBy, partsReadOfPages } from './khatmaProgress';
 
 const at = (y, m, d) => new Date(y, m - 1, d, 12).getTime();
 
@@ -70,5 +70,27 @@ describe('khatmaAverage (since 13 Dhu al-Hijjah 1447)', () => {
 
   it('has no average before the first khatma', () => {
     expect(khatmaAverage({ timestamps: [], today: '2026-07-04' })).toMatchObject({ count: 0, average: null });
+  });
+});
+
+describe('khatma sections (several counters)', () => {
+  it('adds the pages read in every section', () => {
+    // 400→412 (12 pages) and 1→22 (21 pages = juz 1)
+    const pages = pagesReadBy([{ start: 400, value: 412 }, { start: 1, value: 22 }]);
+    expect(pages.size).toBe(33);
+    expect(partsReadOfPages(pages)).toBeCloseTo(1 + 12 / 20, 5);
+  });
+
+  it('does not count overlapping sections twice', () => {
+    expect(pagesReadBy([{ start: 1, value: 51 }, { start: 30, value: 61 }]).size).toBe(60);
+  });
+
+  it('a counter without start reads from page 1 (old behaviour)', () => {
+    const p = khatmaProgress({ lastKhatmaAt: at(2026, 10, 11), counters: [{ value: 182 }], today: '2026-10-14' });
+    expect(p.read).toBe(9);
+  });
+
+  it('a section counter at its start has read nothing yet', () => {
+    expect(pagesReadBy([{ start: 400, value: 400 }]).size).toBe(0);
   });
 });
