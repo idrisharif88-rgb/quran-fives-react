@@ -82,7 +82,7 @@ import usePageNavSettings from './hooks/usePageNavSettings';
 import useLongPressNav from './hooks/useLongPressNav';
 import useVolumeNav from './hooks/useVolumeNav';
 import useHoldRepeat from './hooks/useHoldRepeat';
-import CounterSectionStrip from './components/CounterSections/CounterSectionStrip';
+import CounterSectionArrows from './components/CounterSections/CounterSectionArrows';
 import { dayKey } from './utils/hifzSchedule';
 import { hijriFromTable } from './utils/hijriDate';
 import useHijriToday from './hooks/useHijriToday';
@@ -3360,8 +3360,6 @@ function App() {
                 </div>
               </div>
 
-              <CounterSectionStrip counters={nightCounters} activeId={activeNightCounterId} onSelect={setActiveNightCounterId} />
-
               <StopwatchBar
                 totalMs={stopwatch.totalMs}
                 currentLapMs={stopwatch.currentLapMs}
@@ -3393,6 +3391,7 @@ function App() {
                   <CounterRing value={activeNightCounter?.value ?? 0} status={lapStatus(stopwatch.currentLapMs, targetMs)} />
                 </button>
                 </CounterFivesMarks>
+                <CounterSectionArrows counters={nightCounters} activeId={activeNightCounterId} onSelect={setActiveNightCounterId} />
               </div>
 
               {Number.isInteger(activeNightCounter?.limit) && (
