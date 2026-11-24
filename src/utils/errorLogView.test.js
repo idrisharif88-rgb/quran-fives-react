@@ -23,5 +23,6 @@ describe('errorLogView', () => {
   it('names a device by model, browser or id', () => {
     expect(deviceName({ model: 'samsung SM-N960F', os: 'Android 10' })).toBe('samsung SM-N960F · Android 10');
     expect(deviceName({ installId: 'abcdef1234' })).toBe('جهاز 1234');
+    expect(deviceName({ installId: 'p', model: 'x' }, { p: 'هاتفي' })).toBe('هاتفي');
   });
 });

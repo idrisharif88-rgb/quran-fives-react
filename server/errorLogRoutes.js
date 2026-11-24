@@ -48,6 +48,7 @@ export function cleanEntry(raw, now, ip) {
 export function registerErrorLogRoutes(app, { dataDir, signedIn, clientIp, limit = { windowMs: 60 * 60 * 1000, max: 200 } }) {
   const dir = path.join(dataDir, 'errors');
   const configFile = path.join(dir, 'config.json');
+  const namesFile = path.join(dir, 'devices.json');   // أسماء يعطيها المالك للأجهزة: { installId: name }
   const ipLimit = createLimiter(limit);
   let lastPrune = 0;
 
@@ -58,6 +59,10 @@ export function registerErrorLogRoutes(app, { dataDir, signedIn, clientIp, limit
 
   async function readConfig() {
     try { return { enabled: true, ...JSON.parse(await fs.readFile(configFile, 'utf8')) }; } catch { return { enabled: true }; }
+  }
+
+  async function readNames() {
+    try { return JSON.parse(await fs.readFile(namesFile, 'utf8')) || {}; } catch { return {}; }
   }
 
   async function prune(now) {
@@ -100,7 +105,7 @@ export function registerErrorLogRoutes(app, { dataDir, signedIn, clientIp, limit
       }
     }
     entries.sort((a, b) => b.at - a.at);
-    res.json({ entries: entries.slice(0, 2000), ...(await readConfig()) });
+    res.json({ entries: entries.slice(0, 2000), names: await readNames(), ...(await readConfig()) });
   });
 
   app.post('/api/admin/errors/config', requireAdmin, async (req, res) => {
@@ -108,6 +113,20 @@ export function registerErrorLogRoutes(app, { dataDir, signedIn, clientIp, limit
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(configFile, JSON.stringify({ enabled: req.body.enabled }));
     res.json({ ok: true, enabled: req.body.enabled });
+  });
+
+  // اسم جهاز يختاره المالك («هاتفي»). اسم فارغ يحذفه. يبقى بعد مسح السجلّ.
+  app.post('/api/admin/errors/device', requireAdmin, async (req, res) => {
+    const { installId, name } = req.body || {};
+    if (typeof installId !== 'string' || !installId || installId.length > MAX_FIELD.installId || typeof name !== 'string') {
+      return res.status(400).json({ error: 'حمولة غير صالحة' });
+    }
+    const names = await readNames();
+    const clean = name.trim().slice(0, 40);
+    if (clean) names[installId] = clean; else delete names[installId];
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(namesFile, JSON.stringify(names));
+    res.json({ ok: true, names });
   });
 
   app.delete('/api/admin/errors', requireAdmin, async (req, res) => {

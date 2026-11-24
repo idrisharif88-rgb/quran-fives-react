@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
-import { fetchErrorLog, setErrorLogEnabled, clearErrorLog } from '../utils/cloudSync';
+import { fetchErrorLog, setErrorLogEnabled, clearErrorLog, nameErrorDevice } from '../utils/cloudSync';
 import { flushErrors } from '../utils/errorLog';
 
 /** بيانات شاشة «سجل الأخطاء»: الأخطاء لعدد أيام، وحالة الاستقبال، والمسح. */
 export default function useErrorLog(days) {
-  const [state, setState] = useState({ status: 'loading', entries: [], enabled: true });
+  const [state, setState] = useState({ status: 'loading', entries: [], names: {}, enabled: true });
 
   const load = useCallback(async () => {
     setState((s) => ({ ...s, status: 'loading' }));
     try {
       await flushErrors();   // ما في طابور هذا الجهاز يظهر في القائمة أيضاً
       const res = await fetchErrorLog(days);
-      setState({ status: 'ok', entries: res.entries || [], enabled: res.enabled !== false });
+      setState({ status: 'ok', entries: res.entries || [], names: res.names || {}, enabled: res.enabled !== false });
     } catch {
       setState((s) => ({ ...s, status: 'error' }));
     }
@@ -29,5 +29,14 @@ export default function useErrorLog(days) {
     try { await clearErrorLog(); setState((s) => ({ ...s, entries: [] })); } catch { setState((s) => ({ ...s, status: 'error' })); }
   };
 
-  return { ...state, reload: load, toggle, clear };
+  // اسم يختاره المالك للجهاز؛ فارغ يعيد اسم الطراز. يُعرض فوراً ويعود إن فشل الحفظ.
+  const rename = async (installId, name) => {
+    const before = state.names;
+    const names = { ...before };
+    if (name.trim()) names[installId] = name.trim(); else delete names[installId];
+    setState((s) => ({ ...s, names }));
+    try { await nameErrorDevice(installId, name); } catch { setState((s) => ({ ...s, names: before })); }
+  };
+
+  return { ...state, reload: load, toggle, clear, rename };
 }

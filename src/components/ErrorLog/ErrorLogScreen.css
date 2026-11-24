@@ -169,7 +169,45 @@
 
 .errorlog-picked { margin: 0 0 10px; }
 
+.errorlog-device {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.errorlog-device-pen {
+  flex: 0 0 38px;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.errorlog-rename {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.errorlog-rename input {
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1.5px solid var(--app-accent-ink);
+  border-radius: 10px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-family: inherit;
+  font-size: 14px;
+}
+
 .errorlog-device-btn {
+  flex: 1;
+  min-width: 0;
   width: 100%;
   display: flex;
   align-items: center;
@@ -203,9 +241,7 @@
 .errorlog-device-name {
   font-weight: 800;
   font-size: 13px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   text-align: right;
 }
 

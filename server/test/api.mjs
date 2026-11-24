@@ -585,6 +585,11 @@ test('سجلّ الأخطاء: يُستقبل بلا حساب، يُنظَّف،
   assert.equal(off.json.stored, 0);
   await call('POST', '/api/admin/errors/config', { headers: owner, body: { enabled: true } });
 
+  const named = await call('POST', '/api/admin/errors/device', { headers: owner, body: { installId: 'inst-1', name: ' هاتفي ' } });
+  assert.equal(named.json.names['inst-1'], 'هاتفي');
+  assert.equal((await call('GET', '/api/admin/errors', { headers: owner })).json.names['inst-1'], 'هاتفي');
+  assert.equal((await call('POST', '/api/admin/errors/device', { headers: basic('third@example.com', '123456', devices['third@example.com']), body: { installId: 'x', name: 'y' } })).status, 403);
+
   assert.equal((await call('DELETE', '/api/admin/errors', { headers: owner })).status, 200);
   assert.equal((await call('GET', '/api/admin/errors', { headers: owner })).json.entries.length, 0);
 });

@@ -187,5 +187,7 @@ export const fetchErrorLog = (days) => api(`/api/admin/errors?days=${days}`, { m
 export const setErrorLogEnabled = (enabled) =>
   api('/api/admin/errors/config', { method: 'POST', body: JSON.stringify({ enabled }) });
 export const clearErrorLog = () => api('/api/admin/errors', { method: 'DELETE' });
+export const nameErrorDevice = (installId, name) =>
+  api('/api/admin/errors/device', { method: 'POST', body: JSON.stringify({ installId, name }) });
 
 export const deleteAccount = (creds) => api('/api/account/delete', { method: 'POST', creds });

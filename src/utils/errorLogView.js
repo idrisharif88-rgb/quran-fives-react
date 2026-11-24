@@ -3,13 +3,16 @@
 
 const NO_ID = 'unknown';
 
-/** اسم الجهاز للعرض: «samsung SM-N960F · Android 10»، أو المتصفح، أو آخر حروف المعرّف */
-export function deviceName(d) {
+/** وصف الجهاز: «samsung SM-N960F · Android 10»، أو المتصفح، أو آخر حروف المعرّف */
+export function deviceModel(d) {
   const label = [d.model, d.os].filter(Boolean).join(' · ');
   if (label) return label;
   if (d.platform === 'web') return 'الموقع';
   return d.installId && d.installId !== NO_ID ? `جهاز ${d.installId.slice(-4)}` : 'جهاز غير معروف';
 }
+
+/** اسم الجهاز للعرض: ما سمّاه المالك، وإلا وصفه */
+export const deviceName = (d, names = {}) => names[d.installId] || deviceModel(d);
 
 function addTo(map, e) {
   const id = e.installId || NO_ID;
