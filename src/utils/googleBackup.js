@@ -22,7 +22,6 @@ export const BACKUP_KEYS = [
   'quran-fives-keep-lap-v1',
   'quran-fives-hifz-voice-v1',
   'quran-fives-hifz-reminder-daily-v1',   // تذكير الحفظ اليومي (hifzReminder.js)
-  'quran-fives-tafsir-reminder-v1',       // ما فُسّر اليوم (useTafsirReminder)
 ];
 
 export function buildBackup(now = Date.now()) {

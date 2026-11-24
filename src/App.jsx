@@ -56,6 +56,8 @@ import CounterPageHead from './components/CounterPageHead';
 import ReviewRecorder from './components/ReviewRecorder/ReviewRecorder';
 import GoogleBackup from './components/GoogleBackup/GoogleBackup';
 import UpdatesNotebook from './components/UpdatesNotebook/UpdatesNotebook';
+import ErrorLogScreen from './components/ErrorLog/ErrorLogScreen';
+import SecurityLogScreen from './components/SecurityLog/SecurityLogScreen';
 import Library from './components/Library/Library';
 import AppScaleSheet from './components/AppScale/AppScaleSheet';
 import ContactUs from './components/ContactUs/ContactUs';
@@ -67,10 +69,13 @@ import SignOutSheet from './components/SignOut/SignOutSheet';
 import DriveRestoreOffer from './components/GoogleBackup/DriveRestoreOffer';
 import useHifzReminder from './hooks/useHifzReminder';
 import { pushLocal, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, fetchMe } from './utils/cloudSync';
+import { reconcile, isEmptyDevice } from './utils/autoSync';
+import useResumeSync from './hooks/useResumeSync';
+import { logError } from './utils/errorLog';
 import { SYNC_ENABLED } from './utils/syncConfig';
-import { getSyncMeta, deviceDataIsForeign, clearSyncMeta } from './utils/syncMeta';
+import { getSyncMeta, clearSyncMeta, noteLocalEdit, lastLocalEdit, getSyncBase, setSyncBase } from './utils/syncMeta';
 import { readAccountStatus, saveAccountStatus } from './utils/syncAccount';
-import { SESSION_STORAGE_KEYS, isPristineState } from './utils/deviceData';
+import { SESSION_STORAGE_KEYS } from './utils/deviceData';
 
 import SyncStatusIndicator from './components/SyncStatusIndicator';
 import StartupSyncPrompt from './components/StartupSyncPrompt';
@@ -82,13 +87,14 @@ import usePageNavSettings from './hooks/usePageNavSettings';
 import useLongPressNav from './hooks/useLongPressNav';
 import useVolumeNav from './hooks/useVolumeNav';
 import useHoldRepeat from './hooks/useHoldRepeat';
+import PullToRefresh from './components/PullToRefresh/PullToRefresh';
+import CounterSectionName from './components/CounterSections/CounterSectionName';
 import CounterSectionArrows from './components/CounterSections/CounterSectionArrows';
 import { dayKey } from './utils/hifzSchedule';
 import { hijriFromTable } from './utils/hijriDate';
 import useHijriToday from './hooks/useHijriToday';
 import HijriMonthsReminder from './components/HijriMonthsReminder';
 import useHijriReminder from './hooks/useHijriReminder';
-import useTafsirReminder from './hooks/useTafsirReminder';
 import { MUSHAF } from './utils/mushafEdition';
 import AccountPanel from './components/AccountPanel';
 import WelcomeToast from './components/WelcomeToast';
@@ -341,6 +347,12 @@ function App() {
   const [isFiqhOpen, setIsFiqhOpen] = useState(false);
   const [isNotebookOpen, setIsNotebookOpen] = useState(false);   // «دفتر التحديثات» للمالك
   const notebookBackRef = useRef(null);
+  const [isErrorLogOpen, setIsErrorLogOpen] = useState(false);   // «سجل الأخطاء» للمالك
+  const errorLogBackRef = useRef(null);
+  const closeErrorLog = useCallback(() => setIsErrorLogOpen(false), []);
+  const [isSecurityLogOpen, setIsSecurityLogOpen] = useState(false);   // «سجل الأمان» للمالك
+  const securityLogBackRef = useRef(null);
+  const closeSecurityLog = useCallback(() => setIsSecurityLogOpen(false), []);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);   // «المكتبة» — لمن أذن له المشرف
   const libraryBackRef = useRef(null);
   const appScale = useAppScale();   // «حجم العرض»
@@ -482,12 +494,6 @@ function App() {
   const hifzHome = useHifzHome();
   const hijriReminder = useHijriReminder(isOwner);   // المشرف: إضافة بدايات الأشهر الهجرية كل شهر
   const ijazatStore = useIjazat(persistedAppState.ijazat);   // إجازاتي: تُزامَن مع الحساب
-  const tafsirReminder = useTafsirReminder();         // كل يوم: تفسير خمس آيات على ظهر البطاقات
-  const { recordSaved: recordTafsirSaved } = tafsirReminder;
-  const saveVerseNoteCounted = useCallback((key, text) => {
-    saveVerseNote(key, text);
-    recordTafsirSaved(key, text);
-  }, [saveVerseNote, recordTafsirSaved]);
   const [syncCheckNonce, setSyncCheckNonce] = useState(0);   // يعيد فحص الفتح («تحقّق الآن»)
   const [isAdminUsersOpen, setIsAdminUsersOpen] = useState(false);
   const syncUnlocked = Boolean(account);
@@ -799,12 +805,47 @@ function App() {
     );
   }, [activeNightCounterId, activeNightCounter]);
 
-  // عند فتح التطبيق: نفحص الخادم فحصاً للقراءة فقط (fetchRemoteInfo) ولا نطبّق
-  // شيئاً. إن اختلفت نسخة السحابة عمّا يعرفه هذا الجهاز عُرض القرار على المستخدم
-  // في StartupSyncPrompt — قبلها كان pullRemoteIfChanged يكتب فوق الحالة المحلية
-  // ويعيد التحميل تلقائياً بمجرّد رجوع الطلب، فتتبدّل حالة الجهاز بلا سؤال.
-  // لا يبدأ الرفع التلقائي إلا بعد أن يصير cloudSyncReadyRef صحيحاً: إمّا لأن
-  // النسختين متطابقتان، أو لأن المستخدم اختار صراحةً.
+  // المزامنة التلقائية (autoSync.js): عند الفتح، وعند العودة إلى التطبيق، وبالسحب للتحديث.
+  // تحدّث صلاحيات الحساب (fetchMe) ثم تدمج نسختي الجهاز والسحابة بلا سؤال. جهاز بلا محتوى
+  // لا يرفع شيئاً؛ والسؤال الوحيد الباقي بيانات حساب آخر فوق سحابة فارغة (emptyCloud).
+  const runSyncCheck = async (isCancelled = () => false) => {
+    if (!SYNC_ENABLED || !syncUnlocked) return;
+    // رفعة جارية: ننتظرها، فعمليّتان معاً تصطدمان بـ409
+    for (let i = 0; i < 50 && cloudPushBusyRef.current; i++) await new Promise(r => setTimeout(r, 200));
+    cloudPushBusyRef.current = true;
+    setIsSyncing(true);
+    try {
+      const me = await fetchMe();
+      if (isCancelled()) return;
+      setAccountStatus(me);
+      saveAccountStatus(me);
+      // بانتظار موافقة المشرف: لا مزامنة ولا علامة فشل — التطبيق يعمل محلياً
+      if (!me.approved) {
+        cloudSyncReadyRef.current = false;
+        setSyncFailed(false);
+        return;
+      }
+      const snapshot = lastSnapshotRef.current ?? loadStoredState(APP_STORAGE_KEY);
+      const result = await reconcile(snapshot);
+      if (result === 'reload') { window.location.reload(); return; }   // لا await بين الكتابة وإعادة التحميل
+      if (isCancelled()) return;
+      if (result === 'emptyCloud') { cloudSyncReadyRef.current = false; setStartupSyncChoice({ emptyCloud: true }); return; }
+      cloudSyncReadyRef.current = true;
+      setSyncFailed(false);
+    } catch (e) {
+      if (isCancelled()) return;
+      // الخادم رفض بيانات الدخول: نُخرج الحساب ليُطلب الدخول من جديد (401 وحده)
+      if (e?.status === 401) { signOut(); return; }
+      logError('sync', e, 'runSyncCheck');
+      // فشل الفحص: لا رفع قبل أن يعرف الجهاز حالة الخادم، وإلا كتب نسخة قديمة فوق الأحدث
+      cloudSyncReadyRef.current = false;
+      setSyncFailed(true);
+    } finally {
+      cloudPushBusyRef.current = false;
+      setIsSyncing(false);
+    }
+  };
+
   useEffect(() => {
     // المزامنة لا تعمل إلا بعد دخول المستخدم بحسابه (syncUnlocked)
     if (!SYNC_ENABLED || !syncUnlocked) {
@@ -816,55 +857,12 @@ function App() {
       return;
     }
     let cancelled = false;
-    (async () => {
-      try {
-        const me = await fetchMe();
-        if (cancelled) return;
-        setAccountStatus(me);
-        saveAccountStatus(me);
-        // بانتظار موافقة المشرف: لا مزامنة ولا علامة فشل — التطبيق يعمل محلياً
-        if (!me.approved) {
-          cloudSyncReadyRef.current = false;
-          setSyncFailed(false);
-          return;
-        }
-        const info = await fetchRemoteInfo();
-        if (cancelled) return;
-        // جهاز بلا محتوى (جديد، أو بعد تسجيل خروج) والحساب له نسخة: تُنزَّل بلا سؤال
-        if (info.hasState && !info.inSync && isPristineState(loadStoredState(APP_STORAGE_KEY))) {
-          if (await forcePullRemote()) { window.location.reload(); return; }
-        }
-        if (cancelled) return;
-        const choice = startupChoiceFor(info);
-        if (choice) { setStartupSyncChoice(choice); return; }
-        // السحابة فارغة أو مطابقة لآخر نسخة رآها الجهاز: لا قرار مطلوب
-        cloudSyncReadyRef.current = true;
-        setSyncFailed(false);
-        // حساب سحابته فارغة (جديد): نرفع حالة هذا الجهاز الآن بدل انتظار أوّل تغيير
-        if (!info.hasState) runCloudPush(lastSnapshotRef.current);
-      } catch (e) {
-        if (cancelled) return;
-        // الخادم رفض بيانات الدخول: نُخرج الحساب ليُطلب الدخول من جديد (401 وحده)
-        if (e?.status === 401) { signOut(); return; }
-        // فشل الفحص: لا نُفعّل الرفع إطلاقاً. الجهاز لم يعرف حالة الخادم بعد،
-        // ورفع حالته المحلية هنا يكتب نسخة قديمة فوق الأحدث من جهاز آخر.
-        setSyncFailed(true);
-      }
-    })();
+    runSyncCheck(() => cancelled);
     return () => { cancelled = true; };
   }, [syncUnlocked, syncCheckNonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // هل يحتاج الفتح قراراً من المستخدم؟ يعيد وصف القرار أو null.
-  // - السحابة تختلف عن آخر نسخة رآها الجهاز: أيّ النسختين تبقى.
-  // - السحابة فارغة وبيانات الجهاز زامنها حساب آخر (تبديل مستخدم): لا تُرفع بيانات
-  //   غيره إلى حسابه بلا سؤال.
-  const startupChoiceFor = (info) => {
-    if (info.hasState && !info.inSync) {
-      return { remoteUpdatedAt: info.updatedAt, localUpdatedAt: getSyncMeta().updatedAt };
-    }
-    if (!info.hasState && deviceDataIsForeign()) return { emptyCloud: true };
-    return null;
-  };
+  // العودة إلى التطبيق من الخلفية: فحص جديد (ما كتبه جهاز آخر، وصلاحيات منحها المالك)
+  useResumeSync(() => setSyncCheckNonce(n => n + 1));
 
   // ─── تنفيذ قرار المزامنة عند الفتح ───
 
@@ -873,24 +871,6 @@ function App() {
     removeStoredState(APP_STORAGE_KEY);
     clearSyncMeta();
     window.location.reload();
-  };
-
-  const handleStartupPull = async () => {
-    if (startupSyncBusy) return;
-    setStartupSyncBusy('pull');
-    setStartupSyncError('');
-    try {
-      const applied = await forcePullRemote();
-      if (!applied) {   // اختفت نسخة السحابة بين الفحص والقرار
-        setStartupSyncError('لا توجد نسخة على السحابة');
-        setStartupSyncBusy(null);
-        return;
-      }
-      window.location.reload();   // إعادة التحميل تطبّق الحالة المنزّلة
-    } catch (e) {
-      setStartupSyncError(e?.status === 401 ? 'بيانات الدخول غير مقبولة' : 'تعذّر التنزيل — تحقّق من الاتصال');
-      setStartupSyncBusy(null);
-    }
   };
 
   const handleStartupPush = async () => {
@@ -926,6 +906,7 @@ function App() {
   // فلا يكتب رفعٌ قديم فاشل فوق نجاح رفعٍ أحدث (يمنع رسالة «لم تتم» الكاذبة).
   const runCloudPush = (snapshot) => {
     if (!SYNC_ENABLED || !syncUnlocked || !snapshot) return;
+    if (isEmptyDevice(snapshot)) return;   // جهاز بلا محتوى لم يزامن قط: لا يرفع شيئاً أبداً
     // رفعة واحدة في كل لحظة: التوازي على شبكة بطيئة كان يجعل الرفعة الثانية
     // تصطدم بـ409 من الأولى (أساسها صار قديماً) فتتعطّل المزامنة بلا سبب حقيقي
     if (cloudPushBusyRef.current) { cloudPushPendingRef.current = snapshot; return; }
@@ -935,8 +916,9 @@ function App() {
     pushLocal(snapshot)
       .then(() => { if (token === cloudPushSeqRef.current) setSyncFailed(false); })
       .catch((e) => {
-        // تعارض: جهاز آخر كتب بعدنا. نوقف الرفع حتى يسحب المستخدم الأحدث بزر إعادة المحاولة
-        if (e?.status === 409) cloudSyncReadyRef.current = false;
+        // تعارض: جهاز آخر كتب بعدنا. يُدمج تلقائياً بعد انتهاء هذه الرفعة (runSyncCheck)
+        if (e?.status === 409) { cloudPushPendingRef.current = null; setSyncCheckNonce(n => n + 1); return; }
+        if (e?.status !== 401 && e?.status !== 403) logError('sync', e, 'runCloudPush');
         if (e?.status === 401) signOut();   // الخادم رفض بيانات الدخول
         if (e?.status === 403) setSyncCheckNonce(n => n + 1);   // سُحبت الموافقة: أعد فحص الحالة
         if (token === cloudPushSeqRef.current) setSyncFailed(true);
@@ -957,22 +939,7 @@ function App() {
   // عرض القرار بدل السحب فوق الحالة المحلية.
   const handleSyncRetry = async () => {
     if (isSyncing || startupSyncBusy) return;
-    if (!cloudSyncReadyRef.current) {
-      setIsSyncing(true);
-      try {
-        const info = await fetchRemoteInfo();
-        const choice = startupChoiceFor(info);
-        if (choice) { setStartupSyncChoice(choice); return; }
-        cloudSyncReadyRef.current = true;
-        setSyncFailed(false);
-      } catch {
-        setSyncFailed(true);
-        return;
-      } finally {
-        setIsSyncing(false);
-      }
-    }
-    runCloudPush(lastSnapshotRef.current);
+    await runSyncCheck();
   };
 
   // بعد الدخول تُغلق لوحة المزامنة ليظهر الترحيب (WelcomeToast) على الشاشة الرئيسية
@@ -995,7 +962,7 @@ function App() {
   // خطوة الرفع: نسخة هذا الجهاز تحلّ محلّ نسخة السحابة
   const handleManualPush = async () => {
     if (manualSyncBusy) return;
-    if (!lastSnapshotRef.current) {   // لم تُلتقط لقطة بعد: لا نرفع حالة فارغة فوق السحابة
+    if (!lastSnapshotRef.current || isEmptyDevice(lastSnapshotRef.current)) {   // لا نرفع حالة فارغة فوق السحابة
       setManualSyncResult({ ok: false, text: 'لا توجد حالة جاهزة للرفع بعد' });
       return;
     }
@@ -1094,6 +1061,10 @@ function App() {
       localStores: readSyncedLocal(),
     };
     saveStoredState(APP_STORAGE_KEY, appStateSnapshot);
+    if (lastSnapshotRef.current) noteLocalEdit();
+    // اللقطة الأولى تحميلٌ لا تعديل: إن لم يُعدَّل شيء منذ آخر مزامنة صارت هي الأساس، فما يضيفه
+    // التحميل من قيم افتراضية لا يُعدّ تغييراً يُرفع (وإلا تبادل جهازان الرفع وإعادة التحميل بلا نهاية)
+    else if (!lastLocalEdit() && getSyncBase()) setSyncBase(appStateSnapshot);
     lastSnapshotRef.current = appStateSnapshot;
   }, [
     activeReciter,
@@ -2138,6 +2109,14 @@ function App() {
       notebookBackRef.current();
       return true;
     }
+    if (errorLogBackRef.current) {
+      errorLogBackRef.current();
+      return true;
+    }
+    if (securityLogBackRef.current) {
+      securityLogBackRef.current();
+      return true;
+    }
     if (libraryBackRef.current) {
       libraryBackRef.current();
       return true;
@@ -2784,16 +2763,6 @@ function App() {
           backRef={celebrationBackRef}
         />
       )}
-      {!hijriReminder.open && tafsirReminder.open && !isHifzOpen && !appSection.needsChoice && (
-        <HijriMonthsReminder
-          message={tafsirReminder.message}
-          closeLabel="افتح الخماسيات"
-          postponeLabel="لاحقًا"
-          onClose={() => { tafsirReminder.hide(); setViewMode('khmasiyat'); }}
-          onPostpone={tafsirReminder.postpone}
-          backRef={celebrationBackRef}
-        />
-      )}
       {isKhatmaProgressOpen && (
         <KhatmaProgressDialog
           khatmas={khatmaList}
@@ -2928,7 +2897,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover more-menu-list" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات'] : []), ...(canLibrary ? ['المكتبة'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'حجم العرض', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'تواصل معنا', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
+                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات', 'سجل الأخطاء', 'سجل الأمان'] : []), ...(canLibrary ? ['المكتبة'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'حجم العرض', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'تواصل معنا', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -2940,6 +2909,8 @@ function App() {
                         if (option === 'إجازاتي') { mainKeyboard.closeKeyboard(); setIsIjazatOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'المحفوظات') { setIsSavedSessionsOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'دفتر التحديثات') { mainKeyboard.closeKeyboard(); setIsNotebookOpen(true); setIsMoreMenuOpen(false); return; }
+                        if (option === 'سجل الأخطاء') { setIsErrorLogOpen(true); setIsMoreMenuOpen(false); return; }
+                        if (option === 'سجل الأمان') { setIsSecurityLogOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'المكتبة') { mainKeyboard.closeKeyboard(); setIsLibraryOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فقهيات') { mainKeyboard.closeKeyboard(); setIsFiqhOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فأل القرآن') { mainKeyboard.closeKeyboard(); setIsFalOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -3390,6 +3361,7 @@ function App() {
                 >
                   <CounterRing value={activeNightCounter?.value ?? 0} status={lapStatus(stopwatch.currentLapMs, targetMs)} />
                 </button>
+                <CounterSectionName counters={nightCounters} activeId={activeNightCounterId} />
                 </CounterFivesMarks>
                 <CounterSectionArrows counters={nightCounters} activeId={activeNightCounterId} onSelect={setActiveNightCounterId} />
               </div>
@@ -3582,7 +3554,7 @@ function App() {
               flipped: flippedCardKey === cardKey,
               onFlip: () => setFlippedCardKey(prev => (prev === cardKey ? null : cardKey)),
               notes: verseNotes,
-              onSave: saveVerseNoteCounted,
+              onSave: saveVerseNote,
               onImport: mergeVerseNotes,
               editorBackRef: noteEditorBackRef,
             } : undefined;
@@ -3985,7 +3957,7 @@ function App() {
       {/* تحت اختيار القسم أيضاً: تكون جاهزة لحظة الضغط، فلا يظهر ما تحتها */}
       {(isHifzOpen || appSection.needsChoice) && (
         <Suspense fallback={<div className="section-cover" />}>
-          <HifzScreen hifz={isOwner && hifzTrial.on ? hifzTrial.hifz : hifz} trial={isOwner && hifzTrial.on} onTrialStart={isOwner ? hifzTrial.start : undefined} onTrialEnd={hifzTrial.end} reciter={activeReciter} onReciterChange={setActiveReciter} contacts={hifzContacts} onOpenAccount={() => setIsSyncPanelOpen(true)} onSwitchSection={canSwitchSection ? () => appSection.choose(SECTION.FIVES) : undefined} homeData={hifzHome} backRef={hifzBackRef} canTakeExtra={isOwner || Boolean(account && accountStatus?.hifzExtraPortion)} canCustomStart={Boolean(account && accountStatus?.hifzCustomStart)} />
+          <HifzScreen hifz={isOwner && hifzTrial.on ? hifzTrial.hifz : hifz} trial={isOwner && hifzTrial.on} onTrialStart={isOwner ? hifzTrial.start : undefined} onTrialEnd={hifzTrial.end} reciter={activeReciter} onReciterChange={setActiveReciter} contacts={hifzContacts} onOpenAccount={() => setIsSyncPanelOpen(true)} onSwitchSection={canSwitchSection ? () => appSection.choose(SECTION.FIVES) : undefined} homeData={hifzHome} backRef={hifzBackRef} onRefresh={account && !isSyncPanelOpen ? runSyncCheck : undefined} canTakeExtra={isOwner || Boolean(account && accountStatus?.hifzExtraPortion)} canCustomStart={Boolean(account && accountStatus?.hifzCustomStart)} />
         </Suspense>
       )}
       {isMushafOpen && (
@@ -4131,7 +4103,7 @@ function App() {
                   المزامنة مفعّلة ✓
                 </p>
                 <p style={{ fontSize: '13px', color: 'var(--app-muted)', margin: '0 0 16px', lineHeight: 1.7 }}>
-                  بياناتك تُرفع تلقائياً إلى حسابك «{account.user}». وبالأسفل خطوتان يدويّتان تحسمان أيّ اختلاف.
+                  بياناتك تُزامَن تلقائياً مع حسابك «{account.user}» بين أجهزتك، وما تغيّر في جهازين يُدمج وحده. اسحب الشاشة الرئيسية إلى الأسفل للتحديث فوراً.
                 </p>
 
                 <SyncScopeList />
@@ -4156,13 +4128,15 @@ function App() {
                     </div>
                     {remoteSyncInfo && !remoteSyncInfo.error && remoteSyncInfo.hasState && (
                       <div className={`manual-sync-badge${remoteSyncInfo.inSync ? ' is-ok' : ''}`}>
-                        {remoteSyncInfo.inSync ? 'النسختان متطابقتان ✓' : 'النسختان مختلفتان — اختر خطوة'}
+                        {remoteSyncInfo.inSync ? 'النسختان متطابقتان ✓' : 'يُدمج تلقائياً عند التحديث'}
                       </div>
                     )}
                   </div>
 
                   {manualSyncConfirm === null ? (
                     <div className="manual-sync-actions">
+                      {/* جهاز بلا محتوى لم يزامن قط: لا رفع، تنزيل نسخة السحابة وحده */}
+                      {!isEmptyDevice(lastSnapshotRef.current) && (
                       <button
                         type="button"
                         className="manual-sync-btn manual-sync-btn--push"
@@ -4175,6 +4149,7 @@ function App() {
                           <span className="manual-sync-btn-sub">نسخة هذا الجهاز تحلّ محلّ نسخة السحابة</span>
                         </span>
                       </button>
+                      )}
                       <button
                         type="button"
                         className="manual-sync-btn manual-sync-btn--pull"
@@ -4292,6 +4267,8 @@ function App() {
       {appSection.needsChoice && <SectionChoice onChoose={appSection.choose} canSwitch={canSwitchSection} />}
       {isScaleOpen && <AppScaleSheet scale={appScale.scale} onChange={appScale.setScale} onClose={() => setIsScaleOpen(false)} backRef={scaleBackRef} />}
       {isNotebookOpen && isOwner && <UpdatesNotebook onClose={() => setIsNotebookOpen(false)} backRef={notebookBackRef} />}
+      {isErrorLogOpen && isOwner && <ErrorLogScreen onClose={closeErrorLog} backRef={errorLogBackRef} />}
+      {isSecurityLogOpen && isOwner && <SecurityLogScreen onClose={closeSecurityLog} backRef={securityLogBackRef} />}
       {isLibraryOpen && canLibrary && <Library onClose={closeLibrary} backRef={libraryBackRef} />}
       {isFiqhOpen && isOwner && (
         <div style={{
@@ -4636,16 +4613,12 @@ function App() {
       )}
 
       {showFloatingHome && <HomeButton onClick={goHome} />}
+      <PullToRefresh enabled={Boolean(account) && !isHifzOpen && viewMode === 'khmasiyat' && !isSyncPanelOpen && !isMoreMenuOpen && !isMushafOpen} onRefresh={runSyncCheck} />
 
       {startupSyncChoice && (
         <StartupSyncPrompt
-          emptyCloud={Boolean(startupSyncChoice.emptyCloud)}
-          remoteUpdatedAt={startupSyncChoice.remoteUpdatedAt}
-          localUpdatedAt={startupSyncChoice.localUpdatedAt}
           busy={startupSyncBusy}
           error={startupSyncError}
-          formatTime={formatHijriTimestamp}
-          onPull={handleStartupPull}
           onPush={handleStartupPush}
           onFresh={handleStartupFresh}
           onLater={handleStartupLater}

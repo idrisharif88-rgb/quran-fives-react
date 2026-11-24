@@ -64,5 +64,7 @@ export function isPristineState(state) {
     && state.stopwatchBestAvgMs == null
     && state.stopwatchBestJuzMs == null
     && !state.activeAyahTest
-    && !state.activePageStartsTest;
+    && !state.activePageStartsTest
+    && isEmpty(state.localStores?.['quran-fives-updates-notebook-v1'])
+    && isEmpty(state.localStores?.['quran-fives-khatma-pages-v1']);
 }

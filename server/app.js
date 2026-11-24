@@ -12,6 +12,8 @@ import { registerFileRoutes } from './fileRoutes.js';
 import { registerAccountDeleteRoutes } from './accountDeleteRoutes.js';
 import { registerLibraryRoutes } from './libraryRoutes.js';
 import { registerTafsirRoutes } from './tafsirRoutes.js';
+import { registerErrorLogRoutes } from './errorLogRoutes.js';
+import { createSecurityLog, registerSecurityRoutes } from './securityLog.js';
 
 const DEFAULT_LIMITS = {
   ipMail: { windowMs: 60 * 60 * 1000, max: 10 },     // رسائل تأكيد/استرجاع لكل عنوان
@@ -55,6 +57,10 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
   const app = express();
   app.set('trust proxy', 'loopback');
   app.use(cors());
+  // سجلّ الأمان: يراقب كل طلب ويكتب المرفوض والحسّاس بعد انتهاء الردّ (securityLog.js).
+  // قبل قارئ JSON، فتُسجَّل الحمولات التالفة التي يرفضها هو أيضاً.
+  const securityLog = createSecurityLog(dataDir);
+  app.use(securityLog.middleware(clientIp));
   app.use(express.json({ limit: '4mb' }));
 
   app.get('/api/health', (req, res) => res.json({ ok: true }));
@@ -136,6 +142,8 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
   });
 
   registerAdminRoutes(app, { accounts, signedIn, adminName });
+  registerErrorLogRoutes(app, { dataDir, signedIn, clientIp });
+  registerSecurityRoutes(app, { log: securityLog, signedIn });
 
   // ─── التسجيل بالبريد، الدخول بخطوتين، واسترجاع كلمة السر ───
   const { mailOtp, fail } = registerAuthRoutes(app, {

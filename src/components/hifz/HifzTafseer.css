@@ -1,0 +1,38 @@
+/* سهما التنقّل بين الآيات في صفحة التفسير: الأيمن = السابقة، الأيسر = التالية (نمط سهمي خطوات الحفظ) */
+.hifz-tafseer-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hifz-tafseer-nav > .hifz-verse {
+  flex: 1;
+  min-width: 0;
+}
+
+.hifz-tafseer-arrow {
+  flex: 0 0 36px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--app-accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hifz-tafseer-arrow svg {
+  width: 28px;
+  height: 28px;
+}
+
+.hifz-tafseer-arrow:active svg { opacity: 0.6; }
+
+.hifz-tafseer-arrow:focus-visible {
+  outline: 2px solid var(--app-accent-ink);
+  outline-offset: -2px;
+  border-radius: 10px;
+}

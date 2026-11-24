@@ -1,27 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
 import './CounterSectionArrows.css';
-
-const NAME_MS = 1400;
 
 /**
  * التنقّل بين أقسام العدّاد (اختيار المالك): سهمان مصمتان رأسيّان على جانبي الدائرة، بشكل سهم
- * تبديل البطاقة (VerseStyleGrip) مُداراً. الأيسر = القسم التالي، والأيمن = السابق، ويظهر اسم القسم
- * لحظةً بعد التبديل. لا يظهران إلا مع قسمين فأكثر.
+ * تبديل البطاقة (VerseStyleGrip) مُداراً. الأيسر = القسم التالي، والأيمن = السابق، واسم القسم يظهر
+ * بعد التبديل في CounterSectionName. لا يظهران إلا مع قسمين فأكثر.
  */
 export default function CounterSectionArrows({ counters, activeId, onSelect }) {
-  const [shownName, setShownName] = useState(null);
-  const timer = useRef(null);
-  useEffect(() => () => clearTimeout(timer.current), []);
-
   if (counters.length < 2) return null;
   const index = Math.max(0, counters.findIndex((c) => c.id === activeId));
 
   const go = (step) => {
     const next = counters[(index + step + counters.length) % counters.length];
     onSelect(next.id);
-    setShownName(next.name || 'العداد');
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => setShownName(null), NAME_MS);
   };
 
   return (
@@ -36,7 +26,6 @@ export default function CounterSectionArrows({ counters, activeId, onSelect }) {
           <path d="M3 5 L13 22 L3 39 Z" fill="currentColor" stroke="currentColor" strokeWidth="3" strokeLinejoin="round" />
         </svg>
       </button>
-      {shownName && <div className="counter-section-name" role="status">{shownName}</div>}
     </>
   );
 }

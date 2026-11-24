@@ -555,3 +555,64 @@ test('جلسة الموقع: مفتاح بدل كلمة السر، ولا يصل
     await fs.rm(dir, { recursive: true, force: true });
   }
 });
+
+test('سجلّ الأخطاء: يُستقبل بلا حساب، يُنظَّف، ويقرؤه المالك وحده', async () => {
+  const sent = await call('POST', '/api/errors', { body: {
+    installId: 'inst-1', version: '1.39', platform: 'android', model: 'samsung SM-N960F', os: 'Android 10',
+    entries: [{ kind: 'sync', message: 'failed for a@b.com with ses.abc123', at: Date.now() }],
+  } });
+  assert.equal(sent.status, 200);
+  assert.equal(sent.json.stored, 1);
+  assert.equal((await call('POST', '/api/errors', { body: { entries: [] } })).status, 400);
+
+  // غير المالك لا يقرأ
+  const denied = await call('GET', '/api/admin/errors', { headers: basic('third@example.com', '123456', devices['third@example.com']) });
+  assert.equal(denied.status, 403);
+
+  const owner = basic('owner', '12345');
+  const read = await call('GET', '/api/admin/errors?days=1', { headers: owner });
+  assert.equal(read.status, 200);
+  assert.equal(read.json.enabled, true);
+  const row = read.json.entries.find((e) => e.installId === 'inst-1');
+  assert.equal(row.message, 'failed for <email> with <token>');
+  assert.equal(row.version, '1.39');
+  assert.equal(row.model, 'samsung SM-N960F');
+  assert.equal(row.os, 'Android 10');
+
+  // الإيقاف: يُقبل الطلب ولا يُحفظ شيء
+  assert.equal((await call('POST', '/api/admin/errors/config', { headers: owner, body: { enabled: false } })).status, 200);
+  const off = await call('POST', '/api/errors', { body: { entries: [{ message: 'x' }] } });
+  assert.equal(off.json.stored, 0);
+  await call('POST', '/api/admin/errors/config', { headers: owner, body: { enabled: true } });
+
+  const named = await call('POST', '/api/admin/errors/device', { headers: owner, body: { installId: 'inst-1', name: ' هاتفي ' } });
+  assert.equal(named.json.names['inst-1'], 'هاتفي');
+  assert.equal((await call('GET', '/api/admin/errors', { headers: owner })).json.names['inst-1'], 'هاتفي');
+  assert.equal((await call('POST', '/api/admin/errors/device', { headers: basic('third@example.com', '123456', devices['third@example.com']), body: { installId: 'x', name: 'y' } })).status, 403);
+
+  assert.equal((await call('DELETE', '/api/admin/errors', { headers: owner })).status, 200);
+  assert.equal((await call('GET', '/api/admin/errors', { headers: owner })).json.entries.length, 0);
+});
+
+test('سجلّ الأمان: يسجّل المرفوض والحسّاس، لا الاستعمال العادي، ولا يقرؤه إلا المالك', async () => {
+  const owner = basic('owner', '12345');
+  const before = (await call('GET', '/api/admin/security?days=1', { headers: owner })).json.total;
+  await call('GET', '/api/state', { headers: basic('third@example.com', 'wrong-pass', devices['third@example.com']) });   // كلمة سر خاطئة
+  await call('GET', '/api/admin/users', { headers: basic('third@example.com', '123456', devices['third@example.com']) });  // ليس المالك
+  await fetch(base + '/api/wp-admin');                                                                                   // تجسّس
+  await call('GET', '/api/state', { headers: owner });                                                                   // استعمال عادي
+  await new Promise((r) => setTimeout(r, 100));
+  const res = await call('GET', '/api/admin/security?days=1', { headers: owner });
+  assert.equal(res.status, 200);
+  const fresh = res.json.entries.slice(0, res.json.total - before);
+  const types = fresh.map((e) => e.type).sort();
+  assert.deepEqual(types, ['admin_denied', 'auth_failed', 'probe']);
+  const failed = fresh.find((e) => e.type === 'auth_failed');
+  assert.equal(failed.user, 'third@example.com');
+  assert.equal(failed.verified, false);
+  assert.ok(!JSON.stringify(fresh).includes('wrong-pass'));
+  const denied = fresh.find((e) => e.type === 'admin_denied');
+  assert.equal(denied.level, 'alert');
+  assert.equal(denied.verified, true);
+  assert.equal((await call('GET', '/api/admin/security', { headers: basic('third@example.com', '123456', devices['third@example.com']) })).status, 403);
+});

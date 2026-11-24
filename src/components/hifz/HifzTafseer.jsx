@@ -5,6 +5,12 @@ import { readAccountStatus } from '../../utils/syncAccount';
 import useTafseerText from '../../hooks/useTafseerText';
 import HifzMushafVerses from './HifzMushafVerses';
 import { refsText } from './hifzText';
+import { stepVerse } from '../../utils/verseStep';
+import './HifzTafseer.css';
+
+const Arrow = ({ next }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={next ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'} /></svg>
+);
 
 // اختيار آية: سورة ورقم آية. «آية اليوم» تعيد الافتراضي.
 function VersePicker({ current, onPick, onToday }) {
@@ -78,7 +84,11 @@ export default function HifzTafseer({ home, todayRef, actions }) {
           onToday={todayRef && home.tafseer ? () => { actions.setTafseerVerse(null); setPicking(false); } : undefined}
         />
       )}
-      <div className="hifz-verse mushaf"><HifzMushafVerses key={verseKey} refs={[ref]} /></div>
+      <div className="hifz-tafseer-nav">
+        <button type="button" className="hifz-tafseer-arrow" onClick={() => actions.setTafseerVerse(stepVerse(ref, -1))} aria-label="الآية السابقة" title="الآية السابقة"><Arrow /></button>
+        <div className="hifz-verse mushaf"><HifzMushafVerses key={verseKey} refs={[ref]} /></div>
+        <button type="button" className="hifz-tafseer-arrow" onClick={() => actions.setTafseerVerse(stepVerse(ref, 1))} aria-label="الآية التالية" title="الآية التالية"><Arrow next /></button>
+      </div>
 
       <div className="hifz-tasbeeh-chips" role="radiogroup" aria-label="كتاب التفسير">
         {books.map((book) => (

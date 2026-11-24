@@ -16,10 +16,12 @@ import SplashIntro from './components/SplashIntro/SplashIntro'
 import './styles/appScale.css'
 import { applyScale, loadScale } from './utils/appScale'
 import { startWebShell } from './utils/webShell'
+import { startErrorLog } from './utils/errorLog'
 
 // حجم العرض قبل أوّل رسم، فلا يقفز التطبيق من حجم إلى آخر عند الفتح
 applyScale(loadScale())
 startWebShell()
+startErrorLog()   // سجلّ الأخطاء: يُرسل إلى الخادم تلقائياً، ويراه المالك في «سجل الأخطاء»
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
