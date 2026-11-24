@@ -20,6 +20,8 @@ export const SYNCED_LOCAL_KEYS = [
   'quran-fives-updates-notebook-v1',   // دفتر التحديثات للمالك (updatesNotebook.js)
   'quran-fives-hifz-home-v1',          // رئيسية الحفظ: مسبحتي وآية التفسير وكتابه (hifzHome.js)
   'quran-fives-khatma-pages-v1',       // الصفحات المنقورة لتقدّم الختمة (khatmaPages.js)
+  'quran-fives-library-recent-v1',     // عمليات البحث السابقة في المكتبة (libraryRecent.js)
+  'quran-fives-keep-lap-v1',           // «أبقِ الجولة» في ساعة الحفظ (useStopwatch) — تركب مع الرفعة التالية
 ];
 export const LOCAL_SYNC_EVENT = 'quran-fives-local-sync';
 

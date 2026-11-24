@@ -1,6 +1,6 @@
 import { SYNC_URL, SYNC_ENABLED } from './syncConfig';
 import { readAccount, authHeaders } from './syncAccount';
-import { getSyncMeta, setSyncMeta } from './syncMeta';
+import { getSyncMeta, setSyncMeta, setSyncBase } from './syncMeta';
 import { APP_STORAGE_KEY, restoreSyncedLocal } from './persistence';
 
 // creds: حساب الطلب. الافتراضي هو الحساب المحفوظ على الجهاز؛ null يرسل بلا دخول.
@@ -52,6 +52,7 @@ export async function pushLocal(state) {
     try {
       const result = await api('/api/state', { method: 'PUT', body });
       setSyncMeta({ updatedAt: result.updatedAt });
+      setSyncBase(state);
       return;
     } catch (e) {
       lastErr = e;
@@ -90,6 +91,7 @@ export async function forcePushLocal(state) {
   });
   const result = await api('/api/state', { method: 'PUT', body });
   setSyncMeta({ updatedAt: result.updatedAt });
+  setSyncBase(state);
   return result.updatedAt;
 }
 
@@ -103,7 +105,19 @@ export async function forcePullRemote() {
   // الاختبارات وسرعة التشغيل تُحفظ خارج حالة التطبيق: تعود إلى مواضعها
   restoreSyncedLocal(remote.state.localStores);
   setSyncMeta({ updatedAt: remote.updatedAt });
+  setSyncBase(remote.state);
   return true;
+}
+
+// ─── المزامنة التلقائية (autoSync.js): قراءة نسخة الخادم، وكتابة بأساس صريح ───
+export const fetchRemoteState = () => api('/api/state', { method: 'GET' });
+
+export async function putState(state, baseUpdatedAt) {
+  const body = JSON.stringify({ state, baseUpdatedAt, writeId: newWriteId() });
+  const result = await api('/api/state', { method: 'PUT', body });
+  setSyncMeta({ updatedAt: result.updatedAt });
+  setSyncBase(state);
+  return result.updatedAt;
 }
 
 // ─── الحساب: تسجيل بالبريد، دخول بخطوتين، واسترجاع كلمة السر ───
@@ -168,4 +182,10 @@ export const setUserPermission = (user, permission, allowed) =>
 
 // حذف الحساب وكل بياناته وملفاته من الخادم. creds بكلمة السر كما أعاد المستخدم كتابتها،
 // ومعها مفتاح الجهاز. يعمل ولو لم يوافق المشرف على الحساب بعد.
+// سجلّ الأخطاء للمالك (server/errorLogRoutes.js)
+export const fetchErrorLog = (days) => api(`/api/admin/errors?days=${days}`, { method: 'GET' });
+export const setErrorLogEnabled = (enabled) =>
+  api('/api/admin/errors/config', { method: 'POST', body: JSON.stringify({ enabled }) });
+export const clearErrorLog = () => api('/api/admin/errors', { method: 'DELETE' });
+
 export const deleteAccount = (creds) => api('/api/account/delete', { method: 'POST', creds });

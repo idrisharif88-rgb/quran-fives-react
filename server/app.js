@@ -12,6 +12,7 @@ import { registerFileRoutes } from './fileRoutes.js';
 import { registerAccountDeleteRoutes } from './accountDeleteRoutes.js';
 import { registerLibraryRoutes } from './libraryRoutes.js';
 import { registerTafsirRoutes } from './tafsirRoutes.js';
+import { registerErrorLogRoutes } from './errorLogRoutes.js';
 
 const DEFAULT_LIMITS = {
   ipMail: { windowMs: 60 * 60 * 1000, max: 10 },     // رسائل تأكيد/استرجاع لكل عنوان
@@ -136,6 +137,7 @@ export function createApp({ dataDir, maxUsers = 100, limits = {}, sendMail, otpO
   });
 
   registerAdminRoutes(app, { accounts, signedIn, adminName });
+  registerErrorLogRoutes(app, { dataDir, signedIn, clientIp });
 
   // ─── التسجيل بالبريد، الدخول بخطوتين، واسترجاع كلمة السر ───
   const { mailOtp, fail } = registerAuthRoutes(app, {

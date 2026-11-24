@@ -40,9 +40,44 @@ export function setSyncMeta(meta) {
 export function clearSyncMeta() {
   try {
     localStorage.removeItem(SYNC_META_KEY);
+    localStorage.removeItem(SYNC_BASE_KEY);
+    localStorage.removeItem(LOCAL_EDIT_KEY);
   } catch {
     // تجاهل فشل التخزين
   }
+}
+
+// ─── أساس الدمج: آخر حالة اتّفق عليها الجهاز والخادم (syncMerge.js) ───
+// يخصّ الحساب نفسه صاحب الطابع، فلا يُدمج أساسُ حسابٍ في حساب آخر.
+const SYNC_BASE_KEY = 'quran-fives-sync-base-v1';
+// آخر تعديل محلي بعد الأساس (ساعة الجهاز): يحسم «الأحدث يفوز» حين يغيّر الجهازان القيمة نفسها
+const LOCAL_EDIT_KEY = 'quran-fives-local-edit-v1';
+
+export function getSyncBase() {
+  const meta = readRaw();
+  if (!meta || !metaBelongsTo(meta, readAccount())) return null;
+  try {
+    return JSON.parse(localStorage.getItem(SYNC_BASE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function setSyncBase(state) {
+  try {
+    localStorage.setItem(SYNC_BASE_KEY, JSON.stringify(state));
+    localStorage.removeItem(LOCAL_EDIT_KEY);
+  } catch {
+    // تجاهل فشل التخزين: بلا أساس يُدمج بلا معرفة المحذوف، ولا يضيع شيء
+  }
+}
+
+export function noteLocalEdit(at = Date.now()) {
+  try { localStorage.setItem(LOCAL_EDIT_KEY, String(at)); } catch { /* تجاهل */ }
+}
+
+export function lastLocalEdit() {
+  try { return Number(localStorage.getItem(LOCAL_EDIT_KEY)) || 0; } catch { return 0; }
 }
 
 // هل بيانات هذا الجهاز زامنها حساب غير الداخل الآن؟ (تبديل المستخدم على الجهاز نفسه)

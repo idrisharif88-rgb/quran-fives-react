@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PullToRefresh from '../PullToRefresh/PullToRefresh';
 import HifzTimeline from './HifzTimeline';
 import HifzCelebration from './HifzCelebration';
 import HifzContacts from './HifzContacts';
@@ -37,8 +38,9 @@ const PAGE_TITLE = { home: 'برنامج الحفظ', day: 'ورد اليوم', 
  * @param canCustomStart أذن المشرف لهذا الحساب أن يبدأ الحفظ من آية يختارها
  * @param trial   وضع التجربة جارٍ (hifz عندها برنامج التجربة): شريطه، و«تخطَّ» في كل خطوة
  * @param onTrialStart / onTrialEnd للمشرف وحده (غائبان عن غيره): الدخول إلى وضع التجربة والخروج منه
+ * @param onRefresh مع حساب: السحب إلى الأسفل في الرئيسية يزامن ويحدّث الصلاحيات (PullToRefresh)
  */
-export default function HifzScreen({ hifz, homeData, reciter, onReciterChange, contacts, onOpenAccount, onSwitchSection, backRef, canTakeExtra = false, canCustomStart = false, trial = false, onTrialStart, onTrialEnd }) {
+export default function HifzScreen({ hifz, homeData, reciter, onReciterChange, contacts, onOpenAccount, onSwitchSection, backRef, canTakeExtra = false, canCustomStart = false, trial = false, onTrialStart, onTrialEnd, onRefresh }) {
   const { program, plan, today, celebrate, inSession, method, actions } = hifz;
   const [page, setPage] = useState('home');                  // الصفحة المعروضة (PAGE_TITLE)
   const [confirming, setConfirming] = useState(null);       // سؤال مفتوح أسفل الشاشة: 'reset' | 'cancel'
@@ -97,6 +99,7 @@ export default function HifzScreen({ hifz, homeData, reciter, onReciterChange, c
 
   return (
     <div className="hifz-screen" dir="rtl">
+      <PullToRefresh enabled={Boolean(onRefresh) && onHome && !confirming && !settingsOpen} onRefresh={onRefresh} />
       <div className="hifz-header">
         {onHome ? (
           <button type="button" className="hifz-account" onClick={onOpenAccount} aria-label="الحساب والمزامنة">

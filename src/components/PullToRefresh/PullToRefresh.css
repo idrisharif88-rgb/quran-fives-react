@@ -1,0 +1,39 @@
+/* مؤشّر السحب للتحديث: فوق كل شيء في أعلى الشاشة، تحت شريط الحالة */
+.pull-refresh {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) - 30px);
+  left: 50%;
+  z-index: 3000;
+  pointer-events: none;
+}
+
+.pull-refresh-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--app-surface);
+  color: var(--app-accent-ink);
+  box-shadow: 0 2px 10px var(--app-shadow, rgba(0, 0, 0, 0.2));
+  display: grid;
+  place-items: center;
+  opacity: 0.85;
+}
+
+.pull-refresh-dot.is-ready,
+.pull-refresh-dot.is-busy { opacity: 1; }
+
+.pull-refresh-dot.is-busy svg { animation: pull-refresh-spin 0.8s linear infinite; }
+
+@keyframes pull-refresh-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pull-refresh-dot.is-busy svg { animation-duration: 2s; }
+}
+
+.pull-refresh .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}

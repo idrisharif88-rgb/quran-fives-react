@@ -10,6 +10,7 @@ export const MORE_MENU_ICON_FOR = {
   'إجازاتي': 'award',
   'فقهيات': 'gavel',
   'دفتر التحديثات': 'notebook_pen',
+  'سجل الأخطاء': 'bug',
   'المكتبة': 'library_big',
   'فأل القرآن': 'auto_awesome',
   'البحث في القرآن': 'search',
