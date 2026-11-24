@@ -4,6 +4,7 @@ import { readRecent, rememberSearch, forgetSearches, clearSearches } from '../ut
 
 const DELAY = 400;   // انتظار بعد آخر حرف قبل الطلب
 const PAGE = 20;
+const SAVE_AFTER = 2000;   // البحث يُحفظ حين تظهر نتائجه ويتوقّف الكتابة ثانيتين (لا الكلمات نصف المكتوبة)
 const MIN_LETTERS = 2;   // كالسيرفر: حرف واحد يطابق عشرات الآلاف ولا يفيد
 const lettersIn = (q) => q.replace(/[^\p{L}]/gu, '').length;
 
@@ -73,6 +74,13 @@ export default function useLibrarySearch() {
   const total = Object.entries(grouped.counts)
     .filter(([id]) => !selected.length || selected.includes(Number(id)))
     .reduce((sum, [, n]) => sum + n, 0);
+
+  // يُحفظ البحث وحده حين تظهر نتائج ويهدأ الكاتب (طلب المالك)، لا عند فتح نتيجة فقط
+  useEffect(() => {
+    if (loading || error || !total || lettersIn(query) < MIN_LETTERS) return undefined;
+    const t = setTimeout(() => setRecent(rememberSearch(query)), SAVE_AFTER);
+    return () => clearTimeout(t);
+  }, [query, total, loading, error]);
 
   return {
     ...catalog, query, setQuery, selected, setSelected, exact, setExact, order, setOrder,
