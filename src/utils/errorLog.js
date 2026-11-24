@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { Device } from '@capacitor/device';
 import { SYNC_URL, SYNC_ENABLED } from './syncConfig';
 import { readAccount } from './syncAccount';
 
@@ -41,6 +42,31 @@ const platform = () => {
   try { return Capacitor.isNativePlatform() ? Capacitor.getPlatform() : 'web'; } catch { return 'web'; }
 };
 
+// وصف الجهاز للمالك: الطراز ونظام التشغيل («samsung SM-N960F · Android 10»). في الموقع: المتصفح والنظام.
+// يُقرأ مرّة في الجلسة؛ ليس معرّفاً للجهاز.
+let deviceInfo = null;
+export function browserLabel(ua) {
+  const browser = /Edg\//.test(ua) ? 'Edge' : /SamsungBrowser/.test(ua) ? 'Samsung Internet' : /Firefox\//.test(ua) ? 'Firefox'
+    : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'متصفح';
+  const os = (ua.match(/Android [\d.]+/) || ua.match(/iPhone OS [\d_]+/) || ua.match(/Windows NT [\d.]+/) || ua.match(/Mac OS X [\d_]+/) || ua.match(/Linux/) || [''])[0].replace(/_/g, '.');
+  return { model: browser, os };
+}
+async function readDevice() {
+  if (deviceInfo) return deviceInfo;
+  try {
+    if (platform() === 'web') {
+      deviceInfo = browserLabel(navigator.userAgent || '');
+    } else {
+      const info = await Device.getInfo();
+      deviceInfo = {
+        model: [info.manufacturer, info.model].filter(Boolean).join(' '),
+        os: `${info.operatingSystem === 'android' ? 'Android' : info.operatingSystem} ${info.osVersion || ''}`.trim(),
+      };
+    }
+  } catch { deviceInfo = { model: '', os: '' }; }
+  return deviceInfo;
+}
+
 let flushTimer = null;
 let flushing = false;
 
@@ -54,7 +80,7 @@ export function logError(kind, error, where) {
     if (!error?.status && typeof navigator !== 'undefined' && navigator.onLine === false && kind !== 'crash') return;
     const message = scrub(error?.message || error || 'unknown').slice(0, 500);
     const stack = error?.stack ? scrub(error.stack).slice(0, 2000) : undefined;
-    const status = error?.status ? ` (http ${error.status})` : '';
+    const status = error?.status && !message.includes(String(error.status)) ? ` (http ${error.status})` : '';
     const now = Date.now();
     const q = readQueue();
     const last = q[q.length - 1];
@@ -77,10 +103,11 @@ export async function flushErrors() {
   flushing = true;
   try {
     const batch = q.slice(0, 20);
+    const { model, os } = await readDevice();
     const res = await fetch(`${SYNC_URL}/api/errors`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ installId: installId(), user: readAccount()?.user, version: VERSION, platform: platform(), entries: batch }),
+      body: JSON.stringify({ installId: installId(), user: readAccount()?.user, version: VERSION, platform: platform(), model, os, entries: batch }),
     });
     // 4xx غير 429: الطلب نفسه مرفوض، فلا فائدة من إعادته إلى الأبد
     if (res.ok || (res.status >= 400 && res.status < 500 && res.status !== 429)) {

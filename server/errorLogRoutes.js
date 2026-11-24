@@ -8,7 +8,7 @@ import { createLimiter } from './rateLimit.js';
 
 export const RETENTION_DAYS = 90;
 const MAX_PER_REQUEST = 20;
-const MAX_FIELD = { kind: 40, message: 500, stack: 2000, where: 120, version: 20, platform: 20, installId: 64, user: 120 };
+const MAX_FIELD = { kind: 40, message: 500, stack: 2000, where: 120, version: 20, platform: 20, installId: 64, user: 120, model: 80, os: 40 };
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const dayName = (ms) => new Date(ms).toISOString().slice(0, 10);
@@ -35,6 +35,8 @@ export function cleanEntry(raw, now, ip) {
     where: clip(raw.where, MAX_FIELD.where),
     version: clip(raw.version, MAX_FIELD.version),
     platform: clip(raw.platform, MAX_FIELD.platform),
+    model: clip(raw.model, MAX_FIELD.model),   // طراز الجهاز أو المتصفح، للمالك
+    os: clip(raw.os, MAX_FIELD.os),
     count: Math.max(1, Math.min(1000, Number(raw.count) || 1)),
     installId: typeof raw.installId === 'string' ? raw.installId.slice(0, MAX_FIELD.installId) : undefined,
     // البريد نفسه لا يُنظَّف هنا: هو حساب صاحب الخطأ، يراه المالك وحده
@@ -75,7 +77,8 @@ export function registerErrorLogRoutes(app, { dataDir, signedIn, clientIp, limit
     if (ipLimit.blocked(ip)) return res.status(429).json({ error: 'أخطاء كثيرة — لاحقاً' });
     if (!(await readConfig()).enabled) return res.json({ ok: true, stored: 0 });
     const now = Date.now();
-    const common = { installId: req.body.installId, user: req.body.user, version: req.body.version, platform: req.body.platform };
+    const { installId, user, version, platform, model, os } = req.body;
+    const common = { installId, user, version, platform, model, os };
     const rows = list.map((e) => cleanEntry({ ...common, ...e }, now, ip)).filter(Boolean);
     rows.forEach(() => ipLimit.hit(ip));
     await fs.mkdir(dir, { recursive: true });

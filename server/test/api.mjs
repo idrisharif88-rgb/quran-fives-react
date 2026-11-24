@@ -558,7 +558,7 @@ test('جلسة الموقع: مفتاح بدل كلمة السر، ولا يصل
 
 test('سجلّ الأخطاء: يُستقبل بلا حساب، يُنظَّف، ويقرؤه المالك وحده', async () => {
   const sent = await call('POST', '/api/errors', { body: {
-    installId: 'inst-1', version: '1.39', platform: 'android',
+    installId: 'inst-1', version: '1.39', platform: 'android', model: 'samsung SM-N960F', os: 'Android 10',
     entries: [{ kind: 'sync', message: 'failed for a@b.com with ses.abc123', at: Date.now() }],
   } });
   assert.equal(sent.status, 200);
@@ -576,6 +576,8 @@ test('سجلّ الأخطاء: يُستقبل بلا حساب، يُنظَّف،
   const row = read.json.entries.find((e) => e.installId === 'inst-1');
   assert.equal(row.message, 'failed for <email> with <token>');
   assert.equal(row.version, '1.39');
+  assert.equal(row.model, 'samsung SM-N960F');
+  assert.equal(row.os, 'Android 10');
 
   // الإيقاف: يُقبل الطلب ولا يُحفظ شيء
   assert.equal((await call('POST', '/api/admin/errors/config', { headers: owner, body: { enabled: false } })).status, 200);
