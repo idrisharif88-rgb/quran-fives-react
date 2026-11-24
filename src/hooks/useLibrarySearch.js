@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchLibraryBooks, fetchLibraryGrouped, searchLibrary } from '../utils/libraryApi';
-import { readRecent, rememberSearch } from '../utils/libraryRecent';
+import { readRecent, rememberSearch, forgetSearches, clearSearches } from '../utils/libraryRecent';
 
 const DELAY = 400;   // انتظار بعد آخر حرف قبل الطلب
 const PAGE = 20;
@@ -80,6 +80,8 @@ export default function useLibrarySearch() {
     tooShort: lettersIn(query) < MIN_LETTERS,
     loadMore: () => run(list.length),
     remember: () => setRecent(rememberSearch(query)),
+    forget: (items) => setRecent(forgetSearches(items)),
+    clearRecent: () => setRecent(clearSearches()),
     retry: () => { setError(null); setAttempt((n) => n + 1); },
   };
 }

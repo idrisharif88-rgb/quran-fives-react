@@ -6,7 +6,10 @@
 // - قوائم النجوم مجموعات: الإضافات من الطرفين تبقى، والمحذوف في أيّ طرف يُحذف.
 // - غير ذلك (رقم، نصّ، قائمة مرتّبة) إن غيّره الطرفان معاً: الأحدث يفوز.
 
-const SET_PATHS = [/^starredByStep\.[^.]+$/, /^starredIndices$/, /^starredPages$/, /^starredPageEnds$/];
+const SET_PATHS = [
+  /^starredByStep\.[^.]+$/, /^starredIndices$/, /^starredPages$/, /^starredPageEnds$/,
+  /^localStores\.quran-fives-library-recent-v1$/,   // بحث المكتبة: ما حُذف في جهاز يُحذف، وما أُضيف في آخر يبقى
+];
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const hasIds = (arr) => Array.isArray(arr) && arr.length > 0 && arr.every((x) => isObj(x) && (typeof x.id === 'string' || typeof x.id === 'number'));

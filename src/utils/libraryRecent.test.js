@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { readRecent, rememberSearch, LIBRARY_RECENT_KEY } from './libraryRecent';
+import { readRecent, rememberSearch, forgetSearches, clearSearches, LIBRARY_RECENT_KEY } from './libraryRecent';
 import { SESSION_STORAGE_KEYS } from './deviceData';
 
 const mem = new Map();
@@ -12,10 +12,17 @@ globalThis.localStorage = {
 
 describe('libraryRecent', () => {
   beforeEach(() => localStorage.clear());
-  it('keeps the newest first, without duplicates, at most 6', () => {
+  it('keeps every search, newest first, without duplicates', () => {
     ['أ', 'ب', 'ج', 'د', 'ه', 'و', 'ز'].forEach(rememberSearch);
     rememberSearch('ه');
-    expect(readRecent()).toEqual(['ه', 'ز', 'و', 'د', 'ج', 'ب']);
+    expect(readRecent()).toEqual(['ه', 'ز', 'و', 'د', 'ج', 'ب', 'أ']);
+  });
+  it('deletes one, several, or all', () => {
+    ['أ', 'ب', 'ج', 'د'].forEach(rememberSearch);
+    expect(forgetSearches(['ب'])).toEqual(['د', 'ج', 'أ']);
+    expect(forgetSearches(['د', 'أ'])).toEqual(['ج']);
+    expect(clearSearches()).toEqual([]);
+    expect(readRecent()).toEqual([]);
   });
   it('ignores empty text and broken storage', () => {
     localStorage.setItem(LIBRARY_RECENT_KEY, '{oops');

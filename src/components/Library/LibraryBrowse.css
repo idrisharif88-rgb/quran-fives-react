@@ -16,6 +16,28 @@
 .library-tip { margin: 0; font-size: 13px; line-height: 1.7; color: var(--app-muted); }
 .library-label { margin: 0 2px 6px; font-size: 12.5px; font-weight: 700; color: var(--app-muted); }
 .library-recent { display: flex; flex-wrap: wrap; gap: 6px; }
+/* عمليات البحث السابقة (LibraryRecent): «تعديل» يختار ويحذف */
+.library-recent-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.library-recent-head .library-label { margin: 0; }
+.library-recent-link { border: 0; background: none; padding: 4px 2px; color: var(--app-accent-ink); font: 800 14px 'Tajawal', sans-serif; cursor: pointer; }
+.library-recent .library-recent-more { color: var(--app-accent-ink); font-weight: 800; border-style: dashed; }
+.library-recent-chip { display: inline-flex; align-items: center; border: 1px solid var(--app-accent-border); border-radius: 999px; background: var(--app-surface); overflow: hidden; }
+.library-recent-chip.picked { background: var(--app-accent); border-color: var(--app-accent); }
+.library-recent .library-recent-chip button { border: 0; border-radius: 0; background: none; }
+.library-recent .library-recent-pick { padding-block: 5px; padding-inline: 12px 2px; }
+.library-recent-chip.picked .library-recent-pick { color: var(--app-accent-contrast); }
+.library-recent .library-recent-x {
+  display: grid; place-items: center; align-self: stretch; padding-block: 0; padding-inline: 4px 10px;
+  color: var(--app-muted); font-size: 12px; font-weight: 900;
+}
+.library-recent-chip.picked .library-recent-x { color: var(--app-accent-contrast); }
+.library-recent-bar { display: flex; gap: 8px; margin-top: 10px; }
+.library-recent-btn {
+  flex: 1; padding: 9px 8px; border-radius: 10px; border: 1.5px solid var(--app-accent-ink);
+  background: var(--app-surface); color: var(--app-accent-ink); font: 800 14px 'Tajawal', sans-serif; cursor: pointer;
+}
+.library-recent-btn.danger { border-color: var(--app-danger); color: var(--app-danger); }
+.library-recent-btn:disabled { opacity: 0.45; cursor: default; }
 .library-recent button {
   padding: 5px 12px; border: 1px solid var(--app-accent-border); border-radius: 999px;
   background: var(--app-surface); color: var(--app-text); font: 500 13.5px 'Tajawal', sans-serif; cursor: pointer;

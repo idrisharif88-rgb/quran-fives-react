@@ -68,7 +68,7 @@ import useSignOut, { REOPEN_SYNC_PANEL_KEY } from './hooks/useSignOut';
 import SignOutSheet from './components/SignOut/SignOutSheet';
 import DriveRestoreOffer from './components/GoogleBackup/DriveRestoreOffer';
 import useHifzReminder from './hooks/useHifzReminder';
-import { pushLocal, getKhitma, putKhitma, forcePushLocal, forcePullRemote, fetchRemoteInfo, fetchMe } from './utils/cloudSync';
+import { pushLocal, getKhitma, putKhitma, forcePushLocal, fetchRemoteInfo, fetchMe } from './utils/cloudSync';
 import { reconcile, isEmptyDevice } from './utils/autoSync';
 import useResumeSync from './hooks/useResumeSync';
 import { logError } from './utils/errorLog';
@@ -506,9 +506,8 @@ function App() {
     } catch { return false; }
   });
   // المزامنة اليدوية بخطوتين: تأكيد قبل التنفيذ، ونتيجة صريحة بعده
-  const [manualSyncBusy, setManualSyncBusy] = useState(null);      // 'push' | 'pull' | null
-  const [manualSyncConfirm, setManualSyncConfirm] = useState(null); // 'push' | 'pull' | null
-  const [manualSyncResult, setManualSyncResult] = useState(null);   // { ok, text }
+  // «زامن الآن» في لوحة المزامنة: نتيجة آخر ضغطة { ok, text }
+  const [syncNowResult, setSyncNowResult] = useState(null);
   const [remoteSyncInfo, setRemoteSyncInfo] = useState(null);       // معلومات الخادم للعرض
   // قرار المزامنة عند الفتح: يُعرض عند اختلاف نسخة السحابة، ولا شيء يُطبَّق قبله
   const [startupSyncChoice, setStartupSyncChoice] = useState(null); // { remoteUpdatedAt, localUpdatedAt }
@@ -808,6 +807,7 @@ function App() {
   // المزامنة التلقائية (autoSync.js): عند الفتح، وعند العودة إلى التطبيق، وبالسحب للتحديث.
   // تحدّث صلاحيات الحساب (fetchMe) ثم تدمج نسختي الجهاز والسحابة بلا سؤال. جهاز بلا محتوى
   // لا يرفع شيئاً؛ والسؤال الوحيد الباقي بيانات حساب آخر فوق سحابة فارغة (emptyCloud).
+  // تعيد true حين تمّت المزامنة (لزرّ «زامن الآن»)
   const runSyncCheck = async (isCancelled = () => false) => {
     if (!SYNC_ENABLED || !syncUnlocked) return;
     // رفعة جارية: ننتظرها، فعمليّتان معاً تصطدمان بـ409
@@ -832,6 +832,7 @@ function App() {
       if (result === 'emptyCloud') { cloudSyncReadyRef.current = false; setStartupSyncChoice({ emptyCloud: true }); return; }
       cloudSyncReadyRef.current = true;
       setSyncFailed(false);
+      return true;
     } catch (e) {
       if (isCancelled()) return;
       // الخادم رفض بيانات الدخول: نُخرج الحساب ليُطلب الدخول من جديد (401 وحده)
@@ -953,54 +954,17 @@ function App() {
     mainKeyboard.closeKeyboard();
     setIsSyncPanelOpen(false);
     auth.cancelPending();
-    setManualSyncConfirm(null);
-    setManualSyncResult(null);
+    setSyncNowResult(null);
   };
 
-  // ─── المزامنة اليدوية: الرفع والتنزيل خطوتان منفصلتان ───
-
-  // خطوة الرفع: نسخة هذا الجهاز تحلّ محلّ نسخة السحابة
-  const handleManualPush = async () => {
-    if (manualSyncBusy) return;
-    if (!lastSnapshotRef.current || isEmptyDevice(lastSnapshotRef.current)) {   // لا نرفع حالة فارغة فوق السحابة
-      setManualSyncResult({ ok: false, text: 'لا توجد حالة جاهزة للرفع بعد' });
-      return;
-    }
-    setManualSyncConfirm(null);
-    setManualSyncBusy('push');
-    setManualSyncResult(null);
-    try {
-      const updatedAt = await forcePushLocal(lastSnapshotRef.current);
-      cloudSyncReadyRef.current = true;   // الجهاز والخادم متطابقان الآن
-      setSyncFailed(false);
-      setRemoteSyncInfo({ updatedAt, hasState: true, inSync: true });
-      setManualSyncResult({ ok: true, text: `تمّ الرفع • ${formatHijriTimestamp(updatedAt)}` });
-    } catch (e) {
-      setManualSyncResult({ ok: false, text: e?.status === 401 ? 'بيانات الدخول غير مقبولة' : 'تعذّر الرفع — تحقّق من الاتصال' });
-    } finally {
-      setManualSyncBusy(null);
-    }
-  };
-
-  // خطوة التنزيل: نسخة السحابة تحلّ محلّ نسخة هذا الجهاز، ثمّ إعادة تحميل لتطبيقها
-  const handleManualPull = async () => {
-    if (manualSyncBusy) return;
-    setManualSyncConfirm(null);
-    setManualSyncBusy('pull');
-    setManualSyncResult(null);
-    try {
-      const applied = await forcePullRemote();
-      if (!applied) {
-        setManualSyncResult({ ok: false, text: 'لا توجد نسخة على السحابة بعد' });
-        setManualSyncBusy(null);
-        return;
-      }
-      setManualSyncResult({ ok: true, text: 'تمّ التنزيل — جارٍ إعادة التحميل…' });
-      window.location.reload();
-    } catch (e) {
-      setManualSyncResult({ ok: false, text: e?.status === 401 ? 'بيانات الدخول غير مقبولة' : 'تعذّر التنزيل — تحقّق من الاتصال' });
-      setManualSyncBusy(null);
-    }
+  // «زامن الآن»: المزامنة التلقائية نفسها (runSyncCheck) بضغطة، ثمّ حالة الخادم من جديد.
+  // لا رفع ولا تنزيل يدويّان بعد اليوم: الدمج يحسم الاختلاف (autoSync.js).
+  const handleSyncNow = async () => {
+    if (isSyncing) return;
+    setSyncNowResult(null);
+    const ok = await runSyncCheck();
+    setSyncNowResult(ok ? { ok: true, text: 'تمّت المزامنة ✓' } : { ok: false, text: 'تعذّرت المزامنة — تحقّق من الاتصال' });
+    fetchRemoteInfo().then(setRemoteSyncInfo).catch(() => setRemoteSyncInfo({ error: true }));
   };
 
   // معلومات الخادم عند فتح اللوحة: متى آخر تحديث، وهل يطابق هذا الجهاز
@@ -4108,7 +4072,7 @@ function App() {
 
                 <SyncScopeList />
 
-                {/* ─── المزامنة اليدوية: خطوة رفع وخطوة تنزيل ─── */}
+                {/* ─── حالة المزامنة، و«زامن الآن» ─── */}
                 <div className="manual-sync">
                   <div className="manual-sync-status" dir="rtl">
                     <div>
@@ -4128,65 +4092,22 @@ function App() {
                     </div>
                     {remoteSyncInfo && !remoteSyncInfo.error && remoteSyncInfo.hasState && (
                       <div className={`manual-sync-badge${remoteSyncInfo.inSync ? ' is-ok' : ''}`}>
-                        {remoteSyncInfo.inSync ? 'النسختان متطابقتان ✓' : 'يُدمج تلقائياً عند التحديث'}
+                        {remoteSyncInfo.inSync ? 'النسختان متطابقتان ✓' : 'تُدمج تلقائياً — أو اضغط «زامن الآن»'}
                       </div>
                     )}
                   </div>
 
-                  {manualSyncConfirm === null ? (
-                    <div className="manual-sync-actions">
-                      {/* جهاز بلا محتوى لم يزامن قط: لا رفع، تنزيل نسخة السحابة وحده */}
-                      {!isEmptyDevice(lastSnapshotRef.current) && (
-                      <button
-                        type="button"
-                        className="manual-sync-btn manual-sync-btn--push"
-                        disabled={Boolean(manualSyncBusy)}
-                        onClick={() => { setManualSyncResult(null); setManualSyncConfirm('push'); }}
-                      >
-                        <span className="manual-sync-btn-icon" aria-hidden="true">↑</span>
-                        <span>
-                          <span className="manual-sync-btn-title">{manualSyncBusy === 'push' ? 'جارٍ الرفع…' : 'رفع إلى السحابة'}</span>
-                          <span className="manual-sync-btn-sub">نسخة هذا الجهاز تحلّ محلّ نسخة السحابة</span>
-                        </span>
-                      </button>
-                      )}
-                      <button
-                        type="button"
-                        className="manual-sync-btn manual-sync-btn--pull"
-                        disabled={Boolean(manualSyncBusy)}
-                        onClick={() => { setManualSyncResult(null); setManualSyncConfirm('pull'); }}
-                      >
-                        <span className="manual-sync-btn-icon" aria-hidden="true">↓</span>
-                        <span>
-                          <span className="manual-sync-btn-title">{manualSyncBusy === 'pull' ? 'جارٍ التنزيل…' : 'تنزيل من السحابة'}</span>
-                          <span className="manual-sync-btn-sub">نسخة السحابة تحلّ محلّ نسخة هذا الجهاز</span>
-                        </span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="manual-sync-confirm">
-                      <p className="manual-sync-confirm-text">
-                        {manualSyncConfirm === 'push'
-                          ? 'سيُكتب فوق نسخة السحابة بنسخة هذا الجهاز. متأكّد؟'
-                          : 'سيُكتب فوق نسخة هذا الجهاز بنسخة السحابة، ثمّ يُعاد تحميل التطبيق. متأكّد؟'}
-                      </p>
-                      <div className="manual-sync-confirm-actions">
-                        <button
-                          type="button"
-                          className="khmasiyat-quiz-btn"
-                          onClick={manualSyncConfirm === 'push' ? handleManualPush : handleManualPull}
-                        >
-                          نعم، {manualSyncConfirm === 'push' ? 'ارفع' : 'نزّل'}
-                        </button>
-                        <button type="button" className="khmasiyat-quiz-btn secondary" onClick={() => setManualSyncConfirm(null)}>
-                          تراجع
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {manualSyncResult && (
-                    <p className={`manual-sync-result${manualSyncResult.ok ? ' is-ok' : ''}`}>{manualSyncResult.text}</p>
+                  <div className="manual-sync-actions">
+                    <button type="button" className="manual-sync-btn manual-sync-btn--pull" disabled={isSyncing} onClick={handleSyncNow}>
+                      <span className="manual-sync-btn-icon" aria-hidden="true">⟳</span>
+                      <span>
+                        <span className="manual-sync-btn-title">{isSyncing ? 'جارٍ المزامنة…' : 'زامن الآن'}</span>
+                        <span className="manual-sync-btn-sub">يجلب الجديد من أجهزتك ويرفع ما تغيّر هنا</span>
+                      </span>
+                    </button>
+                  </div>
+                  {syncNowResult && (
+                    <p className={`manual-sync-result${syncNowResult.ok ? ' is-ok' : ''}`}>{syncNowResult.text}</p>
                   )}
                 </div>
                   </>
