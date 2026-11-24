@@ -80,6 +80,8 @@ export default function Library({ onClose, backRef }) {
             sections={s.sections}
             recent={s.recent}
             onSearch={(q) => s.setQuery(q)}
+            onForget={s.forget}
+            onClear={s.clearRecent}
             onPickBook={(id) => { s.setSelected([id]); inputRef.current?.focus(); }}
           />
         )}

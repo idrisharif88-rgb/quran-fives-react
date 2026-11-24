@@ -44,6 +44,13 @@ describe('mergeStates', () => {
     expect(out.starredByStep[5]).toEqual([11]);
   });
 
+  it('merges library searches as a set', () => {
+    const k = 'quran-fives-library-recent-v1';
+    const base = { localStores: { [k]: ['a', 'b'] } };
+    const out = mergeStates(base, { localStores: { [k]: ['c', 'a', 'b'] } }, { localStores: { [k]: ['a'] } });
+    expect(out.localStores[k]).toEqual(['c', 'a']);
+  });
+
   it('keeps positional arrays whole', () => {
     expect(mergeStates({ s: [0, 0] }, { s: [1, 0] }, { s: [0, 1] }, 'remote')).toEqual({ s: [0, 1] });
   });

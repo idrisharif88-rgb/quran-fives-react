@@ -1,18 +1,12 @@
 import { counted, COUNTED } from '../../utils/libraryText';
+import LibraryRecent from './LibraryRecent';
 
 // قبل البحث: تلميح، عمليات البحث السابقة، والكتب بأقسامها — الضغط على كتاب يحصر البحث فيه
-export default function LibraryHome({ books, sections, recent, onSearch, onPickBook }) {
+export default function LibraryHome({ books, sections, recent, onSearch, onForget, onClear, onPickBook }) {
   return (
     <div className="library-home">
       <p className="library-tip">اكتب كلمة أو أكثر. التشكيل لا يلزم، و«الصلاة» تجد «بالصلاة» و«والصلاة». أو اختر كتاباً لتبحث فيه وحده.</p>
-      {recent.length > 0 && (
-        <div>
-          <p className="library-label">عمليات بحث سابقة</p>
-          <div className="library-recent">
-            {recent.map((r) => <button key={r} type="button" onClick={() => onSearch(r)}>{r}</button>)}
-          </div>
-        </div>
-      )}
+      <LibraryRecent recent={recent} onSearch={onSearch} onForget={onForget} onClear={onClear} />
       {sections.map((s) => {
         const inSection = books.filter((b) => b.section === s.id);
         if (!inSection.length) return null;

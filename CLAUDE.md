@@ -133,6 +133,10 @@ The APK must work with no network. Only recitation audio may hit the internet �
 - **`src/styles/fonts.css` is generated — don't hand-edit it.** Re-run `scripts/fetch-fonts.sh src/assets/fonts src/styles/fonts.css` to add a family or weight. It keeps the `arabic` + `latin` subsets only and drops the rest.
 - **A failing network request must never look like a styling bug.** Test any new asset with the device in airplane mode before shipping.
 
+# Library Rules
+
+- **Every search is kept** (`libraryRecent.js`, cap 500 only to protect storage), synced as a set (`SET_PATHS` in `syncMerge.js`: a delete on one device stays deleted). `LibraryRecent` is the owner's option A: chips, first 8 + «+N الكل»; «تعديل» makes a tap select, ✕ deletes one, then «احذف المحدّد» or «امسح الكل» (confirm in place).
+
 # Hijri Calendar Rules
 
 - **The owner's moon table is the calendar for every user.** `src/constants/hijriMonths.js` holds each month's moon (date + time); `monthStart` in `src/utils/hijriDate.js` turns it into day 1 by the dawn rule: before 04:00 the same day, from 05:00 the next day, between 04:00 and 05:00 the owner decides (written as `start`). Every Hijri date in the app goes through `hijriFromTable` first; Umm al-Qura is only the fallback past the table's end.
