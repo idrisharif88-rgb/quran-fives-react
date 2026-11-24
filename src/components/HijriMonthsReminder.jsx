@@ -5,7 +5,7 @@ import './HijriMonthsReminder.css';
  * تنبيه صغير للمشرف أعلى الشاشة (إضافة أهلّة، أو هلال بين الرابعة والخامسة). لا يحجب ما خلفه.
  * @param onClose    إغلاق حتى الشهر الهجري التالي
  * @param onPostpone تأجيل حتى الغد (وكذلك زرّ الرجوع في الهاتف)
- * يستعمله أيضاً تذكير التفسير اليومي بتسميات أخرى للزرّين
+ * يستعمله أيضاً شريط «نسخة جديدة من الموقع» (WebUpdateBar) بتسميات أخرى للزرّين
  */
 export default function HijriMonthsReminder({ message, onClose, onPostpone, backRef, closeLabel = 'إغلاق', postponeLabel = 'تأجيل' }) {
   useEffect(() => {

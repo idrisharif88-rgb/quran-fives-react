@@ -59,6 +59,8 @@ export default function Library({ onClose, backRef }) {
               ref={inputRef}
               value={s.query}
               onChange={(e) => s.setQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !s.tooShort) { s.remember(); e.currentTarget.blur(); } }}
+              enterKeyHint="search"
               placeholder={single ? `ابحث في ${single.name}…` : `ابحث في ${counted(s.books.length || 13, COUNTED.books)}…`}
               aria-label="كلمة البحث"
               dir="rtl"

@@ -88,6 +88,7 @@ import useLongPressNav from './hooks/useLongPressNav';
 import useVolumeNav from './hooks/useVolumeNav';
 import useHoldRepeat from './hooks/useHoldRepeat';
 import PullToRefresh from './components/PullToRefresh/PullToRefresh';
+import WebUpdateBar from './components/WebUpdateBar';
 import CounterSectionName from './components/CounterSections/CounterSectionName';
 import CounterSectionArrows from './components/CounterSections/CounterSectionArrows';
 import { dayKey } from './utils/hifzSchedule';
@@ -2727,6 +2728,7 @@ function App() {
           backRef={celebrationBackRef}
         />
       )}
+      {!hijriReminder.open && <WebUpdateBar backRef={celebrationBackRef} />}
       {isKhatmaProgressOpen && (
         <KhatmaProgressDialog
           khatmas={khatmaList}
