@@ -1,7 +1,6 @@
 import { SYNC_URL, SYNC_ENABLED } from './syncConfig';
 import { readAccount, authHeaders } from './syncAccount';
 import { getSyncMeta, setSyncMeta, setSyncBase } from './syncMeta';
-import { APP_STORAGE_KEY, restoreSyncedLocal } from './persistence';
 
 // creds: حساب الطلب. الافتراضي هو الحساب المحفوظ على الجهاز؛ null يرسل بلا دخول.
 async function api(path, { creds = readAccount(), ...options } = {}, timeoutMs = 12000) {
@@ -31,7 +30,7 @@ async function api(path, { creds = readAccount(), ...options } = {}, timeoutMs =
 
 // حُذفت pullRemoteIfChanged عمداً: كانت تكتب نسخة الخادم فوق الحالة المحلية
 // تلقائياً بمجرّد اختلاف الطابع الزمني، فتتبدّل حالة الجهاز بلا سؤال. صار الفحص
-// بـfetchRemoteInfo (قراءة فقط) والتطبيق بـforcePullRemote بعد قرار المستخدم.
+// بـfetchRemoteInfo (قراءة فقط)، والتطبيق اليوم بالدمج التلقائي (autoSync.js).
 // المقارنة بعدم التساوي لا بالأكبر: الطابع يصدر عن ساعة الخادم وحدها، وأي
 // اختلاف يعني أن جهازاً آخر كتب بعدنا (ويُصلح أيضاً الطوابع القديمة المشوّهة).
 
@@ -64,9 +63,9 @@ export async function pushLocal(state) {
   throw lastErr;
 }
 
-// ─── المزامنة اليدوية: خطوتان صريحتان، رفع وتنزيل ───
-// الطريقة نفسها في الاثنتين: نقرأ طابع الخادم الحالي ونستعمله أساساً للكتابة،
-// فالعملية تنجح دائماً بلا 409 ودون أي تغيير في عقد الخادم أو نشر جديد.
+// ─── حالة الخادم للوحة المزامنة، ورفع قسري لحالتين: نسخ بيانات الجهاز إلى سحابة فارغة
+// (emptyCloud) وحفظ نسخة الجهاز قبل تسجيل الخروج (useSignOut). يقرأ طابع الخادم الحالي
+// ويجعله أساس الكتابة، فينجح بلا 409 ودون تغيير في عقد الخادم.
 
 // معلومات الخادم للعرض: متى آخر تحديث، وهل يطابق ما يعرفه هذا الجهاز
 export async function fetchRemoteInfo() {
@@ -93,20 +92,6 @@ export async function forcePushLocal(state) {
   setSyncMeta({ updatedAt: result.updatedAt });
   setSyncBase(state);
   return result.updatedAt;
-}
-
-// تنزيل: نسخة السحابة تحلّ محلّ نسخة هذا الجهاز.
-// تعيد false إن كانت السحابة فارغة، كي لا يمحو التنزيلُ حالةَ الجهاز بلا شيء.
-export async function forcePullRemote() {
-  if (!SYNC_ENABLED) throw new Error('sync disabled');
-  const remote = await api('/api/state', { method: 'GET' });
-  if (!remote || !remote.state) return false;
-  localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(remote.state));
-  // الاختبارات وسرعة التشغيل تُحفظ خارج حالة التطبيق: تعود إلى مواضعها
-  restoreSyncedLocal(remote.state.localStores);
-  setSyncMeta({ updatedAt: remote.updatedAt });
-  setSyncBase(remote.state);
-  return true;
 }
 
 // ─── المزامنة التلقائية (autoSync.js): قراءة نسخة الخادم، وكتابة بأساس صريح ───
