@@ -57,6 +57,7 @@ import ReviewRecorder from './components/ReviewRecorder/ReviewRecorder';
 import GoogleBackup from './components/GoogleBackup/GoogleBackup';
 import UpdatesNotebook from './components/UpdatesNotebook/UpdatesNotebook';
 import ErrorLogScreen from './components/ErrorLog/ErrorLogScreen';
+import SecurityLogScreen from './components/SecurityLog/SecurityLogScreen';
 import Library from './components/Library/Library';
 import AppScaleSheet from './components/AppScale/AppScaleSheet';
 import ContactUs from './components/ContactUs/ContactUs';
@@ -349,6 +350,9 @@ function App() {
   const [isErrorLogOpen, setIsErrorLogOpen] = useState(false);   // «سجل الأخطاء» للمالك
   const errorLogBackRef = useRef(null);
   const closeErrorLog = useCallback(() => setIsErrorLogOpen(false), []);
+  const [isSecurityLogOpen, setIsSecurityLogOpen] = useState(false);   // «سجل الأمان» للمالك
+  const securityLogBackRef = useRef(null);
+  const closeSecurityLog = useCallback(() => setIsSecurityLogOpen(false), []);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);   // «المكتبة» — لمن أذن له المشرف
   const libraryBackRef = useRef(null);
   const appScale = useAppScale();   // «حجم العرض»
@@ -2109,6 +2113,10 @@ function App() {
       errorLogBackRef.current();
       return true;
     }
+    if (securityLogBackRef.current) {
+      securityLogBackRef.current();
+      return true;
+    }
     if (libraryBackRef.current) {
       libraryBackRef.current();
       return true;
@@ -2889,7 +2897,7 @@ function App() {
               </button>
               {isMoreMenuOpen && (
                 <div className="ayah-menu-popover more-menu-popover more-menu-list" dir="rtl" style={{ minWidth: '180px' }}>
-                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات', 'سجل الأخطاء'] : []), ...(canLibrary ? ['المكتبة'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'حجم العرض', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'تواصل معنا', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
+                  {['المصحف', 'العداد', 'ختماتي', 'المحفوظات', 'إجازاتي', ...(isOwner ? ['فقهيات', 'دفتر التحديثات', 'سجل الأخطاء', 'سجل الأمان'] : []), ...(canLibrary ? ['المكتبة'] : []), 'فأل القرآن', 'البحث في القرآن', 'الوضع الليلي', ACCENT_THEME_LABEL, 'الخط', 'حجم العرض', 'إعدادات الصوت', 'خماسيات - سور', 'اختبار سور', 'عجائب قرآنية', 'شرح البرنامج', 'تواصل معنا', 'مزامنة QR', 'المزامنة السحابية', 'السور المتشابهة في العدد', 'إعادة تعيين التطبيق'].map(option => (
                     <button
                       key={`more-${option}`}
                       type="button"
@@ -2902,6 +2910,7 @@ function App() {
                         if (option === 'المحفوظات') { setIsSavedSessionsOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'دفتر التحديثات') { mainKeyboard.closeKeyboard(); setIsNotebookOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'سجل الأخطاء') { setIsErrorLogOpen(true); setIsMoreMenuOpen(false); return; }
+                        if (option === 'سجل الأمان') { setIsSecurityLogOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'المكتبة') { mainKeyboard.closeKeyboard(); setIsLibraryOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فقهيات') { mainKeyboard.closeKeyboard(); setIsFiqhOpen(true); setIsMoreMenuOpen(false); return; }
                         if (option === 'فأل القرآن') { mainKeyboard.closeKeyboard(); setIsFalOpen(true); setIsMoreMenuOpen(false); setIsFontMenuOpen(false); return; }
@@ -4259,6 +4268,7 @@ function App() {
       {isScaleOpen && <AppScaleSheet scale={appScale.scale} onChange={appScale.setScale} onClose={() => setIsScaleOpen(false)} backRef={scaleBackRef} />}
       {isNotebookOpen && isOwner && <UpdatesNotebook onClose={() => setIsNotebookOpen(false)} backRef={notebookBackRef} />}
       {isErrorLogOpen && isOwner && <ErrorLogScreen onClose={closeErrorLog} backRef={errorLogBackRef} />}
+      {isSecurityLogOpen && isOwner && <SecurityLogScreen onClose={closeSecurityLog} backRef={securityLogBackRef} />}
       {isLibraryOpen && canLibrary && <Library onClose={closeLibrary} backRef={libraryBackRef} />}
       {isFiqhOpen && isOwner && (
         <div style={{

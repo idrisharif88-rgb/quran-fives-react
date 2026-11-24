@@ -1,0 +1,88 @@
+/* «سجل الأمان» للمالك — الهيكل من UpdatesNotebook.css، والتصفية من ErrorLogScreen.css */
+.seclog-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.seclog-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 6px;
+  border: 1.5px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.seclog-tile b { font-size: 22px; font-variant-numeric: tabular-nums; }
+.seclog-tile span { font-size: 13px; font-weight: 800; color: var(--app-muted); }
+.seclog-tile.alert b { color: var(--app-danger); }
+.seclog-tile.warn b { color: color-mix(in srgb, var(--app-warn) 65%, var(--app-text)); }
+.seclog-tile.info b { color: var(--app-accent-ink); }
+.seclog-tile.active { border-color: var(--app-accent-ink); box-shadow: 0 0 0 1.5px var(--app-accent-ink) inset; }
+
+.seclog-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.seclog-row {
+  border: 1px solid var(--app-border);
+  border-inline-start: 4px solid var(--app-accent-ink);
+  border-radius: 10px;
+  background: var(--app-surface);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.seclog-row.alert { border-inline-start-color: var(--app-danger); }
+.seclog-row.warn { border-inline-start-color: var(--app-warn); }
+
+.seclog-row-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.seclog-time { font-size: 12px; color: var(--app-muted); white-space: nowrap; }
+
+.seclog-row-who {
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  overflow-wrap: anywhere;
+}
+
+.seclog-tag {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--app-surface-2);
+  color: color-mix(in srgb, var(--app-warn) 65%, var(--app-text));
+}
+
+.seclog-row-sub {
+  font-size: 12px;
+  color: var(--app-muted);
+  overflow-wrap: anywhere;
+}
+
+.seclog-note { font-size: 12px; }

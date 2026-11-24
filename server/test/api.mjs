@@ -593,3 +593,26 @@ test('سجلّ الأخطاء: يُستقبل بلا حساب، يُنظَّف،
   assert.equal((await call('DELETE', '/api/admin/errors', { headers: owner })).status, 200);
   assert.equal((await call('GET', '/api/admin/errors', { headers: owner })).json.entries.length, 0);
 });
+
+test('سجلّ الأمان: يسجّل المرفوض والحسّاس، لا الاستعمال العادي، ولا يقرؤه إلا المالك', async () => {
+  const owner = basic('owner', '12345');
+  const before = (await call('GET', '/api/admin/security?days=1', { headers: owner })).json.total;
+  await call('GET', '/api/state', { headers: basic('third@example.com', 'wrong-pass', devices['third@example.com']) });   // كلمة سر خاطئة
+  await call('GET', '/api/admin/users', { headers: basic('third@example.com', '123456', devices['third@example.com']) });  // ليس المالك
+  await fetch(base + '/api/wp-admin');                                                                                   // تجسّس
+  await call('GET', '/api/state', { headers: owner });                                                                   // استعمال عادي
+  await new Promise((r) => setTimeout(r, 100));
+  const res = await call('GET', '/api/admin/security?days=1', { headers: owner });
+  assert.equal(res.status, 200);
+  const fresh = res.json.entries.slice(0, res.json.total - before);
+  const types = fresh.map((e) => e.type).sort();
+  assert.deepEqual(types, ['admin_denied', 'auth_failed', 'probe']);
+  const failed = fresh.find((e) => e.type === 'auth_failed');
+  assert.equal(failed.user, 'third@example.com');
+  assert.equal(failed.verified, false);
+  assert.ok(!JSON.stringify(fresh).includes('wrong-pass'));
+  const denied = fresh.find((e) => e.type === 'admin_denied');
+  assert.equal(denied.level, 'alert');
+  assert.equal(denied.verified, true);
+  assert.equal((await call('GET', '/api/admin/security', { headers: basic('third@example.com', '123456', devices['third@example.com']) })).status, 403);
+});

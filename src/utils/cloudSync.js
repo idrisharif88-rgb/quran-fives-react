@@ -190,4 +190,7 @@ export const clearErrorLog = () => api('/api/admin/errors', { method: 'DELETE' }
 export const nameErrorDevice = (installId, name) =>
   api('/api/admin/errors/device', { method: 'POST', body: JSON.stringify({ installId, name }) });
 
+// سجلّ الأمان للمالك (server/securityLog.js)
+export const fetchSecurityLog = (days) => api(`/api/admin/security?days=${days}`, { method: 'GET' });
+
 export const deleteAccount = (creds) => api('/api/account/delete', { method: 'POST', creds });

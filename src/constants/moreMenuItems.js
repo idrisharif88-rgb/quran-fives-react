@@ -11,6 +11,7 @@ export const MORE_MENU_ICON_FOR = {
   'فقهيات': 'gavel',
   'دفتر التحديثات': 'notebook_pen',
   'سجل الأخطاء': 'bug',
+  'سجل الأمان': 'shield_alert',
   'المكتبة': 'library_big',
   'فأل القرآن': 'auto_awesome',
   'البحث في القرآن': 'search',
