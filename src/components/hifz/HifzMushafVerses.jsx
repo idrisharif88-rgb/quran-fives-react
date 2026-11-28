@@ -1,16 +1,19 @@
 import { useState, useRef, useLayoutEffect } from 'react';
 import MushafPage from '../mushaf/MushafPage';
+import HifzPageSwitch from './HifzPageSwitch';
 import { verseKeys, pagesOfRefs } from '../../utils/hifzRecordingRefs';
 import '../mushaf/MushafReader.css';
 
 /**
  * آيات الورد كما في المصحف المطبوع: أسطرها وحدها بعرض عمود الصفحة، كل كلمة في موضعها
- * من سطرها، وما في السطر من غيرها فارغ. ورد يمتدّ على صفحتين يُرسم جزآه متتاليين.
+ * من سطرها، وما في السطر من غيرها فارغ. ورد يمتدّ على صفحتين تُعرض صفحاته واحدة واحدة،
+ * كلّ آية في صفحتها، ويُنتقل بينها بالسهمين (HifzPageSwitch).
  * @param refs آيات الورد [{ s, a }]
  */
 export default function HifzMushafVerses({ refs }) {
   const hostRef = useRef(null);
   const [width, setWidth] = useState(0);
+  const [pageAt, setPageAt] = useState({ portion: '', at: 0 });
 
   useLayoutEffect(() => {
     const el = hostRef.current;
@@ -29,11 +32,18 @@ export default function HifzMushafVerses({ refs }) {
   }, []);
 
   const keys = verseKeys(refs);
+  const pages = pagesOfRefs(refs);
+  // ورد جديد يبدأ من صفحته الأولى
+  const portion = keys.join(',');
+  const at = pageAt.portion === portion ? Math.min(pageAt.at, pages.length - 1) : 0;
   return (
     <div className="hifz-mushaf app-unzoom" ref={hostRef}>
-      {width > 0 && pagesOfRefs(refs).map((page) => (
-        <MushafPage key={page} page={page} width={width} highlightVerse={keys} onlyVerses />
-      ))}
+      {width > 0 && pages.length > 0 && (
+        <MushafPage key={pages[at]} page={pages[at]} width={width} highlightVerse={keys} onlyVerses />
+      )}
+      {pages.length > 1 && (
+        <HifzPageSwitch pages={pages} at={at} onChange={(next) => setPageAt({ portion, at: next })} />
+      )}
     </div>
   );
 }

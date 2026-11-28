@@ -1,0 +1,36 @@
+/* صفحات ورد يمتدّ على صفحتين (HifzPageSwitch). الحاوية font-size: 0، فالحجم هنا صريح */
+.hifz-page-switch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--app-text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.hifz-page-switch-arrow {
+  flex: 0 0 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--app-accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.hifz-page-switch-arrow svg {
+  width: 28px;
+  height: 28px;
+}
+
+.hifz-page-switch-arrow:disabled {
+  opacity: 0.25;
+  cursor: default;
+}

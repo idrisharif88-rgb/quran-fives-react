@@ -38,3 +38,19 @@ export function pagesReadSince(pages, since) {
   }
   return read;
 }
+
+/** طابع آخر ختمة مسجّلة (ms)، أو null */
+export function lastKhatmaTime(khatmas) {
+  const times = (khatmas || []).map((k) => k.timestamp).filter(Number.isFinite);
+  return times.length ? Math.max(...times) : null;
+}
+
+/**
+ * هل تُتمّ هذه الصفحة الختمة؟ صحيح حين تكون آخر صفحة ناقصة من صفحات المصحف بعد آخر ختمة،
+ * أيّاً كانت الصفحة التي بدأت منها الأقسام (400←604 ثم 1←399 تُتمّ عند 399).
+ */
+export function completesKhatma(pages, page, since) {
+  if (!isPage(page)) return false;
+  const read = pagesReadSince(pages, since);
+  return !read.has(page) && read.size === LAST_PAGE - 1;
+}
