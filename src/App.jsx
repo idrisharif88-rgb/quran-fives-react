@@ -84,6 +84,7 @@ import CelebrationDialog from './components/CelebrationDialog';
 import KhatmaProgressDialog from './components/KhatmaProgressDialog';
 import useKhatmaPages from './hooks/useKhatmaPages';
 import { completesKhatma, lastKhatmaTime } from './utils/khatmaPages';
+import { khatmaDoneMessage, KHATMA_DONE_TITLE, KHATMA_DONE_BUTTON } from './utils/khatmaMessage';
 import usePageNavSettings from './hooks/usePageNavSettings';
 import useLongPressNav from './hooks/useLongPressNav';
 import useVolumeNav from './hooks/useVolumeNav';
@@ -2742,10 +2743,9 @@ function App() {
       )}
       {isKhatmaCongratsOpen && (
         <CelebrationDialog
-          title="مبارك إتمام المصحف"
-          message={`أتممت صفحات المصحف كلّها (${MUSHAF.totalPages} صفحة). تقبّل الله منك وجعل القرآن ربيع قلبك.`}
-          stats={khitmaUnlocked ? [{ label: 'ختماتي المسجّلة', value: khatmaList.length }] : []}
-          primaryLabel="الحمد لله"
+          title={KHATMA_DONE_TITLE}
+          message={khatmaDoneMessage(khitmaUnlocked ? khatmaList.length : null, MUSHAF.totalPages)}
+          primaryLabel={KHATMA_DONE_BUTTON}
           onPrimary={closeKhatmaCongrats}
           onClose={closeKhatmaCongrats}
           backRef={celebrationBackRef}

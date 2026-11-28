@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pageOpening as raw } from './pageOpening';
+import { pageOpening as raw, pageOpeningVerse } from './pageOpening';
 
 // ترتيب الحركات فوق الحرف يختلف بين المصادر (شدّة ثم فتحة أو العكس)
 const pageOpening = (page) => raw(page).normalize('NFC');
@@ -17,5 +17,11 @@ describe('pageOpening', () => {
   it('is empty outside the mushaf', () => {
     expect(pageOpening(0)).toBe('');
     expect(pageOpening(605)).toBe('');
+  });
+
+  it('gives the number of the verse a page opens with', () => {
+    expect(pageOpeningVerse(3)).toBe(6);
+    expect(pageOpeningVerse(50)).toBe(1);
+    expect(pageOpeningVerse(605)).toBe(null);
   });
 });

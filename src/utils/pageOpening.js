@@ -21,3 +21,8 @@ export function pageOpening(page, count = 3) {
   }
   return words.join(' ');
 }
+
+/** رقم الآية التي تبدأ بها صفحة المصحف (في سورتها)، أو null خارج المصحف */
+export function pageOpeningVerse(page) {
+  return startOfPage.get(page)?.a ?? null;
+}
