@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { normalizePages, markPage, unmarkPage, pagesReadSince } from './khatmaPages';
+import { normalizePages, markPage, unmarkPage, pagesReadSince, completesKhatma, lastKhatmaTime } from './khatmaPages';
+import { LAST_PAGE } from '../data/juzPages';
 
 describe('khatma pages', () => {
   it('marks, re-marks and unmarks a page', () => {
@@ -24,5 +25,31 @@ describe('khatma pages', () => {
   it('counts only pages after the given time', () => {
     expect([...pagesReadSince({ 1: 5, 2: 15 }, 10)]).toEqual([2]);
     expect(pagesReadSince({ 1: 5, 2: 15 }, null).size).toBe(2);
+  });
+});
+
+describe('completesKhatma', () => {
+  const all = (except, at = 10) => {
+    const p = {};
+    for (let i = 1; i <= LAST_PAGE; i++) if (i !== except) p[i] = at;
+    return p;
+  };
+  it('fires on the last missing page, whatever the start', () => {
+    expect(completesKhatma(all(399), 399, null)).toBe(true);
+    expect(completesKhatma(all(604), 604, null)).toBe(true);
+  });
+  it('does not fire when pages are still missing', () => {
+    const p = all(399); delete p[5];
+    expect(completesKhatma(p, 399, null)).toBe(false);
+  });
+  it('does not fire again for a page already read', () => {
+    expect(completesKhatma(all(0), 604, null)).toBe(false);
+  });
+  it('counts only pages after the last khatma', () => {
+    expect(completesKhatma(all(399, 10), 399, 20)).toBe(false);
+  });
+  it('lastKhatmaTime', () => {
+    expect(lastKhatmaTime([{ timestamp: 3 }, { timestamp: 9 }, {}])).toBe(9);
+    expect(lastKhatmaTime([])).toBe(null);
   });
 });

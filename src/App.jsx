@@ -83,6 +83,7 @@ import useBrowserBack, { leaveSite } from './hooks/useBrowserBack';
 import CelebrationDialog from './components/CelebrationDialog';
 import KhatmaProgressDialog from './components/KhatmaProgressDialog';
 import useKhatmaPages from './hooks/useKhatmaPages';
+import { completesKhatma, lastKhatmaTime } from './utils/khatmaPages';
 import usePageNavSettings from './hooks/usePageNavSettings';
 import useLongPressNav from './hooks/useLongPressNav';
 import useVolumeNav from './hooks/useVolumeNav';
@@ -1612,8 +1613,8 @@ function App() {
     const nextValue = hasLimit
       ? Math.min(activeNightCounter.limit, finishedPage + 1)
       : finishedPage + 1;
-    // إنهاء آخر صفحة في المصحف: تهنئة بالختمة (مرة، عند تجاوزها)
-    if (finishedPage === MUSHAF.totalPages) setIsKhatmaCongratsOpen(true);
+    // آخر صفحة ناقصة من المصحف منذ آخر ختمة: تهنئة بالختمة، أيّاً كانت بداية الأقسام
+    if (completesKhatma(khatmaPages.pages, finishedPage, lastKhatmaTime(khatmaList))) setIsKhatmaCongratsOpen(true);
     // سجّل زمن الصفحة المنتهية إن وُجدت صفحة فعلية
     if (finishedPage >= 1) {
       stopwatch.recordLap(finishedPage);
@@ -2742,7 +2743,7 @@ function App() {
       {isKhatmaCongratsOpen && (
         <CelebrationDialog
           title="مبارك إتمام المصحف"
-          message={`أتممت الصفحة ${MUSHAF.totalPages}، آخر صفحات المصحف. تقبّل الله منك وجعل القرآن ربيع قلبك.`}
+          message={`أتممت صفحات المصحف كلّها (${MUSHAF.totalPages} صفحة). تقبّل الله منك وجعل القرآن ربيع قلبك.`}
           stats={khitmaUnlocked ? [{ label: 'ختماتي المسجّلة', value: khatmaList.length }] : []}
           primaryLabel="الحمد لله"
           onPrimary={closeKhatmaCongrats}
